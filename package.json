@@ -1,0 +1,20 @@
+{
+  "name": "voco-app",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server --workspace=vocoserver\" \"npm run dev:shop --workspace=vocoshop\"",
+    "dev:server": "cd vocoserver && npm run dev",
+    "dev:shop": "cd vocoshop && npx expo start",
+    "install:all": "npm install && cd vocoserver && npm install && cd ../vocoshop && npm install"
+  },
+  "workspaces": [
+    "vocoserver",
+    "vocoshop"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "expo-image-manipulator": "~14.0.8"
+  }
+}

@@ -1,0 +1,167 @@
+// src/routes/stockRoutes.ts
+import { Router } from "express";
+import authMiddleware from "../middleware/authMiddleware";
+import requirePermission from "../middleware/permissionMiddleware";
+import Product from "../models/Product";
+
+const router = Router();
+
+/**
+* 🔐 Toutes les routes stock protégées
+* Stock = dépend de permission "inventory"
+*/
+router.use(authMiddleware);
+router.use(requirePermission("inventory"));
+
+router.get("/test", (req, res) => {
+res.send("Stock route OK");
+});
+
+/** ---------------------------------------
+* HELPERS
+---------------------------------------- */
+function isValidYYYYMMDD(v: string) {
+if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+
+const [y, m, d] = v.split("-").map(Number);
+if (!y || !m || !d) return false;
+
+// midi UTC => évite le décalage timezone (la veille)
+const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+return (
+dt.getUTCFullYear() === y &&
+dt.getUTCMonth() + 1 === m &&
+dt.getUTCDate() === d
+);
+}
+
+function toSafeUTCDate(v: string) {
+const [y, m, d] = v.split("-").map(Number);
+return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+}
+
+/**
+* 🟩 AJOUTER DU STOCK
+* POST /api/stocks/add
+* body: { productId, quantity, expirationDate? } // YYYY-MM-DD
+*/
+router.post("/add", async (req: any, res) => {
+try {
+const storeId = String(req.user?.storeId || "");
+if (!storeId) return res.status(400).json({ error: "storeId manquant." });
+
+const { productId, quantity, expirationDate } = req.body;
+
+if (!productId || quantity === undefined || quantity === null) {
+return res.status(400).json({ error: "Paramètres manquants." });
+}
+
+const q = Number(quantity);
+if (!Number.isFinite(q) || q <= 0) {
+return res.status(400).json({ error: "Quantité invalide." });
+}
+
+// ✅ IMPORTANT : ton Product.ts utilise storeId (pas store)
+const product: any = await Product.findOne({ _id: productId, storeId });
+if (!product) {
+return res.status(404).json({ error: "Produit introuvable" });
+}
+
+// ✅ 1) stock
+product.quantity = Number(product.quantity || 0) + q;
+
+// ✅ 2) expiration date (optionnelle)
+const exp = String(expirationDate || "").trim();
+if (exp) {
+if (!isValidYYYYMMDD(exp)) {
+return res.status(400).json({
+error: "Date invalide. Format attendu YYYY-MM-DD (ex: 2026-01-31).",
+});
+}
+
+const safeDate = toSafeUTCDate(exp);
+
+if (!Array.isArray(product.expirationDates)) product.expirationDates = [];
+
+// anti-doublon par jour
+const already = product.expirationDates.some((dt: Date) => {
+const isoDay = new Date(dt).toISOString().slice(0, 10);
+return isoDay === exp;
+});
+
+if (!already) {
+product.expirationDates.push(safeDate);
+// tri croissant
+product.expirationDates.sort(
+(a: Date, b: Date) =>
+new Date(a).getTime() - new Date(b).getTime()
+);
+}
+}
+
+await product.save();
+
+return res.json({
+message: "Stock ajouté avec succès",
+newQuantity: product.quantity,
+product,
+});
+} catch (error) {
+console.error("❌ addStock ERROR :", error);
+return res
+.status(500)
+.json({ error: "Erreur serveur lors de l’ajout du stock" });
+}
+});
+
+/**
+* 🟥 RETIRER DU STOCK
+* POST /api/stocks/remove
+* body: { productId, quantity }
+*/
+router.post("/remove", async (req: any, res) => {
+try {
+const storeId = String(req.user?.storeId || "");
+if (!storeId) return res.status(400).json({ error: "storeId manquant." });
+
+const { productId, quantity } = req.body;
+
+if (!productId || quantity === undefined || quantity === null) {
+return res.status(400).json({ error: "Paramètres manquants." });
+}
+
+const q = Number(quantity);
+if (!Number.isFinite(q) || q <= 0) {
+return res
+.status(400)
+.json({ error: "La quantité à retirer doit être positive." });
+}
+
+// ✅ IMPORTANT : ton Product.ts utilise storeId
+const product: any = await Product.findOne({ _id: productId, storeId });
+if (!product) return res.status(404).json({ error: "Produit introuvable" });
+
+if (Number(product.quantity || 0) < q) {
+return res
+.status(400)
+.json({ error: "Quantité supérieure au stock disponible." });
+}
+
+product.quantity = Number(product.quantity || 0) - q;
+await product.save();
+
+return res.json({
+message: "Stock retiré avec succès",
+newQuantity: product.quantity,
+product,
+});
+} catch (error) {
+console.error("❌ removeStock ERROR :", error);
+return res
+.status(500)
+.json({ error: "Erreur serveur lors du retrait du stock" });
+}
+});
+
+export default router;
+ 
