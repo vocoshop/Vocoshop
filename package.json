@@ -9,7 +9,8 @@
   },
   "workspaces": [
     "vocoserver",
-    "vocoshop"
+    "vocoshop",
+    "voco-web"
   ],
   "devDependencies": {
     "concurrently": "^8.2.2"
