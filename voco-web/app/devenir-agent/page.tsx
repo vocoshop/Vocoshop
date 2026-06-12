@@ -187,6 +187,8 @@ export default function DevenirAgent() {
                   <div style={{ marginTop: 12 }}>
                     <label style={labelStyle}>Téléphone *</label>
                     <input
+                      type="tel"
+                      inputMode="tel"
                       placeholder="+242 6XX XXX XXX"
                       value={form.phone}
                       onChange={(e) => update('phone', e.target.value)}
