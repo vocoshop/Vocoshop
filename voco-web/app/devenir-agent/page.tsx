@@ -172,7 +172,6 @@ export default function DevenirAgent() {
                         value={form.firstName}
                         onChange={(e) => update('firstName', e.target.value)}
                         style={inputStyle}
-                        autoFocus
                       />
                     </div>
                     <div>
