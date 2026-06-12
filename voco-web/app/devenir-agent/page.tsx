@@ -87,7 +87,7 @@ function SignupScreenMockup() {
         {[
           { label: 'Prénom', placeholder: 'Jean', filled: true },
           { label: 'Nom', placeholder: 'Dupont', filled: true },
-          { label: 'Téléphone', placeholder: '+242 6XX XXX', filled: false },
+          { label: 'Email', placeholder: 'jean@email.com', filled: false },
           { label: 'Ville', placeholder: 'Brazzaville', filled: false },
         ].map((field, i) => (
           <div key={i} style={{ marginBottom: 12 }}>
@@ -133,7 +133,7 @@ export default function DevenirAgent() {
     country: 'CG',
     firstName: '',
     lastName: '',
-    phone: '',
+    email: '',
     gender: '',
     birthDate: '',
     city: '',
@@ -240,7 +240,7 @@ export default function DevenirAgent() {
                 Inscription envoyée !
               </h2>
               <p style={{ fontSize: 14, color: '#a1a1aa', lineHeight: 1.6, marginBottom: 24 }}>
-                Ton dossier est en cours de vérification. Tu recevras un SMS avec ton code agent dans les prochaines heures.
+                Ton dossier est en cours de vérification. Tu recevras un email avec ton code agent dans les prochaines heures.
               </p>
               <Link href="/login" style={{
                 display: 'inline-flex',
@@ -309,11 +309,12 @@ export default function DevenirAgent() {
                     </div>
                   </div>
                   <div style={{ marginTop: 12 }}>
-                    <label style={labelStyle}>Téléphone *</label>
+                    <label style={labelStyle}>Email *</label>
                     <input
-                      placeholder="+242 6XX XXX XXX"
-                      value={form.phone}
-                      onChange={(e) => update('phone', e.target.value)}
+                      type="email"
+                      placeholder="jean@email.com"
+                      value={form.email}
+                      onChange={(e) => update('email', e.target.value)}
                       style={inputStyle}
                     />
                   </div>
@@ -406,7 +407,7 @@ export default function DevenirAgent() {
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#fafafa', marginBottom: 12 }}>Récapitulatif</div>
                     {[
                       { label: 'Nom', value: `${form.firstName} ${form.lastName}` },
-                      { label: 'Téléphone', value: form.phone },
+                      { label: 'Email', value: form.email },
                       { label: 'Ville', value: form.city },
                       { label: 'Pays', value: COUNTRIES.find((c) => c.code === form.country)?.name },
                       { label: 'Pièce', value: `${form.idType} — ${form.idNumber}` },
@@ -459,7 +460,7 @@ export default function DevenirAgent() {
                 )}
                 <button
                   onClick={() => {
-                    if (step === 1 && (!form.firstName || !form.lastName || !form.phone || !form.city)) {
+                    if (step === 1 && (!form.firstName || !form.lastName || !form.email || !form.city)) {
                       setError('Remplis tous les champs obligatoires');
                       return;
                     }
