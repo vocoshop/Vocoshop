@@ -130,7 +130,7 @@ export default function DevenirAgent() {
                 Inscription envoyée !
               </h2>
               <p style={{ fontSize: 14, color: '#a1a1aa', lineHeight: 1.6, marginBottom: 24 }}>
-                Ton dossier est en cours de vérification. Tu recevras un SMS avec ton code agent dans les prochaines heures.
+                Ton dossier est en cours de vérification. Tu recevras un SMS avec ton code agent dès que ton compte sera validé par notre équipe.
               </p>
               <Link href="/login" style={{
                 display: 'inline-flex',
