@@ -14,7 +14,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 ===================================================== */
 export default function Login() {
   const router = useRouter();
-  const [step, setStep] = useState<'login' | 'authCode' | 'setPassword' | 'forgot'>('authCode');
+  const [step, setStep] = useState<'login' | 'authCode' | 'setPassword' | 'forgot'>('login');
   const [codeOrPhone, setCodeOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [authCode, setAuthCode] = useState('');
