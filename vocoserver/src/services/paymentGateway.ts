@@ -77,7 +77,7 @@ async function chargeMobileMoney(
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    const data: any = await res.json();
 
     if (data.status === "success" || data.status === "pending") {
       return {
@@ -129,7 +129,7 @@ async function chargeCard(
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    const data: any = await res.json();
 
     if (data.status === "success" || data.status === "pending") {
       return {
@@ -219,7 +219,7 @@ export async function verifyTransaction(txRef: string): Promise<boolean> {
     const res = await fetch(`${FLW_BASE}/transactions/verify_by_reference?tx_ref=${txRef}`, {
       headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` },
     });
-    const data = await res.json();
+    const data: any = await res.json();
     return data.status === "success" && data.data?.status === "successful";
   } catch {
     return false;

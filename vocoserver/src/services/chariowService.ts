@@ -108,7 +108,7 @@ export async function createChariowCheckout(
 
     clearTimeout(timeout);
 
-    const data = await res.json();
+    const data: any = await res.json();
 
     if (!res.ok) {
       const msg = data.message || `Erreur Chariow ${res.status}`;

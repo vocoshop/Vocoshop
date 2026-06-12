@@ -125,7 +125,7 @@ function buildSharedReportPdf(params: {
   const left = doc.page.margins.left;
   const right = pageW - doc.page.margins.right;
 
-  const addFooter = (doc: PDFKit.PDFDocument) => {
+  const addFooter = (doc: any) => {
     const fy = doc.page.height - 30;
     doc.fontSize(7).fillColor("#999");
     doc.text("Vocoshop — Document officiel authentifié par empreinte numérique", left, fy, { width: pageW - left * 2, align: "center" });
