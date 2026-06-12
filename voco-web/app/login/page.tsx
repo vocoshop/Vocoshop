@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
-import PhoneMockup from '@/components/PhoneMockup';
-import HomeScreenMockup from '@/components/HomeScreenMockup';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -139,37 +137,14 @@ export default function Login() {
     <div style={{ minHeight: '100vh', background: '#0a0a0b', display: 'flex', flexDirection: 'column' }}>
       <PublicNavbar active="login" />
 
-      <div className="grid-2 container" style={{
+      <div style={{
         flex: 1,
         padding: '100px 24px 60px',
+        display: 'flex',
+        justifyContent: 'center',
       }}>
-        {/* LEFT — PHONE MOCKUP */}
-        <div className="animate-fadeInLeft" style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-          <div style={{ position: 'relative' }}>
-            <div className="animate-glowPulse" style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 320,
-              height: 320,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, #a855f715 0%, transparent 70%)',
-              filter: 'blur(50px)',
-              pointerEvents: 'none',
-            }} />
-            <PhoneMockup>
-              <HomeScreenMockup />
-            </PhoneMockup>
-          </div>
-        </div>
-
-        {/* RIGHT — FORM */}
-        <div className="animate-fadeInRight delay-200" style={{ maxWidth: 420 }}>
+        {/* FORM */}
+        <div className="animate-fadeInRight" style={{ maxWidth: 420, width: '100%' }}>
           <div className="form-card" style={{
             padding: 40,
             borderRadius: 24,
