@@ -132,7 +132,7 @@ export default function DevenirAgent() {
             </div>
           ) : (
             /* FORM */
-            <form noValidate onSubmit={(e) => e.preventDefault()} className="form-card" style={{
+            <div className="form-card" style={{
               padding: 40,
               borderRadius: 24,
               background: '#111113',
@@ -368,7 +368,7 @@ export default function DevenirAgent() {
                   {loading ? 'Envoi...' : step === 3 ? 'Envoyer ma candidature' : 'Suivant →'}
                 </button>
               </div>
-            </form>
+            </div>
           )}
 
           {/* Login link */}

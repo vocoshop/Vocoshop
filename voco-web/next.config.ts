@@ -1,14 +1,12 @@
 import type { NextConfig } from "next";
 
-const APIBackend = process.env.API_BACKEND_URL || "https://vocoshop.onrender.com";
-
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['172.20.10.11'],
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: `${APIBackend}/api/:path*`,
+        destination: "https://vocoshop.onrender.com/api/:path*",
       },
     ];
   },
