@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const APIBackend = process.env.API_BACKEND_URL || "http://localhost:4000";
+const APIBackend = process.env.API_BACKEND_URL || "https://vocoshop.onrender.com";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['172.20.10.11'],
