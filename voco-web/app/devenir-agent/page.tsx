@@ -46,16 +46,19 @@ export default function DevenirAgent() {
     setError('');
     setLoading(true);
     try {
+      console.log('📤 Submitting form:', JSON.stringify(form));
       const res = await fetch(`${API_URL}/agent/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
+      console.log('📥 Response status:', res.status);
       const data = await res.json();
+      console.log('📥 Response data:', data);
       if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
       setSuccess(true);
     } catch (err: any) {
-      console.error('Register error:', err);
+      console.error('❌ Register error:', err);
       setError(err.message || 'Erreur inconnue');
     } finally {
       setLoading(false);
