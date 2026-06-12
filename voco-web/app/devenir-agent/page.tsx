@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
-import PhoneMockup from '@/components/PhoneMockup';
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -18,107 +18,6 @@ const COUNTRIES = [
   { code: 'FR', name: 'France' },
   { code: 'BE', name: 'Belgique' },
 ];
-
-/* =====================================================
-   PHONE SCREEN — INSCRIPTION
-===================================================== */
-function SignupScreenMockup() {
-  return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      background: '#0f0f13',
-      display: 'flex',
-      flexDirection: 'column',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-      overflow: 'hidden',
-    }}>
-      {/* Status bar */}
-      <div style={{
-        padding: '28px 16px 8px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: 11,
-        color: '#71717a',
-        fontWeight: 600,
-      }}>
-        <span>9:41</span>
-        <div style={{ width: 16, height: 10, border: '1px solid #71717a', borderRadius: 2, position: 'relative' }}>
-          <div style={{ position: 'absolute', inset: 1, background: '#22c55e', borderRadius: 1 }} />
-        </div>
-      </div>
-
-      {/* Header */}
-      <div style={{ padding: '12px 16px', textAlign: 'center' }}>
-        <div style={{
-          width: 48,
-          height: 48,
-          borderRadius: 14,
-          background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 24,
-          fontWeight: 800,
-          color: '#fff',
-          margin: '0 auto 12px',
-        }}>V</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#fafafa' }}>Devenir Agent</div>
-        <div style={{ fontSize: 11, color: '#71717a', marginTop: 4 }}>Rejoins le réseau Vocoshop</div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ padding: '0 16px', marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {[1, 2, 3].map((s) => (
-            <div key={s} style={{
-              flex: 1,
-              height: 3,
-              borderRadius: 2,
-              background: s === 1 ? '#a855f7' : '#1a1a1f',
-            }} />
-          ))}
-        </div>
-        <div style={{ fontSize: 10, color: '#71717a', marginTop: 6, textAlign: 'center' }}>Étape 1 sur 3</div>
-      </div>
-
-      {/* Form preview */}
-      <div style={{ padding: '0 16px', flex: 1 }}>
-        {[
-          { label: 'Prénom', placeholder: 'Jean', filled: true },
-          { label: 'Nom', placeholder: 'Dupont', filled: true },
-          { label: 'Email', placeholder: 'jean@email.com', filled: false },
-          { label: 'Ville', placeholder: 'Brazzaville', filled: false },
-        ].map((field, i) => (
-          <div key={i} style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, color: '#71717a', marginBottom: 4 }}>{field.label}</div>
-            <div style={{
-              padding: '10px 12px',
-              borderRadius: 8,
-              background: '#141418',
-              border: `1px solid ${field.filled ? '#a855f730' : '#1a1a1f'}`,
-              fontSize: 12,
-              color: field.filled ? '#fafafa' : '#52525b',
-            }}>{field.placeholder}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* CTA */}
-      <div style={{ padding: '12px 16px 20px' }}>
-        <div style={{
-          padding: '12px',
-          borderRadius: 10,
-          background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
-          textAlign: 'center',
-          fontSize: 13,
-          fontWeight: 600,
-          color: '#fff',
-        }}>Suivant →</div>
-      </div>
-    </div>
-  );
-}
 
 /* =====================================================
    SIGNUP PAGE — ULTRA PRO
@@ -185,37 +84,14 @@ export default function DevenirAgent() {
     <div style={{ minHeight: '100vh', background: '#0a0a0b', display: 'flex', flexDirection: 'column' }}>
       <PublicNavbar active="devenir-agent" />
 
-      <div className="grid-2 container" style={{
+      <div style={{
         flex: 1,
         padding: '100px 24px 60px',
+        display: 'flex',
+        justifyContent: 'center',
       }}>
-        {/* LEFT — PHONE MOCKUP */}
-        <div className="animate-fadeInLeft" style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-          <div style={{ position: 'relative' }}>
-            <div className="animate-glowPulse" style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 320,
-              height: 320,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, #a855f715 0%, transparent 70%)',
-              filter: 'blur(50px)',
-              pointerEvents: 'none',
-            }} />
-            <PhoneMockup>
-              <SignupScreenMockup />
-            </PhoneMockup>
-          </div>
-        </div>
-
-        {/* RIGHT — FORM */}
-        <div className="animate-fadeInRight delay-200" style={{ maxWidth: 460 }}>
+        {/* FORM */}
+        <div className="animate-fadeInRight" style={{ maxWidth: 460, width: '100%' }}>
           {success ? (
             /* SUCCESS */
             <div className="form-card" style={{
