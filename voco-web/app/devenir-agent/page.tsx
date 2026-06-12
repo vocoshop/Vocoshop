@@ -240,10 +240,11 @@ export default function DevenirAgent() {
                     <div>
                       <label style={labelStyle}>Date de naissance</label>
                       <input
-                        type="date"
+                        type="text"
+                        placeholder="JJ/MM/AAAA"
                         value={form.birthDate}
                         onChange={(e) => update('birthDate', e.target.value)}
-                        style={{ ...inputStyle, colorScheme: 'dark' }}
+                        style={inputStyle}
                       />
                     </div>
                   </div>
