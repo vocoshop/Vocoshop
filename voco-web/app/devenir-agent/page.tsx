@@ -46,11 +46,21 @@ export default function DevenirAgent() {
     setError('');
     setLoading(true);
     try {
-      console.log('📤 Submitting form:', JSON.stringify(form));
+      let birthDateISO = '';
+      if (form.birthDate) {
+        const parts = form.birthDate.split('/');
+        if (parts.length === 3) {
+          birthDateISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        } else {
+          birthDateISO = form.birthDate;
+        }
+      }
+      const payload = { ...form, birthDate: birthDateISO };
+      console.log('📤 Submitting form:', JSON.stringify(payload));
       const res = await fetch(`${API_URL}/public/agent/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       console.log('📥 Response status:', res.status);
       const data = await res.json();
@@ -229,7 +239,7 @@ export default function DevenirAgent() {
                 <div className="animate-fadeIn">
                   <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
-                      <label style={labelStyle}>Genre</label>
+                      <label style={labelStyle}>Genre *</label>
                       <select
                         value={form.gender}
                         onChange={(e) => update('gender', e.target.value)}
@@ -345,8 +355,8 @@ export default function DevenirAgent() {
                       setError('Remplis tous les champs obligatoires');
                       return;
                     }
-                    if (step === 2 && !form.idNumber) {
-                      setError('Numéro de pièce requis');
+                    if (step === 2 && (!form.gender || !form.idNumber)) {
+                      setError('Genre et numéro de pièce requis');
                       return;
                     }
                     setError('');
