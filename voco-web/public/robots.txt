@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /devenir-agent
+Allow: /login
+Disallow: /super-admin/
+Disallow: /admin-manager/
+Disallow: /agent/dashboard
+
+Sitemap: https://vocoshop.com/sitemap.xml
