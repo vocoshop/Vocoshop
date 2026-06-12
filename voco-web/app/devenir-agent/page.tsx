@@ -39,8 +39,22 @@ export default function DevenirAgent() {
     idType: 'CNI',
     idNumber: '',
   });
+  const [idPhoto, setIdPhoto] = useState<File | null>(null);
+  const [selfiePhoto, setSelfiePhoto] = useState<File | null>(null);
+  const [idPhotoPreview, setIdPhotoPreview] = useState('');
+  const [selfiePhotoPreview, setSelfiePhotoPreview] = useState('');
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  const handleFileChange = (field: 'id' | 'selfie', file: File | null) => {
+    if (field === 'id') {
+      setIdPhoto(file);
+      setIdPhotoPreview(file ? URL.createObjectURL(file) : '');
+    } else {
+      setSelfiePhoto(file);
+      setSelfiePhotoPreview(file ? URL.createObjectURL(file) : '');
+    }
+  };
 
   const handleSubmit = async () => {
     setError('');
@@ -55,12 +69,22 @@ export default function DevenirAgent() {
           birthDateISO = form.birthDate;
         }
       }
-      const payload = { ...form, birthDate: birthDateISO };
-      console.log('📤 Submitting form:', JSON.stringify(payload));
+      const fd = new FormData();
+      fd.append('country', form.country);
+      fd.append('firstName', form.firstName);
+      fd.append('lastName', form.lastName);
+      fd.append('phone', form.phone);
+      fd.append('gender', form.gender);
+      fd.append('birthDate', birthDateISO);
+      fd.append('city', form.city);
+      fd.append('idType', form.idType);
+      fd.append('idNumber', form.idNumber);
+      if (idPhoto) fd.append('idPhoto', idPhoto);
+      if (selfiePhoto) fd.append('selfiePhoto', selfiePhoto);
+      console.log('📤 Submitting FormData');
       const res = await fetch(`${API_URL}/public/agent/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: fd,
       });
       console.log('📥 Response status:', res.status);
       const data = await res.json();
@@ -282,6 +306,76 @@ export default function DevenirAgent() {
                       style={inputStyle}
                     />
                   </div>
+
+                  <div style={{ marginTop: 16 }}>
+                    <label style={labelStyle}>Photo de la pièce d'identité *</label>
+                    <div
+                      onClick={() => document.getElementById('idPhotoInput')?.click()}
+                      style={{
+                        padding: idPhotoPreview ? 0 : 24,
+                        borderRadius: 12,
+                        border: '1px dashed #3f3f46',
+                        background: '#0a0a0b',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        overflow: 'hidden',
+                        position: 'relative',
+                      }}
+                    >
+                      {idPhotoPreview ? (
+                        <img src={idPhotoPreview} alt="Pièce" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: 28, marginBottom: 8 }}>📷</div>
+                          <div style={{ fontSize: 13, color: '#71717a' }}>Appuie pour prendre ou choisir une photo</div>
+                        </div>
+                      )}
+                      <input
+                        id="idPhotoInput"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => handleFileChange('id', e.target.files?.[0] || null)}
+                        style={{ display: 'none' }}
+                      />
+                    </div>
+                    {idPhoto && <div style={{ fontSize: 11, color: '#a1a1aa', marginTop: 4 }}>{idPhoto.name}</div>}
+                  </div>
+
+                  <div style={{ marginTop: 16 }}>
+                    <label style={labelStyle}>Selfie avec ta pièce *</label>
+                    <div
+                      onClick={() => document.getElementById('selfiePhotoInput')?.click()}
+                      style={{
+                        padding: selfiePhotoPreview ? 0 : 24,
+                        borderRadius: 12,
+                        border: '1px dashed #3f3f46',
+                        background: '#0a0a0b',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        overflow: 'hidden',
+                        position: 'relative',
+                      }}
+                    >
+                      {selfiePhotoPreview ? (
+                        <img src={selfiePhotoPreview} alt="Selfie" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: 28, marginBottom: 8 }}>🤳</div>
+                          <div style={{ fontSize: 13, color: '#71717a' }}>Prends un selfie avec ta pièce visible</div>
+                        </div>
+                      )}
+                      <input
+                        id="selfiePhotoInput"
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={(e) => handleFileChange('selfie', e.target.files?.[0] || null)}
+                        style={{ display: 'none' }}
+                      />
+                    </div>
+                    {selfiePhoto && <div style={{ fontSize: 11, color: '#a1a1aa', marginTop: 4 }}>{selfiePhoto.name}</div>}
+                  </div>
                 </div>
               )}
 
@@ -302,6 +396,8 @@ export default function DevenirAgent() {
                       { label: 'Ville', value: form.city },
                       { label: 'Pays', value: COUNTRIES.find((c) => c.code === form.country)?.name },
                       { label: 'Pièce', value: `${form.idType} — ${form.idNumber}` },
+                      { label: 'Photo pièce', value: idPhoto ? '✓ Jointe' : '✗ Manquante' },
+                      { label: 'Selfie', value: selfiePhoto ? '✓ Joint' : '— Optionnel' },
                     ].map((item, i) => (
                       <div key={i} style={{
                         display: 'flex',
@@ -355,8 +451,8 @@ export default function DevenirAgent() {
                       setError('Remplis tous les champs obligatoires');
                       return;
                     }
-                    if (step === 2 && (!form.gender || !form.idNumber)) {
-                      setError('Genre et numéro de pièce requis');
+                    if (step === 2 && (!form.gender || !form.idNumber || !idPhoto)) {
+                      setError('Genre, numéro de pièce et photo de la pièce requis');
                       return;
                     }
                     setError('');
