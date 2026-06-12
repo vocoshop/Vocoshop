@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 const sColor = (s?: string) => ({ active: '#22c55e', trial: '#eab308', grace: '#3b82f6', expired: '#ef4444', unused: '#71717a' })[s || ''] || '#71717a';
 const sLabel = (s?: string) => ({ active: 'Actif', trial: 'Trial', grace: 'Grace', expired: 'Expiré', unused: 'Inactif' })[s || ''] || 'En attente';

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 const TYPE_STYLES: Record<string, { label: string; color: string; bg: string }> = {
   blockchain: { label: 'On-chain', color: '#22c55e', bg: '#22c55e20' },

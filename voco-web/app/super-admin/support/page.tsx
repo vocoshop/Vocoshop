@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
 const pColor = (p: string) => ({ high: '#ef4444', medium: '#eab308', low: '#3b82f6' })[p] || '#71717a';

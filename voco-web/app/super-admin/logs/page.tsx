@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 const nColor: Record<string, string> = {
   error: '#ef4444', Erreur: '#ef4444',

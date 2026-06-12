@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<any>({});

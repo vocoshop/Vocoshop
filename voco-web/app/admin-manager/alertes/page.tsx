@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 const severityOrder: Record<string, number> = { '🔴': 0, '🟠': 1, '🟡': 2 };
 const severityLabels: Record<string, string> = { '🔴': 'Urgent', '🟠': 'Important', '🟡': 'Modéré' };

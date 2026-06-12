@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 const agentName = (a: any) => a.name || [a.firstName, a.lastName].filter(Boolean).join(' ') || 'Agent';
 
 export default function AgentsPage() {

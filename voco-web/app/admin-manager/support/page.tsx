@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 const priorityColors: Record<string, string> = { low: '#22c55e', medium: '#eab308', high: '#ef4444' };
 const priorityLabels: Record<string, string> = { low: 'Faible', medium: 'Moyenne', high: 'Haute' };

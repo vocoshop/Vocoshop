@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 const subColors: Record<string, string> = {
   actif: '#22c55e', actif_30j: '#22c55e', actif_7j: '#3b82f6',

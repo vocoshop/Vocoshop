@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 /* =====================================================
    LOGIN PAGE — ULTRA PRO

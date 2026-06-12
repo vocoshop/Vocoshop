@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 type Message = { role: 'user' | 'assistant'; content: string; type?: string };
 
