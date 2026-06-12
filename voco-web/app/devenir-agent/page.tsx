@@ -55,7 +55,8 @@ export default function DevenirAgent() {
       if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Register error:', err);
+      setError(err.message || 'Erreur inconnue');
     } finally {
       setLoading(false);
     }
@@ -131,7 +132,7 @@ export default function DevenirAgent() {
             </div>
           ) : (
             /* FORM */
-            <div className="form-card" style={{
+            <form noValidate onSubmit={(e) => e.preventDefault()} className="form-card" style={{
               padding: 40,
               borderRadius: 24,
               background: '#111113',
@@ -187,7 +188,8 @@ export default function DevenirAgent() {
                   <div style={{ marginTop: 12 }}>
                     <label style={labelStyle}>Téléphone *</label>
                     <input
-                      type="text"
+                      inputMode="text"
+                      autoComplete="off"
                       placeholder="+242 6XX XXX XXX"
                       value={form.phone}
                       onChange={(e) => update('phone', e.target.value)}
@@ -366,7 +368,7 @@ export default function DevenirAgent() {
                   {loading ? 'Envoi...' : step === 3 ? 'Envoyer ma candidature' : 'Suivant →'}
                 </button>
               </div>
-            </div>
+            </form>
           )}
 
           {/* Login link */}
