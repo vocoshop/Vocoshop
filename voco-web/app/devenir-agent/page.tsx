@@ -187,8 +187,7 @@ export default function DevenirAgent() {
                   <div style={{ marginTop: 12 }}>
                     <label style={labelStyle}>Téléphone *</label>
                     <input
-                      type="tel"
-                      inputMode="tel"
+                      type="text"
                       placeholder="+242 6XX XXX XXX"
                       value={form.phone}
                       onChange={(e) => update('phone', e.target.value)}
@@ -200,7 +199,7 @@ export default function DevenirAgent() {
                     <select
                       value={form.country}
                       onChange={(e) => update('country', e.target.value)}
-                      style={{ ...inputStyle, appearance: 'none' as const, cursor: 'pointer' }}
+                      style={{ ...inputStyle, cursor: 'pointer' }}
                     >
                       {COUNTRIES.map((c) => (
                         <option key={c.code} value={c.code} style={{ background: '#0a0a0b', color: '#fafafa' }}>
@@ -230,7 +229,7 @@ export default function DevenirAgent() {
                       <select
                         value={form.gender}
                         onChange={(e) => update('gender', e.target.value)}
-                        style={{ ...inputStyle, appearance: 'none' as const, cursor: 'pointer' }}
+                        style={{ ...inputStyle, cursor: 'pointer' }}
                       >
                         <option value="" style={{ background: '#0a0a0b' }}>Choisir</option>
                         <option value="M" style={{ background: '#0a0a0b' }}>Homme</option>
@@ -253,7 +252,7 @@ export default function DevenirAgent() {
                     <select
                       value={form.idType}
                       onChange={(e) => update('idType', e.target.value)}
-                      style={{ ...inputStyle, appearance: 'none' as const, cursor: 'pointer' }}
+                      style={{ ...inputStyle, cursor: 'pointer' }}
                     >
                       <option value="CNI" style={{ background: '#0a0a0b' }}>Carte Nationale d'Identité</option>
                       <option value="PASSEPORT" style={{ background: '#0a0a0b' }}>Passeport</option>
