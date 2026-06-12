@@ -47,7 +47,7 @@ export default function DevenirAgent() {
     setLoading(true);
     try {
       console.log('📤 Submitting form:', JSON.stringify(form));
-      const res = await fetch(`${API_URL}/agent/auth/register`, {
+      const res = await fetch(`${API_URL}/public/agent/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
