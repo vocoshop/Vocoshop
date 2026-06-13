@@ -33,7 +33,11 @@ export default function CandidaturesPage() {
     setLoading(false);
   }, [getHeaders]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const t = localStorage.getItem('adminToken');
+    if (!t) { router.push('/admin/login'); return; }
+    load();
+  }, [load, router]);
 
   const approve = async (id: string) => {
     setActionLoading(true);
