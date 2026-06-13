@@ -30,7 +30,7 @@ export const scanDocument = async (req: Request, res: Response) => {
     res.status(201).json(result);
   } catch (err: any) {
     console.error("Erreur scan OCR:", err);
-    res.status(500).json({ error: err.message || "Erreur lors du scan" });
+    res.status(500).json({ error: "Erreur lors du scan" });
   }
 };
 
@@ -48,7 +48,7 @@ export const validateScan = async (req: Request, res: Response) => {
     res.json(result);
   } catch (err: any) {
     console.error("Erreur validation OCR:", err);
-    res.status(500).json({ error: err.message || "Erreur lors de la validation" });
+    res.status(500).json({ error: "Erreur lors de la validation" });
   }
 };
 

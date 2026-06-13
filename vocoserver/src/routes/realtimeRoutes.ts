@@ -17,9 +17,8 @@ router.get("/events", (req: Request, res: Response) => {
 
   try {
     const secrets = [
-      process.env.JWT_ADMIN_SECRET,
-      process.env.JWT_MANAGER_SECRET,
-      process.env.JWT_AGENT_SECRET,
+      process.env.JWT_SECRET,
+      process.env.AGENT_JWT_SECRET,
     ].filter(Boolean);
     const valid = secrets.some((s) => s && jwt.verify(token, s));
     if (!valid) return res.status(403).json({ error: "Token invalide" });

@@ -29,7 +29,7 @@ export const createAdminNotification = async (req: Request, res: Response) => {
     } else if (targetType === "specific_agent" || targetType === "specific_store") {
       total = targetId ? 1 : 0;
     } else if (targetType === "by_city") {
-      total = await Store.countDocuments({ city: { $regex: targetCity || "", $options: "i" } });
+      total = await Store.countDocuments({ city: { $regex: (targetCity || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } });
     }
 
     const isScheduled = scheduledAt && new Date(scheduledAt) > new Date();
@@ -54,7 +54,7 @@ export const createAdminNotification = async (req: Request, res: Response) => {
         const stores = await Store.find().select("_id").lean();
         storeIds = stores.map((s: any) => String(s._id));
       } else if (targetType === "by_city") {
-        const stores = await Store.find({ city: { $regex: targetCity || "", $options: "i" } }).select("_id").lean();
+        const stores = await Store.find({ city: { $regex: (targetCity || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } }).select("_id").lean();
         storeIds = stores.map((s: any) => String(s._id));
       } else if (targetType === "specific_store" && targetId) {
         storeIds = [targetId];

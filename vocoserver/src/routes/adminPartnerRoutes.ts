@@ -1,5 +1,6 @@
 import { Router } from "express";
 import authMiddleware from "../middleware/authMiddleware";
+import requireOwner from "../middleware/requireOwner";
 import {
   getPartners,
   getPartner,
@@ -9,7 +10,7 @@ import {
 } from "../controllers/partnerController";
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, requireOwner);
 
 router.get("/partners", getPartners);
 router.get("/partners/:id", getPartner);

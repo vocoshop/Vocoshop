@@ -147,9 +147,10 @@ const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
 const filter: any = { storeId };
 
   if (search.trim() !== "") {
+    const es = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     filter.$or = [
-      { name: { $regex: search.trim(), $options: "i" } },
-      { barcode: { $regex: search.trim(), $options: "i" } },
+      { name: { $regex: es, $options: "i" } },
+      { barcode: { $regex: es, $options: "i" } },
     ];
   }
 

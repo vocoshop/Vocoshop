@@ -99,7 +99,7 @@ export default function Login() {
       const res = await fetch(`${API_URL}/agent/auth/set-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: tempAgent?.id || tempAgent?._id, newPassword }),
+        body: JSON.stringify({ agentId: tempAgent?.id || tempAgent?._id, newPassword, authCode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur');

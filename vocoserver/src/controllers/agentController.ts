@@ -398,14 +398,16 @@ export const setPassword = async (req: Request, res: Response) => {
   try {
     const agentId = String(req.body?.agentId || "").trim();
     const newPassword = String(req.body?.newPassword || "");
+    const authCode = String(req.body?.authCode || "").trim();
 
     if (!agentId) return res.status(400).json({ error: "agentId manquant" });
+    if (!authCode) return res.status(400).json({ error: "authCode requis (OTP d'abord)" });
     if (newPassword.length < 6) {
       return res.status(400).json({ error: "Mot de passe trop court (min 6)" });
     }
 
     const agent: any = await Agent.findById(agentId)
-      .select("_id code mustChangePassword authCodeHash isApproved isActive")
+      .select("_id code mustChangePassword authCodeHash authCodeIssuedAt isApproved isActive")
       .lean();
 
     if (!agent) return res.status(404).json({ error: "Agent introuvable" });
@@ -413,6 +415,13 @@ export const setPassword = async (req: Request, res: Response) => {
     if (agent.mustChangePassword === false) {
       return res.status(400).json({ error: "Compte déjà activé" });
     }
+
+    // ✅ Vérifier l'OTP/authCode AVANT de permettre le changement de mot de passe
+    if (!agent.authCodeHash) {
+      return res.status(400).json({ error: "Aucun authCode actif. Demande un nouveau code OTP." });
+    }
+    const ok = await bcrypt.compare(authCode, String(agent.authCodeHash || ""));
+    if (!ok) return res.status(401).json({ error: "Code OTP invalide" });
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
 

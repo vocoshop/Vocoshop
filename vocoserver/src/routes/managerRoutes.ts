@@ -112,11 +112,12 @@ router.get("/agents", async (req: any, res: any) => {
 
     const accessFilter = buildAccessFilter(req.manager);
     if (q) {
+      const eq = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       accessFilter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { code: { $regex: q, $options: "i" } },
-        { phone: { $regex: q, $options: "i" } },
-        { city: { $regex: q, $options: "i" } },
+        { name: { $regex: eq, $options: "i" } },
+        { code: { $regex: eq, $options: "i" } },
+        { phone: { $regex: eq, $options: "i" } },
+        { city: { $regex: eq, $options: "i" } },
       ];
     }
 
@@ -315,10 +316,11 @@ router.get("/stores", async (req: any, res: any) => {
 
     const filter: any = { agentCode: { $in: agentCodes } };
     if (q) {
+      const eq = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { storeName: { $regex: q, $options: "i" } },
-        { shopId: { $regex: q, $options: "i" } },
-        { phone: { $regex: q, $options: "i" } },
+        { storeName: { $regex: eq, $options: "i" } },
+        { shopId: { $regex: eq, $options: "i" } },
+        { phone: { $regex: eq, $options: "i" } },
       ];
     }
 

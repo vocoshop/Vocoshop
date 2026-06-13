@@ -181,7 +181,7 @@ Plateforme actuelle:
     res.json({ reply, type: "chat" });
   } catch (err: any) {
     console.error("❌ VocoAI error:", err.message);
-    res.status(500).json({ error: "Erreur VocoAI", details: err.message });
+    res.status(500).json({ error: "Erreur VocoAI" });
   }
 });
 

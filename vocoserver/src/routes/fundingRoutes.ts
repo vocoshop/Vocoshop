@@ -1,5 +1,6 @@
 import { Router } from "express";
 import authMiddleware from "../middleware/authMiddleware";
+import requireOwner from "../middleware/requireOwner";
 import {
   getScore,
   getDemandes,
@@ -23,8 +24,8 @@ router.get("/opportunities", getOpportunities);
 router.get("/demandes", getDemandes);
 router.post("/demandes", createDemande);
 
-// Routes admin (même middleware — token admin = role "owner")
-router.get("/admin/demandes", getAllDemandesAdmin);
-router.put("/admin/demandes/:id", updateDemandeStatus);
+// Routes admin — owner uniquement
+router.get("/admin/demandes", requireOwner, getAllDemandesAdmin);
+router.put("/admin/demandes/:id", requireOwner, updateDemandeStatus);
 
 export default router;

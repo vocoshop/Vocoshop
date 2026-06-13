@@ -43,13 +43,14 @@ router.get("/stores", async (req: any, res: any) => {
     const filter: any = {};
     
     if (agentCode) filter.agentCode = agentCode;
-    if (city) filter.city = { $regex: city, $options: "i" };
+    if (city) filter.city = { $regex: city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
     
     if (q) {
+      const eq = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { storeName: { $regex: q, $options: "i" } },
-        { shopId: { $regex: q, $options: "i" } },
-        { phone: { $regex: q, $options: "i" } },
+        { storeName: { $regex: eq, $options: "i" } },
+        { shopId: { $regex: eq, $options: "i" } },
+        { phone: { $regex: eq, $options: "i" } },
       ];
     }
 
