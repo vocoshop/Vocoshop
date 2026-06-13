@@ -390,6 +390,77 @@ return res.status(500).json({ error: "Erreur serveur" });
 };
 
 /* =====================================================
+POST /api/agent/auth/set-password (PUBLIC)
+Body: { agentId, newPassword }
+- Définir le mot de passe après première connexion
+===================================================== */
+export const setPassword = async (req: Request, res: Response) => {
+  try {
+    const agentId = String(req.body?.agentId || "").trim();
+    const newPassword = String(req.body?.newPassword || "");
+
+    if (!agentId) return res.status(400).json({ error: "agentId manquant" });
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Mot de passe trop court (min 6)" });
+    }
+
+    const agent: any = await Agent.findById(agentId)
+      .select("_id code mustChangePassword authCodeHash isApproved isActive")
+      .lean();
+
+    if (!agent) return res.status(404).json({ error: "Agent introuvable" });
+    if (!agent.isApproved) return res.status(403).json({ error: "Compte non approuvé" });
+    if (agent.mustChangePassword === false) {
+      return res.status(400).json({ error: "Compte déjà activé" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await Agent.updateOne({ _id: agentId }, {
+      $set: {
+        passwordHash,
+        mustChangePassword: false,
+        authCodeHash: null,
+        authCodeIssuedAt: null,
+        lastLoginAt: new Date(),
+      }
+    });
+
+    const token = jwt.sign(
+      { agentId: agent._id, role: "agent", type: "agent" },
+      getAgentJwtSecret(),
+      { expiresIn: "7d" }
+    );
+
+    const updatedAgent = await Agent.findById(agentId)
+      .select("_id name firstName lastName phone code city country gender birthDate idType idNumber isApproved isActive mustChangePassword lastLoginAt createdAt")
+      .lean();
+
+    return res.json({
+      message: "Compte activé",
+      token,
+      agent: {
+        id: String(updatedAgent?._id),
+        firstName: updatedAgent?.firstName || "",
+        lastName: updatedAgent?.lastName || "",
+        name: updatedAgent?.name,
+        phone: updatedAgent?.phone,
+        code: updatedAgent?.code,
+        city: updatedAgent?.city || "",
+        country: updatedAgent?.country || "",
+        isApproved: !!updatedAgent?.isApproved,
+        isActive: updatedAgent?.isActive,
+        mustChangePassword: false,
+        role: "agent",
+      },
+    });
+  } catch (e) {
+    console.error("❌ setPassword:", e);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+/* =====================================================
 GET /api/agent/me (PROTECTED)
 ===================================================== */
 export const getAgentMe = async (req: Request, res: Response) => {

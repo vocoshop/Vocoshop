@@ -3,16 +3,17 @@ import { Router } from "express";
 import agentAuthMiddleware from "../middleware/agentAuthMiddleware";
 
 import {
-loginAgent,
-completeFirstLogin,
-getAgentMe,
-listAgentStores,
-getAgentKpis,
-getAgentAnalysis,
-sendAgentOTP,
-verifyAgentOTP,
-forgotPassword,
-getCommissions,
+  loginAgent,
+  completeFirstLogin,
+  setPassword,
+  getAgentMe,
+  listAgentStores,
+  getAgentKpis,
+  getAgentAnalysis,
+  sendAgentOTP,
+  verifyAgentOTP,
+  forgotPassword,
+  getCommissions,
 } from "../controllers/agentController";
 
 const router = Router();
@@ -22,6 +23,8 @@ router.post("/auth/login", loginAgent);
 router.post("/auth/otp/send", sendAgentOTP);
 router.post("/auth/otp/verify", verifyAgentOTP);
 router.post("/auth/forgot-password", forgotPassword);
+router.post("/auth/verify-auth-code", verifyAgentOTP);
+router.post("/auth/set-password", setPassword);
 
 // PROTECTED
 router.use(agentAuthMiddleware);
