@@ -23,7 +23,7 @@ async function verifyToken(token: string, role: "admin" | "manager" | "agent"): 
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Laisser passer les pages publiques
