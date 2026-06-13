@@ -66,6 +66,7 @@ import managerSupportRoutes from "./routes/managerSupportRoutes";
 import ocrRoutes from "./routes/ocrRoutes";
 import callProxyRoutes from "./routes/callProxyRoutes";
 import fundingRoutes from "./routes/fundingRoutes";
+import communicationRoutes from "./routes/communicationRoutes";
 
 import { patchConsole } from "./utils/systemLogger";
 patchConsole();
@@ -160,6 +161,7 @@ app.use("/api/admin", adminStoreRoutes);
 app.use("/api/admin/withdrawals", adminWithdrawalRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
 app.use("/api/admin/support", adminSupportRoutes);
+app.use("/api/admin/communication", communicationRoutes);
 app.use("/api/admin/config", adminConfigRoutes);
 app.use("/api/admin/security", adminSecurityRoutes);
 app.use("/api/admin/blockchain", adminBlockchainRoutes);
