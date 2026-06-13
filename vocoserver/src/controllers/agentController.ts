@@ -8,6 +8,7 @@ import Store from "../models/Store";
 import DailyReport from "../models/DailyReport";
 import { normalizePhone } from "../utils/phone";
 import { getAgentCommissions } from "../services/commissionService";
+import { notifyAuthCode, notifyPasswordReset } from "../services/notificationService";
 
 /* =====================================================
 Helpers
@@ -90,15 +91,16 @@ export const sendAgentOTP = async (req: Request, res: Response) => {
       { $set: { authCodeHash: hashed, authCodeIssuedAt: new Date() } }
     );
 
-    let smsSent = false;
+    let notifResult = { whatsapp: false, sms: false };
     try {
-      const { sendSMS } = await import("../services/smsService");
-      smsSent = await sendSMS(phone, `Votre code de connexion Vocoshop est : ${code}`);
+      notifResult = await notifyAuthCode(phone, code);
     } catch (e) {
-      console.error("❌ SMS OTP non envoyé:", e);
+      console.error("❌ Notification OTP échouée:", e);
     }
 
-    return res.json({ message: smsSent ? "Code envoyé par SMS" : "Code généré (SMS non envoyé)", phone, smsSent });
+    const sent = notifResult.whatsapp || notifResult.sms;
+    const channel = notifResult.whatsapp ? "WhatsApp" : notifResult.sms ? "SMS" : "aucun";
+    return res.json({ message: sent ? `Code envoyé par ${channel}` : "Code généré (notification non envoyée)", phone, sent, channel });
   } catch (e) {
     console.error("❌ sendAgentOTP:", e);
     return res.status(500).json({ error: "Erreur serveur" });
@@ -192,18 +194,19 @@ export const forgotPassword = async (req: Request, res: Response) => {
       { $set: { passwordHash: hashed, mustChangePassword: true, lastLoginAt: null } }
     );
 
-    let smsSent = false;
+    let notifResult = { whatsapp: false, sms: false };
     try {
-      const { sendSMS } = await import("../services/smsService");
       const firstName = agent.firstName || agent.name?.split(" ")[0] || "";
-      smsSent = await sendSMS(phone, `Vocoshop\nBonjour ${firstName},\nVotre nouveau mot de passe est : ${tempPassword}\nChangez-le après connexion.`);
+      notifResult = await notifyPasswordReset(phone, firstName, tempPassword);
     } catch (e) {
-      console.error("❌ SMS forgotPassword non envoyé:", e);
+      console.error("❌ Notification forgotPassword échouée:", e);
     }
 
+    const sent = notifResult.whatsapp || notifResult.sms;
+    const channel = notifResult.whatsapp ? "WhatsApp" : notifResult.sms ? "SMS" : "aucun";
     return res.json({
-      message: smsSent ? "Un nouveau mot de passe vous a été envoyé par SMS" : "Mot de passe réinitialisé (SMS non envoyé)",
-      phone, smsSent,
+      message: sent ? `Mot de passe envoyé par ${channel}` : "Mot de passe réinitialisé (notification non envoyée)",
+      phone, sent, channel,
     });
   } catch (e) {
     console.error("❌ forgotPassword:", e);

@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 import Agent from "../models/Agent";
 import { getNextSequence } from "../services/counterService";
-import { sendSMS } from "../services/smsService";
+import { notifyWelcome, notifyText } from "../services/notificationService";
 import { normalizePhone } from "../utils/phone";
 
 function randomSuffix(): string {
@@ -128,7 +128,7 @@ const msg =
 `Code d'accès (1ère connexion): ${authCode}\n` +
 `Connectez-vous puis définissez votre mot de passe.`;
 
-const smsOk = await sendSMS(phone, msg);
+const smsOk = await notifyText(phone, msg);
 
 return res.status(201).json({
 message: smsOk ? "Agent créé + SMS envoyé" : "Agent créé (SMS non envoyé)",
@@ -270,7 +270,7 @@ const msg =
 `Code d'accès (1ère connexion): ${authCode}\n` +
 `Connectez-vous puis définissez votre mot de passe.`;
 
-smsOk = await sendSMS(String(agent.phone), msg);
+smsOk = await notifyText(String(agent.phone), msg);
 }
 
 return res.json({
@@ -317,28 +317,18 @@ authCodeIssuedAt: new Date(),
 mustChangePassword: true,
 });
 
-let smsSent = false;
+let notifSent = false;
 if (sendSms) {
 const firstName = agent.firstName || agent.name.split(" ")[0];
-const msg =
-`Vocoshop 🎉\n` +
-`Bonjour ${firstName},\n` +
-`Bienvenue dans l'équipe!\n\n` +
-`Votre compte a été validé.\n` +
-`🔑 Code Agent: ${agent.code}\n` +
-`🔐 Code de connexion: ${authCode}\n\n` +
-`Connectez-vous sur:\n` +
-`https://voco.shop/login\n\n` +
-`Ce code vous permettra de définir votre mot de passe.`;
-
-smsSent = await sendSMS(String(agent.phone), msg);
+const result = await notifyWelcome(String(agent.phone), firstName, agent.code, authCode);
+notifSent = result.whatsapp || result.sms;
 }
 
 return res.json({
-message: smsSent
-? "Candidat approuvé + SMS envoyé"
-: "Candidat approuvé (SMS non envoyé)",
-smsSent,
+message: notifSent
+? "Candidat approuvé + notification envoyée"
+: "Candidat approuvé (notification non envoyée)",
+notifSent,
 authCode,
 agent: {
 id: agent._id,
@@ -383,7 +373,7 @@ const msg =
 `Vous pouvez postuler à nouveau plus tard.\n\n` +
 `L'équipe Vocoshop`;
 
-smsSent = await sendSMS(String(agent.phone), msg);
+smsSent = await notifyText(String(agent.phone), msg);
 }
 
 await Agent.findByIdAndDelete(id);
