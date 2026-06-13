@@ -1,51 +1,83 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-const PUBLIC_AUTH_ROUTES = [
-  "/admin/login",
-  "/admin",
-  "/manager-login",
-];
+const PUBLIC_AUTH_ROUTES = ["/admin/login", "/admin", "/manager-login"];
 
-const PUBLIC_PAGES = [
-  "/",
-  "/login",
-  "/devenir-agent",
-];
+const PUBLIC_PAGES = ["/", "/login", "/devenir-agent"];
 
-export function middleware(request: NextRequest) {
+function getSecret(role: "admin" | "manager" | "agent"): Uint8Array {
+  const s =
+    role === "agent"
+      ? process.env.AGENT_JWT_SECRET
+      : process.env.JWT_SECRET;
+  return new TextEncoder().encode(s || "fallback-secret");
+}
+
+async function verifyToken(token: string, role: "admin" | "manager" | "agent"): Promise<boolean> {
+  try {
+    await jwtVerify(token, getSecret(role));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (PUBLIC_PAGES.some((route) => pathname === route || pathname.startsWith("/api/"))) {
+  // Laisser passer les pages publiques
+  if (
+    PUBLIC_PAGES.some((route) => pathname === route) ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/uploads/")
+  ) {
     return NextResponse.next();
   }
 
+  // Laisser passer les routes d'auth (login)
   if (PUBLIC_AUTH_ROUTES.some((route) => pathname === route)) {
     return NextResponse.next();
   }
 
+  const isSuperAdmin = pathname.startsWith("/super-admin");
+  const isManager = pathname.startsWith("/admin-manager");
+  const isAdmin = pathname.startsWith("/admin") && !pathname.startsWith("/admin-manager");
+  const isAgent = pathname.startsWith("/agent");
+
+  // Vérifier les tokens JWT existants
   const adminToken = request.cookies.get("adminToken")?.value;
   const managerToken = request.cookies.get("managerToken")?.value;
   const agentToken = request.cookies.get("agentToken")?.value;
 
-  const isSuperAdmin = pathname.startsWith("/super-admin");
-  const isManager = pathname.startsWith("/admin-manager");
-  const isAgent = pathname.startsWith("/agent");
-  const isAdmin = pathname.startsWith("/admin") && !pathname.startsWith("/admin-manager");
+  // Rediriger vers login si le token est invalide ou manquant
+  const redirectToLogin = (target: string) => {
+    const url = new URL(target, request.url);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
+  };
 
-  if (isSuperAdmin && adminToken) return NextResponse.next();
-  if (isManager && (managerToken || adminToken)) return NextResponse.next();
-  if (isAgent && agentToken) return NextResponse.next();
-  if (isAdmin && adminToken) return NextResponse.next();
-
-  if (isSuperAdmin || isAgent) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+  if (isSuperAdmin) {
+    if (adminToken && (await verifyToken(adminToken, "admin"))) return NextResponse.next();
+    return redirectToLogin("/admin/login");
   }
+
   if (isManager) {
-    return NextResponse.redirect(new URL("/manager-login", request.url));
+    if (managerToken && (await verifyToken(managerToken, "manager"))) return NextResponse.next();
+    if (adminToken && (await verifyToken(adminToken, "admin"))) return NextResponse.next();
+    return redirectToLogin("/manager-login");
   }
+
   if (isAdmin) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+    if (adminToken && (await verifyToken(adminToken, "admin"))) return NextResponse.next();
+    return redirectToLogin("/admin/login");
+  }
+
+  if (isAgent) {
+    if (agentToken && (await verifyToken(agentToken, "agent"))) return NextResponse.next();
+    return redirectToLogin("/login");
   }
 
   return NextResponse.next();
