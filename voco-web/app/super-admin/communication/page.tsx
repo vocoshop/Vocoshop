@@ -86,6 +86,7 @@ export default function CommunicationPage() {
         if (statsRes?.status === 401 || storesRes?.status === 401) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminInfo');
+          document.cookie = 'adminToken=; path=/; max-age=0';
           window.location.href = '/admin/login';
           return;
         }

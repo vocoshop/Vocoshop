@@ -58,6 +58,7 @@ export default function AdminLogin() {
         role: data.role || 'superadmin',
       }));
 
+      document.cookie = `adminToken=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
       router.push('/super-admin/dashboard');
     } catch (err) {
       setError('Erreur de connexion au serveur');

@@ -50,6 +50,7 @@ export default function Login() {
       } else if (data.token) {
         localStorage.setItem('agentToken', data.token);
         localStorage.setItem('agentData', JSON.stringify(data.agent));
+        document.cookie = `agentToken=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         router.push('/agent/dashboard');
       }
     } catch (err: any) {
@@ -76,6 +77,7 @@ export default function Login() {
       } else if (data.token) {
         localStorage.setItem('agentToken', data.token);
         localStorage.setItem('agentData', JSON.stringify(data.agent));
+        document.cookie = `agentToken=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         router.push('/agent/dashboard');
       }
     } catch (err: any) {
@@ -104,6 +106,7 @@ export default function Login() {
       if (data.token) {
         localStorage.setItem('agentToken', data.token);
         localStorage.setItem('agentData', JSON.stringify(data.agent));
+        document.cookie = `agentToken=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         router.push('/agent/dashboard');
       }
     } catch (err: any) {

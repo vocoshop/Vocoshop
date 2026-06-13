@@ -83,6 +83,7 @@ useEffect(() => {
         ]);
         if (sr?.status === 401 || ar?.status === 401) {
           localStorage.removeItem('adminToken'); localStorage.removeItem('adminInfo');
+          document.cookie = 'adminToken=; path=/; max-age=0';
           window.location.href = '/admin/login'; return;
         }
         const alerts: any[] = [];
@@ -139,6 +140,7 @@ useEffect(() => {
         ]);
         if (sr?.status === 401 || ar?.status === 401) {
           localStorage.removeItem('adminToken'); localStorage.removeItem('adminInfo');
+          document.cookie = 'adminToken=; path=/; max-age=0';
           window.location.href = '/admin/login'; return;
         }
         const q = searchQuery.toLowerCase();
@@ -190,6 +192,7 @@ useEffect(() => {
   const handleLogout = useCallback(() => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminInfo');
+    document.cookie = 'adminToken=; path=/; max-age=0';
     router.push('/admin/login');
   }, [router]);
 

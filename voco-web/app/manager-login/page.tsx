@@ -31,6 +31,7 @@ export default function ManagerLoginPage() {
       if (!res.ok) { setError(data.error || 'Erreur de connexion'); return; }
       localStorage.setItem('managerToken', data.token);
       localStorage.setItem('managerInfo', JSON.stringify(data.user));
+      document.cookie = `managerToken=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
       router.push('/admin-manager/dashboard');
     } catch { setError('Erreur de connexion au serveur'); }
     finally { setLoading(false); }
