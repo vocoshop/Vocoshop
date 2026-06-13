@@ -24,6 +24,7 @@ const PUBLIC_ROUTES = [
   "/super-admin/agents",
   "/super-admin/abonnements",
   "/super-admin/parametres",
+  "/super-admin/candidatures",
   "/super-admin/AIAgent",
   "/admin-manager/dashboard",
   "/admin-manager/agents",
