@@ -21,7 +21,7 @@
   - [ ] `FLUTTERWAVE_SECRET_HASH` → vrai hash
   - [ ] `CHARIOW_*` → vraies clés
   - [ ] `SMTP_USER` + `SMTP_PASS` → vrai Gmail + mdp application
-  - [ ] `CORS_ORIGINS` → vérifier inclut vocoshop.com
+  - [ ] `CORS_ORIGINS` → vocoshop.com,https://vocoshop-vocoserver.vercel.app
 - [ ] `npm install && npm run build`
 - [ ] Démarrer : `node dist/server.js`
 - [ ] Tester : `curl https://api.vocoshop.com/api/health`
@@ -63,10 +63,24 @@
 - [ ] Chariow : configurer le webhook URL
   - URL : `https://api.vocoshop.com/api/chariow/webhook`
 
-## ÉTAPE 6 — Africa's Talking
+## ÉTAPE 6 — Africa's Talking + WhatsApp
 - [ ] Créer un compte sur africastalking.com
 - [ ] Remplacer `AT_USERNAME` par le vrai username
 - [ ] Tester l'envoi d'OTP
+
+### WhatsApp Cloud API (Meta)
+- [ ] Créer un compte Meta Developer → developers.facebook.com
+- [ ] Créer une app → "Business" → "WhatsApp"
+- [ ] Obtenir un numéro WhatsApp Business
+- [ ] Ajouter sur Render :
+  - [ ] `WHATSAPP_TOKEN` → Token d'accès Meta (permanent)
+  - [ ] `WHATSAPP_PHONE_NUMBER_ID` → ID du numéro WhatsApp
+- [ ] Créer les 3 templates dans Meta Business Suite :
+  - [ ] `voco_auth` → "{{1}}" (code OTP)
+  - [ ] `voco_welcome` → "{{1}}" (prénom), "{{2}}" (code agent), "{{3}}" (code connexion)
+  - [ ] `voco_password` → "{{1}}" (prénom), "{{2}}" (mot de passe temp)
+- [ ] Templates doivent être approuvés par Meta (peut prendre 24-48h)
+- [ ] Tester l'envoi WhatsApp + fallback SMS
 
 ## ÉTAPE 7 — Gmail SMTP
 - [ ] Créer vocoshop.cg@gmail.com
