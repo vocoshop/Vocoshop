@@ -1,53 +1,28 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_ROUTES = [
-  "/super-admin",
-  "/admin-manager",
-  "/admin",
-  "/agent",
-];
-
-const PUBLIC_ROUTES = [
-  "/super-admin/dashboard",
-  "/super-admin/admin-managers",
-  "/super-admin/partenaires",
-  "/super-admin/demandes",
-  "/super-admin/logs",
-  "/super-admin/preuves",
-  "/super-admin/securite",
-  "/super-admin/analytics",
-  "/super-admin/parrainages",
-  "/super-admin/paiements",
-  "/super-admin/notifications",
-  "/super-admin/boutiques",
-  "/super-admin/agents",
-  "/super-admin/abonnements",
-  "/super-admin/parametres",
-  "/super-admin/candidatures",
-  "/super-admin/AIAgent",
-  "/admin-manager/dashboard",
-  "/admin-manager/agents",
-  "/admin-manager/boutiques",
-  "/admin-manager/alertes",
-  "/admin-manager/notifications",
-  "/admin-manager/comparer",
-  "/admin-manager/performances",
-  "/admin-manager/support",
-  "/admin-manager/parametres",
-  "/admin-manager/commissions",
+const PUBLIC_AUTH_ROUTES = [
   "/admin/login",
   "/admin",
+  "/manager-login",
+];
+
+const PUBLIC_PAGES = [
+  "/",
+  "/login",
+  "/devenir-agent",
 ];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
-  if (!isProtected) return NextResponse.next();
+  if (PUBLIC_PAGES.some((route) => pathname === route || pathname.startsWith("/api/"))) {
+    return NextResponse.next();
+  }
 
-  const isPublic = PUBLIC_ROUTES.some((route) => pathname === route);
-  if (isPublic) return NextResponse.next();
+  if (PUBLIC_AUTH_ROUTES.some((route) => pathname === route)) {
+    return NextResponse.next();
+  }
 
   const adminToken = request.cookies.get("adminToken")?.value;
   const managerToken = request.cookies.get("managerToken")?.value;
@@ -56,11 +31,12 @@ export function middleware(request: NextRequest) {
   const isSuperAdmin = pathname.startsWith("/super-admin");
   const isManager = pathname.startsWith("/admin-manager");
   const isAgent = pathname.startsWith("/agent");
+  const isAdmin = pathname.startsWith("/admin") && !pathname.startsWith("/admin-manager");
 
   if (isSuperAdmin && adminToken) return NextResponse.next();
   if (isManager && (managerToken || adminToken)) return NextResponse.next();
   if (isAgent && agentToken) return NextResponse.next();
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin-manager") && adminToken) return NextResponse.next();
+  if (isAdmin && adminToken) return NextResponse.next();
 
   if (isSuperAdmin || isAgent) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
@@ -68,8 +44,11 @@ export function middleware(request: NextRequest) {
   if (isManager) {
     return NextResponse.redirect(new URL("/manager-login", request.url));
   }
+  if (isAdmin) {
+    return NextResponse.redirect(new URL("/admin/login", request.url));
+  }
 
-  return NextResponse.redirect(new URL("/admin/login", request.url));
+  return NextResponse.next();
 }
 
 export const config = {

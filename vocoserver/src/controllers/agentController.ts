@@ -90,7 +90,15 @@ export const sendAgentOTP = async (req: Request, res: Response) => {
       { $set: { authCodeHash: hashed, authCodeIssuedAt: new Date() } }
     );
 
-    return res.json({ message: "Code envoyé", phone });
+    let smsSent = false;
+    try {
+      const { sendSMS } = await import("../services/smsService");
+      smsSent = await sendSMS(phone, `Votre code de connexion Vocoshop est : ${code}`);
+    } catch (e) {
+      console.error("❌ SMS OTP non envoyé:", e);
+    }
+
+    return res.json({ message: smsSent ? "Code envoyé par SMS" : "Code généré (SMS non envoyé)", phone, smsSent });
   } catch (e) {
     console.error("❌ sendAgentOTP:", e);
     return res.status(500).json({ error: "Erreur serveur" });
@@ -171,7 +179,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
     if (!agent) return res.status(404).json({ error: "Aucun agent trouvé avec ce numéro" });
     if (!agent.isActive) return res.status(403).json({ error: "Agent désactivé" });
 
-    // Générer un mot de passe temporaire (8 caractères)
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
     let tempPassword = "";
     for (let i = 0; i < 8; i++) {
@@ -185,9 +192,18 @@ export const forgotPassword = async (req: Request, res: Response) => {
       { $set: { passwordHash: hashed, mustChangePassword: true, lastLoginAt: null } }
     );
 
+    let smsSent = false;
+    try {
+      const { sendSMS } = await import("../services/smsService");
+      const firstName = agent.firstName || agent.name?.split(" ")[0] || "";
+      smsSent = await sendSMS(phone, `Vocoshop\nBonjour ${firstName},\nVotre nouveau mot de passe est : ${tempPassword}\nChangez-le après connexion.`);
+    } catch (e) {
+      console.error("❌ SMS forgotPassword non envoyé:", e);
+    }
+
     return res.json({
-      message: "Un nouveau mot de passe vous a été envoyé par SMS",
-      phone,
+      message: smsSent ? "Un nouveau mot de passe vous a été envoyé par SMS" : "Mot de passe réinitialisé (SMS non envoyé)",
+      phone, smsSent,
     });
   } catch (e) {
     console.error("❌ forgotPassword:", e);
