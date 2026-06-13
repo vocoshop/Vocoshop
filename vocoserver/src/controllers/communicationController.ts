@@ -7,13 +7,21 @@ import { sendSMS } from "../services/smsService";
 import { sendWhatsAppText } from "../services/whatsappService";
 import { logSystem } from "../utils/systemLogger";
 
+/**
+ * Communication Controller
+ *
+ * RÈGLE :
+ * - Campagnes/Promotions → WhatsApp en priorité, SMS en fallback
+ * - OTP/Auth → SMS uniquement (géré par agentController/otpController)
+ */
+
 /* =====================================================
 POST /api/admin/communication/send
 Body: { channel, recipients, message, subject?, city? }
 ===================================================== */
 export const sendCommunication = async (req: Request, res: Response) => {
   try {
-    const channel = String(req.body?.channel || "sms");
+    const channel = String(req.body?.channel || "whatsapp"); // "sms" | "whatsapp"
     const recipients = String(req.body?.recipients || "all_stores");
     const message = String(req.body?.message || "").trim();
     const subject = String(req.body?.subject || "").trim();
@@ -24,28 +32,28 @@ export const sendCommunication = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Canal invalide (sms ou whatsapp)" });
     }
 
-    let phones: string[] = [];
+    let phones: { phone: string; name?: string }[] = [];
 
     switch (recipients) {
       case "all_stores": {
-        const stores = await Store.find({}).select("phone").lean();
-        phones = stores.map((s: any) => s.phone).filter(Boolean);
+        const stores = await Store.find({}).select("phone storeName ownerName").lean();
+        phones = stores.map((s: any) => ({ phone: s.phone, name: s.ownerName || s.storeName })).filter(s => s.phone);
         break;
       }
       case "all_agents": {
-        const agents = await Agent.find({ isApproved: true }).select("phone").lean();
-        phones = agents.map((a: any) => a.phone).filter(Boolean);
+        const agents = await Agent.find({ isApproved: true }).select("phone name").lean();
+        phones = agents.map((a: any) => ({ phone: a.phone, name: a.name })).filter(a => a.phone);
         break;
       }
       case "active_stores": {
-        const stores = await Store.find({ subscriptionStatus: "active" }).select("phone").lean();
-        phones = stores.map((s: any) => s.phone).filter(Boolean);
+        const stores = await Store.find({ subscriptionStatus: "active" }).select("phone storeName ownerName").lean();
+        phones = stores.map((s: any) => ({ phone: s.phone, name: s.ownerName || s.storeName })).filter(s => s.phone);
         break;
       }
       case "stores_by_city": {
         if (!city) return res.status(400).json({ error: "Ville requise" });
-        const stores = await Store.find({ city: new RegExp(city, "i") }).select("phone").lean();
-        phones = stores.map((s: any) => s.phone).filter(Boolean);
+        const stores = await Store.find({ city: new RegExp(city, "i") }).select("phone storeName ownerName").lean();
+        phones = stores.map((s: any) => ({ phone: s.phone, name: s.ownerName || s.storeName })).filter(s => s.phone);
         break;
       }
       default:
@@ -56,19 +64,27 @@ export const sendCommunication = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Aucun destinataire trouvé" });
     }
 
-    phones = [...new Set(phones)];
+    // Dédupliquer
+    const uniquePhones = [...new Set(phones.map(p => p.phone))];
+    const phoneMap = new Map(phones.map(p => [p.phone, p.name]));
 
     let sent = 0;
     let failed = 0;
     const errors: string[] = [];
     const subjectPrefix = subject ? `[${subject}] ` : "";
 
-    for (const phone of phones) {
+    for (const phone of uniquePhones) {
       try {
         let ok = false;
         if (channel === "whatsapp") {
+          // WhatsApp en priorité pour les campagnes
           ok = await sendWhatsAppText(phone, `${subjectPrefix}${message}`);
+          // Si WhatsApp échoue, fallback SMS
+          if (!ok) {
+            ok = await sendSMS(phone, `${subjectPrefix}${message}`);
+          }
         } else {
+          // SMS direct
           ok = await sendSMS(phone, `${subjectPrefix}${message}`);
         }
         if (ok) sent++;
@@ -84,7 +100,7 @@ export const sendCommunication = async (req: Request, res: Response) => {
     await CommunicationLog.create({
       channel,
       recipients,
-      recipientCount: phones.length,
+      recipientCount: uniquePhones.length,
       subject: subject || undefined,
       message,
       sent,
@@ -95,16 +111,16 @@ export const sendCommunication = async (req: Request, res: Response) => {
       sentBy: (req as any).user?.id || "admin",
     });
 
-    logSystem("info", `Communication envoyée: ${channel} → ${sent}/${phones.length} (${recipients})`, {
+    logSystem("info", `Communication: ${channel} → ${sent}/${uniquePhones.length} (${recipients})`, {
       source: "communication",
       path: "/api/admin/communication/send",
     });
 
     return res.json({
-      message: `${sent} message(s) envoyé(s) sur ${phones.length}`,
+      message: `${sent} message(s) envoyé(s) sur ${uniquePhones.length}`,
       sent,
       failed,
-      total: phones.length,
+      total: uniquePhones.length,
       channel,
       recipients,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined,

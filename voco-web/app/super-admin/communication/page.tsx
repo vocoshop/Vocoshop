@@ -42,8 +42,8 @@ const RECIPIENT_OPTIONS = [
 ];
 
 const CHANNEL_OPTIONS = [
-  { value: 'sms', label: 'SMS', sublabel: "Africa's Talking", icon: '📱', costPerChar: 0.80, maxChars: 160 },
-  { value: 'whatsapp', label: 'WhatsApp', sublabel: 'WhatsApp Business', icon: '💬', costPerChar: 0.50, maxChars: 1000 },
+  { value: 'whatsapp', label: 'WhatsApp', sublabel: 'Promotions & campagnes', icon: '💬', costPerChar: 0.50, maxChars: 1000 },
+  { value: 'sms', label: 'SMS', sublabel: 'OTP & alerts urgentes', icon: '📱', costPerChar: 0.80, maxChars: 160 },
 ];
 
 export default function CommunicationPage() {
@@ -56,7 +56,7 @@ export default function CommunicationPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [history, setHistory] = useState<SentMessage[]>([]);
 
-  const [channel, setChannel] = useState('sms');
+  const [channel, setChannel] = useState('whatsapp');
   const [recipients, setRecipients] = useState('all_stores');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -238,7 +238,18 @@ export default function CommunicationPage() {
 
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Communication</h2>
-        <p style={{ fontSize: 13, color: '#71717a', margin: '4px 0 0' }}>Envoyez des SMS et WhatsApp aux boutiques et agents</p>
+        <p style={{ fontSize: 13, color: '#71717a', margin: '4px 0 0' }}>WhatsApp pour les promotions · SMS pour les OTP et alertes urgentes</p>
+      </div>
+
+      <div style={{
+        padding: '12px 16px', borderRadius: 10, background: '#22c55e10', border: '1px solid #22c55e30',
+        marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: '#a1a1aa',
+      }}>
+        <span style={{ fontSize: 16 }}>💡</span>
+        <span>
+          <strong style={{ color: '#22c55e' }}>WhatsApp</strong> = promotions, campagnes, notifications (gratuit &lt;1000/mois) ·
+          <strong style={{ color: '#3b82f6' }}> SMS</strong> = OTP, alertes urgentes (payant ~$0.03/msg)
+        </span>
       </div>
 
       <div className="comm-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, minHeight: 'calc(100vh - 120px)' }}>
