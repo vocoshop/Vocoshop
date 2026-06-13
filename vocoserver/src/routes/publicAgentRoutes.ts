@@ -2,6 +2,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { registerAgent } from "../controllers/agentPublicController";
+import { registerLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -33,6 +34,7 @@ const upload = multer({
 
 router.post(
   "/register",
+  registerLimiter,
   upload.fields([
     { name: "idPhoto", maxCount: 1 },
     { name: "selfiePhoto", maxCount: 1 },

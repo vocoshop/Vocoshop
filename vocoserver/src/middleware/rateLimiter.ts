@@ -65,3 +65,14 @@ export const chariowWebhookLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 heure
+  max: 5, // 5 inscriptions par heure par IP
+  message: {
+    error: "Trop d'inscriptions. Veuillez réessayer plus tard.",
+    code: "REGISTER_RATE_LIMIT",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

@@ -30,11 +30,11 @@ export default function ManagerDashboard() {
     const t = localStorage.getItem('adminToken') || localStorage.getItem('managerToken') || '';
     const headers: any = t ? { Authorization: `Bearer ${t}` } : {};
     Promise.all([
-      fetch(API + '/admin-manager/agents?limit=100', { headers }).then(r => r.ok ? r.json() : { agents: [] }).catch(() => ({ agents: [] })),
-      fetch(API + '/admin-manager/stores?limit=500', { headers }).then(r => r.ok ? r.json() : { stores: [] }).catch(() => ({ stores: [] })),
-      fetch(API + '/admin-manager/alerts', { headers }).then(r => r.ok ? r.json() : { alerts: [] }).catch(() => ({ alerts: [] })),
+      fetch(API + '/admin-manager/agents?limit=100', { headers }).then(r => r.ok ? r.json() : { agents: [], _status: r.status }).catch(() => ({ agents: [] })),
+      fetch(API + '/admin-manager/stores?limit=500', { headers }).then(r => r.ok ? r.json() : { stores: [], _status: r.status }).catch(() => ({ stores: [] })),
+      fetch(API + '/admin-manager/alerts', { headers }).then(r => r.ok ? r.json() : { alerts: [], _status: r.status }).catch(() => ({ alerts: [] })),
     ]).then(([ad, sd, ald]) => {
-      if ([ad, sd, ald].some((r: any) => r?.status === 401)) {
+      if ([ad, sd, ald].some((r: any) => r?._status === 401)) {
         localStorage.removeItem('adminToken'); localStorage.removeItem('managerToken');
         localStorage.removeItem('adminInfo'); localStorage.removeItem('managerInfo');
         window.location.href = '/admin/login'; return;

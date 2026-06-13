@@ -81,14 +81,11 @@ export default function DevenirAgent() {
       fd.append('idNumber', form.idNumber);
       if (idPhoto) fd.append('idPhoto', idPhoto);
       if (selfiePhoto) fd.append('selfiePhoto', selfiePhoto);
-      console.log('📤 Submitting FormData');
       const res = await fetch(`${API_URL}/public/agent/register`, {
         method: 'POST',
         body: fd,
       });
-      console.log('📥 Response status:', res.status);
       const data = await res.json();
-      console.log('📥 Response data:', data);
       if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
       setSuccess(true);
     } catch (err: any) {

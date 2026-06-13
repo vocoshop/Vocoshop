@@ -9,9 +9,6 @@ import { normalizePhone } from "../utils/phone";
 
 export const registerAgent = async (req: Request, res: Response) => {
   try {
-    console.log("📝 Body:", req.body);
-    console.log("📁 Files:", req.files);
-    
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     
     const country = String(req.body?.country || "").trim();
@@ -23,8 +20,6 @@ export const registerAgent = async (req: Request, res: Response) => {
     const city = String(req.body?.city || "").trim();
     const idType = String(req.body?.idType || "").trim();
     const idNumber = String(req.body?.idNumber || "").trim();
-
-    console.log("📋 Parsed:", { country, firstName, lastName, phone, gender, birthDate, city, idType, idNumber });
 
     if (!country || !firstName || !lastName || !phone || !gender || !birthDate || !city || !idType || !idNumber) {
       return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis" });

@@ -40,15 +40,15 @@ function verifyFlutterwaveSignature(req: Request): boolean {
 export const paymentWebhook = async (req: Request, res: Response) => {
 try {
 
-if (FLUTTERWAVE_SECRET_HASH && !verifyFlutterwaveSignature(req)) {
-  logSystem("warning", "Webhook signature verification failed", { source: "webhook", path: "/api/webhook" });
-  return res.status(401).json({ error: "Signature invalide" });
+if (!FLUTTERWAVE_SECRET_HASH) {
+  logSystem("error", "Webhook REJETÉ — FLUTTERWAVE_SECRET_HASH non configuré", { source: "webhook", path: "/api/webhook" });
+  return res.status(500).json({ error: "Webhook non configuré" });
 }
 
-console.log("\n==============================");
-console.log("🔥 WEBHOOK RECEIVED");
-console.log(req.body);
-console.log("==============================\n");
+if (!verifyFlutterwaveSignature(req)) {
+  logSystem("warning", "Webhook REJETÉ — signature invalide", { source: "webhook", path: "/api/webhook" });
+  return res.status(401).json({ error: "Signature invalide" });
+}
 
 const ip = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || null;
 

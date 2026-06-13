@@ -1,15 +1,32 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import { onRealtimeEvent } from "../services/realtimeService";
 
 const router = Router();
 
-// Clients SSE connectés
 const clients = new Set<any>();
 
 /* =====================================================
-GET /api/realtime/events — Flux SSE
+GET /api/realtime/events — Flux SSE (token requis via query)
 ===================================================== */
-router.get("/events", (req: any, res: any) => {
+router.get("/events", (req: Request, res: Response) => {
+  const token = String(req.query?.token || "");
+  if (!token) {
+    return res.status(401).json({ error: "Token requis (?token=...)" });
+  }
+
+  try {
+    const secrets = [
+      process.env.JWT_ADMIN_SECRET,
+      process.env.JWT_MANAGER_SECRET,
+      process.env.JWT_AGENT_SECRET,
+    ].filter(Boolean);
+    const valid = secrets.some((s) => s && jwt.verify(token, s));
+    if (!valid) return res.status(403).json({ error: "Token invalide" });
+  } catch {
+    return res.status(403).json({ error: "Token invalide" });
+  }
+
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",

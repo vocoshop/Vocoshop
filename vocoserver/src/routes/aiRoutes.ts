@@ -188,7 +188,7 @@ Plateforme actuelle:
 /* =====================================================
 📌 Route : Deviner la catégorie automatiquement
 ===================================================== */
-router.post("/suggest-category", async (req, res) => {
+router.post("/suggest-category", authMiddleware, async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: "Product name required" });
