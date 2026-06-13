@@ -79,26 +79,28 @@ export default function CommunicationPage() {
     (async () => {
       try {
         const h = { Authorization: `Bearer ${t}` };
-        const [sr, ar] = await Promise.all([
+        const [statsRes, storesRes] = await Promise.all([
+          fetch(`${API}/admin/communication/stats`, { headers: h }).catch(() => null),
           fetch(`${API}/admin/stores?limit=1000`, { headers: h }).catch(() => null),
-          fetch(`${API}/admin/agents?approved=true&limit=1000`, { headers: h }).catch(() => null),
         ]);
-        if (sr?.status === 401 || ar?.status === 401) {
+        if (statsRes?.status === 401 || storesRes?.status === 401) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminInfo');
           window.location.href = '/admin/login';
           return;
         }
-        if (sr?.ok) {
-          const sd = await sr.json();
+        if (statsRes?.ok) {
+          const stats = await statsRes.json();
+          setStores(Array(stats.totalStores).fill({}));
+          setAgents(Array(stats.totalAgents).fill({}));
+          if (stats.cities) setCities(stats.cities.sort());
+        }
+        if (storesRes?.ok) {
+          const sd = await storesRes.json();
           const storeList = sd.stores || [];
           setStores(storeList);
           const uniqueCities = [...new Set(storeList.map((s: any) => s.city).filter(Boolean))] as string[];
-          setCities(uniqueCities.sort());
-        }
-        if (ar?.ok) {
-          const ad = await ar.json();
-          setAgents(ad.agents || []);
+          if (uniqueCities.length > 0) setCities(uniqueCities.sort());
         }
       } catch {} finally { setLoading(false); }
     })();

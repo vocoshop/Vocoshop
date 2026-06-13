@@ -1,6 +1,6 @@
 import { Router } from "express";
 import authMiddleware from "../middleware/authMiddleware";
-import { sendCommunication, getCommunicationStats } from "../controllers/communicationController";
+import { sendCommunication, getCommunicationStats, getCommunicationHistory } from "../controllers/communicationController";
 
 const router = Router();
 
@@ -10,9 +10,7 @@ router.get("/stats", authMiddleware, getCommunicationStats);
 // POST /api/admin/communication/send — envoyer SMS ou WhatsApp
 router.post("/send", authMiddleware, sendCommunication);
 
-// GET /api/admin/communication/history — historique (pour l'instant retourne une liste vide, à implémenter plus tard)
-router.get("/history", authMiddleware, async (_req, res) => {
-  return res.json({ messages: [], total: 0 });
-});
+// GET /api/admin/communication/history — historique paginé
+router.get("/history", authMiddleware, getCommunicationHistory);
 
 export default router;

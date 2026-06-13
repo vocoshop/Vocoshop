@@ -2,8 +2,9 @@
 import { Request, Response } from "express";
 import Store from "../models/Store";
 import Agent from "../models/Agent";
+import CommunicationLog from "../models/CommunicationLog";
 import { sendSMS } from "../services/smsService";
-import { sendWhatsApp, sendWhatsAppText } from "../services/whatsappService";
+import { sendWhatsAppText } from "../services/whatsappService";
 import { logSystem } from "../utils/systemLogger";
 
 /* =====================================================
@@ -12,7 +13,7 @@ Body: { channel, recipients, message, subject?, city? }
 ===================================================== */
 export const sendCommunication = async (req: Request, res: Response) => {
   try {
-    const channel = String(req.body?.channel || "sms"); // "sms" | "whatsapp"
+    const channel = String(req.body?.channel || "sms");
     const recipients = String(req.body?.recipients || "all_stores");
     const message = String(req.body?.message || "").trim();
     const subject = String(req.body?.subject || "").trim();
@@ -23,7 +24,6 @@ export const sendCommunication = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Canal invalide (sms ou whatsapp)" });
     }
 
-    // Collecter les numéros de téléphone
     let phones: string[] = [];
 
     switch (recipients) {
@@ -56,10 +56,8 @@ export const sendCommunication = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Aucun destinataire trouvé" });
     }
 
-    // Dédupliquer
     phones = [...new Set(phones)];
 
-    // Envoyer
     let sent = 0;
     let failed = 0;
     const errors: string[] = [];
@@ -80,6 +78,22 @@ export const sendCommunication = async (req: Request, res: Response) => {
         errors.push(`${phone}: ${e.message}`);
       }
     }
+
+    const status = sent === 0 ? "failed" : failed > 0 ? "partial" : "sent";
+
+    await CommunicationLog.create({
+      channel,
+      recipients,
+      recipientCount: phones.length,
+      subject: subject || undefined,
+      message,
+      sent,
+      failed,
+      errorDetails: errors.slice(0, 20),
+      status,
+      city: city || undefined,
+      sentBy: (req as any).user?.id || "admin",
+    });
 
     logSystem("info", `Communication envoyée: ${channel} → ${sent}/${phones.length} (${recipients})`, {
       source: "communication",
@@ -102,16 +116,41 @@ export const sendCommunication = async (req: Request, res: Response) => {
 };
 
 /* =====================================================
-GET /api/admin/communication/stats
-Retourne les compteurs de destinataires
+GET /api/admin/communication/history?page=1&limit=10
 ===================================================== */
-export const getCommunicationStats = async (req: Request, res: Response) => {
+export const getCommunicationHistory = async (req: Request, res: Response) => {
   try {
-    const [totalStores, activeStores, totalAgents, cities] = await Promise.all([
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const [messages, total] = await Promise.all([
+      CommunicationLog.find({})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      CommunicationLog.countDocuments({}),
+    ]);
+
+    return res.json({ messages, total, page, limit });
+  } catch (e) {
+    console.error("❌ getCommunicationHistory:", e);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+/* =====================================================
+GET /api/admin/communication/stats
+===================================================== */
+export const getCommunicationStats = async (_req: Request, res: Response) => {
+  try {
+    const [totalStores, activeStores, totalAgents, cities, totalMessages] = await Promise.all([
       Store.countDocuments({}).catch(() => 0),
       Store.countDocuments({ subscriptionStatus: "active" }).catch(() => 0),
       Agent.countDocuments({ isApproved: true }).catch(() => 0),
       Store.distinct("city").catch(() => []),
+      CommunicationLog.countDocuments({}).catch(() => 0),
     ]);
 
     return res.json({
@@ -119,6 +158,7 @@ export const getCommunicationStats = async (req: Request, res: Response) => {
       activeStores,
       totalAgents,
       cities: cities.filter(Boolean),
+      totalMessages,
     });
   } catch (e) {
     console.error("❌ getCommunicationStats:", e);
