@@ -33,7 +33,7 @@ export const sendSMS = async (phone: string, message: string): Promise<boolean> 
       body: params.toString(),
     });
 
-    const data = await res.json();
+    const data: any = await res.json();
 
     if (data.messages && data.messages[0]?.status === "0") {
       console.log("✅ SMS Vonage envoyé:", formatted);

@@ -61,7 +61,7 @@ export const sendWhatsApp = async (
       }
     );
 
-    const data = await res.json();
+    const data: any = await res.json();
 
     if (!res.ok) {
       console.error("❌ WhatsApp API error:", res.status, data);
