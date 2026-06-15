@@ -110,18 +110,27 @@ export const sendAgentOTP = async (req: Request, res: Response) => {
 /* =====================================================
 POST /api/agent/auth/otp/verify (PUBLIC)
 - Vérifie le code OTP et connecte l'agent
+- Accepte { phone, code } OU { agentId, code }
 ===================================================== */
 export const verifyAgentOTP = async (req: Request, res: Response) => {
   try {
+    const agentId = String(req.body?.agentId || "").trim();
     const phoneRaw = String(req.body?.phone || "").trim();
     const code = String(req.body?.code || "").trim();
     const phone = normalizePhone(phoneRaw);
 
-    if (!phone || !code) return res.status(400).json({ error: "Téléphone et code requis" });
+    if (!code) return res.status(400).json({ error: "Code requis" });
 
-    const agent: any = await Agent.findOne({ phone })
-      .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive authCodeHash authCodeIssuedAt createdAt lastLoginAt")
-      .lean();
+    let agent: any;
+    if (agentId) {
+      agent = await Agent.findById(agentId)
+        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive authCodeHash authCodeIssuedAt createdAt lastLoginAt")
+        .lean();
+    } else if (phone) {
+      agent = await Agent.findOne({ phone })
+        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive authCodeHash authCodeIssuedAt createdAt lastLoginAt")
+        .lean();
+    }
 
     if (!agent) return res.status(404).json({ error: "Agent introuvable" });
     if (!agent.isActive) return res.status(403).json({ error: "Agent désactivé" });
@@ -131,36 +140,41 @@ export const verifyAgentOTP = async (req: Request, res: Response) => {
     const ok = await bcrypt.compare(code, agent.authCodeHash);
     if (!ok) return res.status(401).json({ error: "Code invalide" });
 
+    const token = signAgentToken(String(agent._id));
+    const agentPayload = {
+      id: String(agent._id),
+      firstName: agent.firstName || "",
+      lastName: agent.lastName || "",
+      name: agent.name,
+      phone: agent.phone,
+      code: agent.code,
+      city: agent.city || "",
+      region: agent.region || "",
+      country: agent.country || "",
+      gender: agent.gender || "",
+      birthDate: agent.birthDate || null,
+      idType: agent.idType || "",
+      idNumber: agent.idNumber || "",
+      isApproved: !!agent.isApproved,
+      isActive: agent.isActive,
+      mustChangePassword: agent.mustChangePassword,
+      hasPassword: !!agent.passwordHash,
+      createdAt: agent.createdAt || null,
+      lastLoginAt: agent.lastLoginAt || null,
+      role: "agent",
+    };
+
+    // Première connexion : ne PAS vider authCodeHash (setPassword en a besoin)
+    if (agent.mustChangePassword) {
+      return res.json({ requiresPasswordSetup: true, token, agent: agentPayload });
+    }
+
+    // Login normal : vider authCodeHash, connecter
     await Agent.updateOne(
       { _id: agent._id },
       { $set: { lastLoginAt: new Date() }, $unset: { authCodeHash: "", authCodeIssuedAt: "" } }
     );
-
-    const token = signAgentToken(String(agent._id));
-
-    return res.json({
-      token,
-      agent: {
-        id: String(agent._id),
-        firstName: agent.firstName || "",
-        lastName: agent.lastName || "",
-        name: agent.name,
-        phone: agent.phone,
-        code: agent.code,
-        city: agent.city || "",
-        region: agent.region || "",
-        country: agent.country || "",
-        gender: agent.gender || "",
-        birthDate: agent.birthDate || null,
-        idType: agent.idType || "",
-        idNumber: agent.idNumber || "",
-        isApproved: !!agent.isApproved,
-        isActive: agent.isActive,
-        createdAt: agent.createdAt || null,
-        lastLoginAt: agent.lastLoginAt || null,
-        role: "agent",
-      },
-    });
+    return res.json({ token, agent: agentPayload });
   } catch (e) {
     console.error("❌ verifyAgentOTP:", e);
     return res.status(500).json({ error: "Erreur serveur" });
@@ -216,20 +230,20 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 /* =====================================================
 POST /api/agent/auth/login (PUBLIC)
-Body:
-- { codeOrPhone, password } -> login normal
-- { codeOrPhone, authCode } -> 1ère connexion
+Body: { codeOrPhone, password? }
+- Si password fourni : login normal (vérification mot de passe)
+- Si password NON fourni : détection auto
+  - Si mustChangePassword : génère OTP, envoie SMS, retourne requiresPasswordSetup
+  - Sinon : retourne requiresPassword (le frontend doit afficher le champ mot de passe)
 ===================================================== */
 export const loginAgent = async (req: Request, res: Response) => {
 try {
 const identifierRaw = String(req.body?.codeOrPhone || "").trim();
 const identifierPhone = normalizePhone(identifierRaw);
-
 const password = String(req.body?.password || "");
-const authCode = String(req.body?.authCode || "");
 
 if (!identifierRaw) {
-return res.status(400).json({ error: "codeOrPhone manquant" });
+return res.status(400).json({ error: "Code agent ou téléphone requis" });
 }
 
 const agent: any = await Agent.findOne({
@@ -264,62 +278,63 @@ const makeAgentPayload = (a: any, mustChangePwd: boolean) => ({
   isApproved: !!a.isApproved,
   isActive: a.isActive,
   mustChangePassword: mustChangePwd,
+  hasPassword: !!a.passwordHash,
   lastLoginAt: a.lastLoginAt || null,
   createdAt: a.createdAt || null,
   role: "agent",
 });
 
-// ✅ 1ère connexion: authCode OU mot de passe temporaire
-if (agent.mustChangePassword) {
-  // Si un password est fourni et que l'agent a déjà un passwordHash (ex: reset password)
-  if (password && agent.passwordHash) {
-    const ok = await bcrypt.compare(password, String(agent.passwordHash || ""));
+// ✅ Si password fourni : tentative de connexion
+if (password) {
+  // 1ère connexion avec mot de passe temporaire
+  if (agent.mustChangePassword && agent.passwordHash) {
+    const ok = await bcrypt.compare(password, String(agent.passwordHash));
     if (!ok) return res.status(401).json({ error: "Mot de passe invalide" });
-
     const token = signAgentToken(String(agent._id));
-    return res.json({
-      token,
-      agent: makeAgentPayload(agent, true),
-    });
+    return res.json({ token, agent: makeAgentPayload(agent, true) });
   }
 
-  // Sinon, flow classique avec authCode
-  if (!authCode) {
-    return res.status(400).json({ error: "authCode requis (première connexion)" });
+  // Login normal
+  if (!agent.passwordHash) return res.status(400).json({ error: "Aucun mot de passe défini. Connexion sans mot de passe d'abord." });
+  const ok = await bcrypt.compare(password, String(agent.passwordHash));
+  if (!ok) return res.status(401).json({ error: "Identifiants invalides" });
+
+  const token = signAgentToken(String(agent._id));
+  Agent.updateOne({ _id: agent._id }, { $set: { lastLoginAt: new Date() } }).catch(() => {});
+  return res.json({ token, agent: makeAgentPayload(agent, false) });
+}
+
+// ✅ Pas de password fourni → détection automatique
+if (agent.mustChangePassword || !agent.passwordHash) {
+  // Première connexion : générer et envoyer OTP automatiquement
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashed = await bcrypt.hash(code, 10);
+  await Agent.updateOne(
+    { _id: agent._id },
+    { $set: { authCodeHash: hashed, authCodeIssuedAt: new Date() } }
+  );
+
+  try {
+    const phone = agent.phone;
+    const firstName = agent.firstName || agent.name?.split(" ")[0] || "";
+    const { notifyAuthCode } = require("../services/notificationService");
+    await notifyAuthCode(phone, code);
+  } catch (e) {
+    console.error("❌ Auto OTP échoué:", e);
   }
-if (!agent.authCodeHash) {
-return res.status(400).json({ error: "Aucun authCode actif. Demande une réinitialisation." });
+
+  return res.json({
+    requiresPasswordSetup: true,
+    agent: makeAgentPayload(agent, true),
+  });
 }
-if (isAuthCodeExpired(agent.authCodeIssuedAt)) {
-return res.status(401).json({ error: "authCode expiré. Demande une réinitialisation." });
-}
 
-const ok = await bcrypt.compare(authCode, String(agent.authCodeHash || ""));
-if (!ok) return res.status(401).json({ error: "authCode invalide" });
-
-const token = signAgentToken(String(agent._id));
-
+// L'agent a un mot de passe → demander le password
 return res.json({
-token,
-agent: makeAgentPayload(agent, true),
+  requiresPassword: true,
+  agent: makeAgentPayload(agent, false),
 });
-}
 
-// ✅ login normal: password
-if (!password) return res.status(400).json({ error: "password requis" });
-
-const ok = await bcrypt.compare(password, String(agent.passwordHash || ""));
-if (!ok) return res.status(401).json({ error: "Identifiants invalides" });
-
-const token = signAgentToken(String(agent._id));
-
-// update lastLoginAt (non bloquant)
-Agent.updateOne({ _id: agent._id }, { $set: { lastLoginAt: new Date() } }).catch(() => {});
-
-return res.json({
-token,
-agent: makeAgentPayload(agent, false),
-});
 } catch (e) {
 console.error("❌ loginAgent:", e);
 return res.status(500).json({ error: "Erreur serveur" });
