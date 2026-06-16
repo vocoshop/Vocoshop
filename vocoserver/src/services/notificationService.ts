@@ -18,7 +18,7 @@ export const notifyAuthCode = async (phone: string, code: string): Promise<{ wha
 };
 
 // ─── Welcome : SMS (car OTP-like, credentials sensibles) ───
-const APP_URL = process.env.PUBLIC_BASE_URL?.replace(/^https?:\/\//, "").replace(/\/api.*$/, "") || "www.vocoshop.app";
+const APP_URL = "www.vocoshop.app";
 export const notifyWelcome = async (
   phone: string,
   firstName: string,
