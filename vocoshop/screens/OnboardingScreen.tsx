@@ -32,6 +32,9 @@ const { token, logout, loading: authLoading } = useContext(AuthContext);
 const [storeName, setStoreName] = useState("");
 const [city, setCity] = useState("");
 
+const [ownerName, setOwnerName] = useState("");
+const [ownerPhone, setOwnerPhone] = useState("");
+
 const [agentCode, setAgentCode] = useState("");
 const [referralCode, setReferralCode] = useState("");
 
@@ -181,6 +184,9 @@ navigation.reset({ index: 0, routes: [{ name: "Login" }] });
 return;
 }
 
+const cleanOwnerName = safeTrim(ownerName);
+const cleanOwnerPhone = safeTrim(ownerPhone);
+
 const payload: any = {
 storeName: cleanStoreName,
 city: cleanCity,
@@ -191,6 +197,10 @@ if (cleanAgentCode) payload.agentCode = cleanAgentCode;
 
 // ⭐⭐⭐⭐⭐ FIX CRITIQUE PARRAINAGE
 if (cleanReferralCode) payload.referralCode = cleanReferralCode;
+
+// ✅ propriétaire
+if (cleanOwnerName) payload.ownerName = cleanOwnerName;
+if (cleanOwnerPhone) payload.ownerPhone = cleanOwnerPhone;
 
 await updateStoreOnboarding(payload, { Authorization: authHeader });
 
@@ -205,7 +215,7 @@ Alert.alert("Erreur", "Impossible d'enregistrer. Réessaie.");
 setLoading(false);
 }
 
-}, [agentCode, referralCode, city, headers.Authorization, loading, navigation, storeName]);
+}, [agentCode, referralCode, city, ownerName, ownerPhone, headers.Authorization, loading, navigation, storeName]);
 
 /* =====================================================
 UI
@@ -258,6 +268,26 @@ placeholder="Ex: Brazzaville"
 placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.input}
 autoCapitalize="words"
+/>
+
+<Text style={styles.label}>Nom du propriétaire (optionnel)</Text>
+<TextInput
+value={ownerName}
+onChangeText={setOwnerName}
+placeholder="Ex: Jean Dupont"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={styles.input}
+autoCapitalize="words"
+/>
+
+<Text style={styles.label}>Téléphone du propriétaire (optionnel)</Text>
+<TextInput
+value={ownerPhone}
+onChangeText={setOwnerPhone}
+placeholder="Ex: +242 06 123 45 67"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={styles.input}
+keyboardType="phone-pad"
 />
 
 <Text style={styles.label}>Code agent (optionnel)</Text>

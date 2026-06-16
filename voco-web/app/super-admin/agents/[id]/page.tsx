@@ -55,15 +55,37 @@ export default function AgentDetail() {
     const t = localStorage.getItem('adminToken');
     if (!t) { setActionLoading(false); return; }
     try {
-      const r = await fetch(`${API}/admin/agents/${agent.code}/suspend`, {
-        method: 'POST',
+      const r = await fetch(`${API}/admin/agents/${agent.id || agent._id}/status`, {
+        method: 'PATCH',
         headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: false }),
       }).catch(() => null);
       if (r?.ok) {
         setAgent({ ...agent, isActive: false });
         showToast('Agent suspendu', 'success');
       } else {
         showToast('Erreur lors de la suspension', 'error');
+      }
+    } catch { showToast('Erreur de connexion', 'error'); }
+    setActionLoading(false);
+  };
+
+  const handleReactivate = async () => {
+    if (!confirm('Réactiver cet agent ? Un code lui sera envoyé par SMS pour créer un nouveau mot de passe.')) return;
+    setActionLoading(true);
+    const t = localStorage.getItem('adminToken');
+    if (!t) { setActionLoading(false); return; }
+    try {
+      const r = await fetch(`${API}/admin/agents/${agent.id || agent._id}/status`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true }),
+      }).catch(() => null);
+      if (r?.ok) {
+        setAgent({ ...agent, isActive: true });
+        showToast('Agent réactivé. Un SMS lui a été envoyé.', 'success');
+      } else {
+        showToast('Erreur lors de la réactivation', 'error');
       }
     } catch { showToast('Erreur de connexion', 'error'); }
     setActionLoading(false);
@@ -181,12 +203,20 @@ export default function AgentDetail() {
               <div style={{ width: `${Math.min(((a.commissionPerStore || 800) / 1500) * 100, 100)}%`, height: '100%', borderRadius: 3, background: '#22c55e', transition: 'width 0.5s' }} />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-            <button onClick={handleSuspend} disabled={actionLoading || !a.isActive} style={{
-              padding: '8px 16px', background: '#eab30820', border: '1px solid #eab30830',
-              borderRadius: 8, color: '#eab308', cursor: actionLoading || !a.isActive ? 'not-allowed' : 'pointer',
-              fontSize: 12, opacity: actionLoading || !a.isActive ? 0.5 : 1,
-            }}>Suspendre</button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>
+            {a.isActive ? (
+              <button onClick={handleSuspend} disabled={actionLoading} style={{
+                padding: '8px 16px', background: '#eab30820', border: '1px solid #eab30830',
+                borderRadius: 8, color: '#eab308', cursor: actionLoading ? 'not-allowed' : 'pointer',
+                fontSize: 12, opacity: actionLoading ? 0.5 : 1,
+              }}>Suspendre</button>
+            ) : (
+              <button onClick={handleReactivate} disabled={actionLoading} style={{
+                padding: '8px 16px', background: '#22c55e20', border: '1px solid #22c55e30',
+                borderRadius: 8, color: '#22c55e', cursor: actionLoading ? 'not-allowed' : 'pointer',
+                fontSize: 12, opacity: actionLoading ? 0.5 : 1,
+              }}>Réactiver</button>
+            )}
             <button onClick={() => { setNewCommission(a.commissionPerStore || 800); setShowCommissionModal(true); }} disabled={actionLoading} style={{
               padding: '8px 16px', background: '#a855f720', border: '1px solid #a855f730',
               borderRadius: 8, color: '#a855f7', cursor: actionLoading ? 'not-allowed' : 'pointer',

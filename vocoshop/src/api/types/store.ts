@@ -13,6 +13,10 @@ paidReferrals: number;
 city?: string;
 agentCode?: string;
 
+// ✅ propriétaire
+ownerName?: string;
+ownerPhone?: string;
+
 // ✅ très important pour décider si on affiche OnboardingScreen
 isOnboarded?: boolean;
 }
@@ -30,4 +34,6 @@ export interface StoreOnboardingPayload {
 storeName: string;
 city?: string;
 agentCode?: string;
+ownerName?: string;
+ownerPhone?: string;
 }

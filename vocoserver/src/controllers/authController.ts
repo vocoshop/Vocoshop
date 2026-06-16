@@ -20,7 +20,7 @@ process.env.JWT_SECRET || "",
 ===================================================== */
 export const registerStore = async (req: Request, res: Response) => {
 try {
-const { phone, storeName, deviceId, referralCodeUsed } = req.body;
+const { phone, storeName, ownerName, ownerPhone, deviceId, referralCodeUsed } = req.body;
 
 const phoneNorm = normalizePhone(phone);
 
@@ -58,6 +58,10 @@ const store = await Store.create({
 phone: phoneNorm,
 storeName:
 typeof storeName === "string" ? storeName.trim() : "",
+ownerName:
+typeof ownerName === "string" ? ownerName.trim() : undefined,
+ownerPhone:
+typeof ownerPhone === "string" ? ownerPhone.trim() : undefined,
 deviceId: deviceId || null,
 
 // ⭐ ULTRA IMPORTANT POUR TON WEBHOOK

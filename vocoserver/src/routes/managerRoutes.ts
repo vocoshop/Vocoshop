@@ -243,11 +243,31 @@ PATCH /api/admin-manager/agents/:id/unsuspend
 ===================================================== */
 router.patch("/agents/:id/unsuspend", async (req: any, res: any) => {
   try {
-    const agent = await Agent.findById(req.params.id);
+    const agent = await Agent.findById(req.params.id).select("_id name phone code isActive");
     if (!agent) return res.status(404).json({ error: "Agent introuvable" });
-    agent.isActive = true;
-    await agent.save();
-    res.json({ success: true, message: "Agent réactivé" });
+    const authCode = String(Math.floor(100000 + Math.random() * 900000));
+    const authCodeHash = await bcrypt.hash(authCode, 10);
+    await Agent.updateOne(
+      { _id: agent._id },
+      {
+        $set: {
+          isActive: true,
+          mustChangePassword: true,
+          passwordHash: null,
+          authCodeHash,
+          authCodeIssuedAt: new Date(),
+        },
+      }
+    );
+    const msg =
+      `Vocoshop Agent ✅\n` +
+      `Bonjour ${agent.name},\n` +
+      `Votre compte a été réactivé.\n` +
+      `Code: ${agent.code}\n` +
+      `Code d'accès: ${authCode}\n` +
+      `Connectez-vous puis créez votre nouveau mot de passe.`;
+    await sendSMS(String(agent.phone), msg).catch(() => false);
+    res.json({ success: true, message: "Agent réactivé + SMS envoyé" });
   } catch (e) {
     console.error("❌ unsuspendAgent error", e);
     res.status(500).json({ error: "Erreur serveur" });

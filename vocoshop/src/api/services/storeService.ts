@@ -33,7 +33,7 @@ return res.data;
 /* =====================================================
 🚀 Onboarding boutique
 PATCH /api/store/onboarding
-Body: { storeName, city?, agentCode? }
+Body: { storeName, city?, agentCode?, ownerName?, ownerPhone? }
 ===================================================== */
 export const updateStoreOnboarding = async (
 payload: StoreOnboardingPayload,

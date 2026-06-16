@@ -7,11 +7,11 @@ VALIDATION MIDDLEWARE — Zod
 
 export const storeRegistrationSchema = z.object({
   phone: z.string().min(8, "Numéro de téléphone trop court"),
-  shopId: z.string().min(1, "Nom de boutique requis").max(100),
-  city: z.string().min(1, "Ville requise").max(50),
-  country: z.string().min(1, "Pays requis").max(50),
-  storeType: z.string().optional(),
-  referredBy: z.string().optional(),
+  storeName: z.string().optional(),
+  ownerName: z.string().optional(),
+  ownerPhone: z.string().optional(),
+  deviceId: z.string().optional(),
+  referralCodeUsed: z.string().optional(),
 });
 
 export const otpRequestSchema = z.object({

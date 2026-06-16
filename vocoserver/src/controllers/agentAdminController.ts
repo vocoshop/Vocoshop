@@ -216,13 +216,56 @@ const isActive = Boolean(req.body?.isActive);
 
 if (!id) return res.status(400).json({ error: "id manquant" });
 
-const agent = await Agent.findByIdAndUpdate(id, { isActive }, { new: true })
+const agent = await Agent.findById(id).select("_id name phone code isActive").lean();
+if (!agent) return res.status(404).json({ error: "Agent introuvable" });
+
+if (isActive) {
+// Réactivation : générer un nouveau code + mustChangePassword + SMS
+const authCode = generateAuthCode(6);
+const authCodeHash = await bcrypt.hash(authCode, 10);
+
+await Agent.updateOne(
+{ _id: id },
+{
+$set: {
+isActive: true,
+mustChangePassword: true,
+passwordHash: null,
+authCodeHash,
+authCodeIssuedAt: new Date(),
+},
+}
+);
+
+const msg =
+`Vocoshop Agent ✅\n` +
+`Bonjour ${agent.name},\n` +
+`Votre compte a été réactivé.\n` +
+`Code: ${agent.code}\n` +
+`Code d'accès: ${authCode}\n` +
+`Connectez-vous puis créez votre nouveau mot de passe.`;
+
+const smsOk = await notifyText(String(agent.phone), msg);
+
+const updated = await Agent.findById(id)
 .select("name phone code codeNumber codeSuffix city region isActive mustChangePassword lastLoginAt createdAt updatedAt")
 .lean();
 
-if (!agent) return res.status(404).json({ error: "Agent introuvable" });
+return res.json({
+message: smsOk ? "Agent réactivé + SMS envoyé" : "Agent réactivé (SMS non envoyé)",
+agent: safeAgent(updated || agent),
+smsSent: smsOk,
+});
+} else {
+// Suspension simple
+await Agent.updateOne({ _id: id }, { $set: { isActive: false } });
 
-return res.json({ message: "Statut mis à jour", agent: safeAgent(agent) });
+const updated = await Agent.findById(id)
+.select("name phone code codeNumber codeSuffix city region isActive mustChangePassword lastLoginAt createdAt updatedAt")
+.lean();
+
+return res.json({ message: "Agent suspendu", agent: safeAgent(updated || agent) });
+}
 } catch (e) {
 console.error("❌ setAgentStatus:", e);
 return res.status(500).json({ error: "Erreur serveur" });

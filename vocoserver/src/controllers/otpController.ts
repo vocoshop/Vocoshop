@@ -166,6 +166,8 @@ try {
 const phone = normalizePhone(req.body?.phone);
 const code = safeTrim(req.body?.code);
 const storeName = safeTrim(req.body?.storeName);
+const ownerName = safeTrim(req.body?.ownerName);
+const ownerPhone = safeTrim(req.body?.ownerPhone);
 const deviceId = safeTrim(req.body?.deviceId);
 const forceRelink = safeBool(req.body?.forceRelink);
 
@@ -194,6 +196,8 @@ if (!store) {
 store = await Store.create({
 phone,
 storeName: storeName || "",
+ownerName: ownerName || undefined,
+ownerPhone: ownerPhone || undefined,
 deviceId: deviceId || null,
 // isOnboarded default false (schema)
 });

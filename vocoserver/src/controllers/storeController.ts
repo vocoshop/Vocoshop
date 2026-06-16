@@ -24,17 +24,21 @@ const storeId = getStoreId(req);
 if (!storeId)
 return res.status(400).json({ error: "storeId manquant" });
 
-const { storeName, city, agentCode, referralCode } = req.body as {
+const { storeName, city, agentCode, referralCode, ownerName, ownerPhone } = req.body as {
 storeName?: string;
 city?: string;
 agentCode?: string;
 referralCode?: string;
+ownerName?: string;
+ownerPhone?: string;
 };
 
 const cleanStoreName = safeTrim(storeName);
 const cleanCity = safeTrim(city);
 const cleanAgentCode = safeTrim(agentCode).toUpperCase();
 const cleanReferralCode = safeTrim(referralCode).toUpperCase();
+const cleanOwnerName = safeTrim(ownerName);
+const cleanOwnerPhone = safeTrim(ownerPhone);
 
 if (!cleanStoreName) {
 return res.status(400).json({ error: "storeName obligatoire" });
@@ -51,6 +55,16 @@ store.storeName = cleanStoreName;
 
 if (cleanCity) {
 store.city = cleanCity;
+}
+
+/* =====================================================
+👤 OWNER (write-once si vide)
+===================================================== */
+if (cleanOwnerName) {
+store.ownerName = cleanOwnerName;
+}
+if (cleanOwnerPhone) {
+store.ownerPhone = cleanOwnerPhone;
 }
 
 /* =====================================================
@@ -102,6 +116,8 @@ referralCode: store.referralCode ?? store.shopId ?? "",
 referredCount: store.referredCount ?? 0,
 city: store.city ?? "",
 agentCode: store.agentCode ?? "",
+ownerName: store.ownerName ?? "",
+ownerPhone: store.ownerPhone ?? "",
 isOnboarded,
 });
 } catch (err) {
@@ -121,7 +137,7 @@ return res.status(400).json({ error: "storeId manquant" });
 
 const store = await Store.findById(storeId)
 .select(
-"storeName phone shopId plan referralCode referredCount paidReferrals city agentCode isOnboarded"
+"storeName phone shopId plan referralCode referredCount paidReferrals city agentCode isOnboarded ownerName ownerPhone"
 )
 .lean();
 
@@ -143,6 +159,8 @@ referredCount: store.referredCount ?? 0,
 paidReferrals: (store as any).paidReferrals ?? 0,
 city: (store as any).city ?? "",
 agentCode: (store as any).agentCode ?? "",
+ownerName: (store as any).ownerName ?? "",
+ownerPhone: (store as any).ownerPhone ?? "",
 isOnboarded,
 });
 } catch (err) {

@@ -13,6 +13,9 @@ storeName?: string;
 city?: string;
 agentCode?: string;
 
+ownerName?: string;
+ownerPhone?: string;
+
 deviceId?: string;
 deviceLastChangedAt?: Date | null;
 deviceChangeCount: number;
@@ -88,6 +91,9 @@ index: true,
 storeName: { type: String, trim: true },
 city: { type: String, default: "", trim: true },
 agentCode: { type: String, default: "", trim: true },
+
+ownerName: { type: String, trim: true },
+ownerPhone: { type: String, trim: true },
 
 /* =========================
 📱 DEVICE CONTROL
