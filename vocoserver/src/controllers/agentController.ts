@@ -306,22 +306,28 @@ if (password) {
 
 // ✅ Pas de password fourni → détection automatique
 if (agent.mustChangePassword || !agent.passwordHash) {
-  // Première connexion : générer et envoyer OTP automatiquement
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const hashed = await bcrypt.hash(code, 10);
-  await Agent.updateOne(
-    { _id: agent._id },
-    { $set: { authCodeHash: hashed, authCodeIssuedAt: new Date() } }
-  );
+  // Si un authCode valide existe déjà (ex: envoyé par approveAgent), ne pas le regénérer
+  if (!agent.authCodeHash || isAuthCodeExpired(agent.authCodeIssuedAt)) {
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashed = await bcrypt.hash(newCode, 10);
+    await Agent.updateOne(
+      { _id: agent._id },
+      { $set: { authCodeHash: hashed, authCodeIssuedAt: new Date() } }
+    );
 
-  try {
-    const phone = agent.phone;
-    const firstName = agent.firstName || agent.name?.split(" ")[0] || "";
-    const { notifyAuthCode } = require("../services/notificationService");
-    await notifyAuthCode(phone, code);
-  } catch (e) {
-    console.error("❌ Auto OTP échoué:", e);
+    try {
+      const { notifyAuthCode } = require("../services/notificationService");
+      await notifyAuthCode(agent.phone, newCode);
+    } catch (e) {
+      console.error("❌ Auto OTP échoué:", e);
+    }
   }
+
+  return res.json({
+    requiresPasswordSetup: true,
+    agent: makeAgentPayload(agent, true),
+  });
+}
 
   return res.json({
     requiresPasswordSetup: true,
