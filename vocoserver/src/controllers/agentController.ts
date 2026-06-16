@@ -329,12 +329,6 @@ if (agent.mustChangePassword || !agent.passwordHash) {
   });
 }
 
-  return res.json({
-    requiresPasswordSetup: true,
-    agent: makeAgentPayload(agent, true),
-  });
-}
-
 // L'agent a un mot de passe → demander le password
 return res.json({
   requiresPassword: true,
