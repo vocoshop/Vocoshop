@@ -18,6 +18,7 @@ export const notifyAuthCode = async (phone: string, code: string): Promise<{ wha
 };
 
 // ─── Welcome : SMS (car OTP-like, credentials sensibles) ───
+const APP_URL = process.env.PUBLIC_BASE_URL?.replace(/^https?:\/\//, "").replace(/\/api.*$/, "") || "www.vocoshop.app";
 export const notifyWelcome = async (
   phone: string,
   firstName: string,
@@ -30,7 +31,7 @@ export const notifyWelcome = async (
     `Votre compte est activé.\n` +
     `Code Agent: ${agentCode}\n` +
     `Code connexion: ${authCode}\n\n` +
-    `Connectez-vous sur vocoshop.com`;
+    `Connectez-vous sur ${APP_URL}`;
   const sms = await sendSMS(phone, msg);
   return { whatsapp: false, sms };
 };
