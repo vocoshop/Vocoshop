@@ -14,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [authCode, setAuthCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
   const [forgotMsg, setForgotMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -100,6 +101,8 @@ export default function Login() {
       if (data.requiresPasswordSetup) {
         setStep('setPassword');
         setAuthCode(authCode);
+        setNewPassword('');
+        setConfirmPassword('');
       } else if (data.token) {
         localStorage.setItem('agentToken', data.token);
         localStorage.setItem('agentData', JSON.stringify(data.agent));
@@ -118,6 +121,10 @@ export default function Login() {
     setError('');
     if (newPassword.length < 6) {
       setError('Le mot de passe doit faire au moins 6 caractères');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
       return;
     }
     setLoading(true);
@@ -319,15 +326,25 @@ export default function Login() {
                     autoFocus
                   />
                 </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 13, color: '#a1a1aa', marginBottom: 6, display: 'block' }}>Confirmer le mot de passe</label>
+                  <input
+                    type="password"
+                    placeholder="Saisis à nouveau le mot de passe"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #27272a', background: '#0a0a0b', color: '#fafafa', fontSize: 15, outline: 'none' }}
+                  />
+                </div>
                 {error && <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>{error}</div>}
                 <button
                   type="submit"
-                  disabled={newPassword.length < 6 || loading}
+                  disabled={newPassword.length < 6 || newPassword !== confirmPassword || loading}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: newPassword.length < 6 ? '#27272a' : 'linear-gradient(135deg, #a855f7, #7c3aed)',
+                    background: newPassword.length < 6 || newPassword !== confirmPassword ? '#27272a' : 'linear-gradient(135deg, #a855f7, #7c3aed)',
                     color: '#fff', fontSize: 15, fontWeight: 600,
-                    cursor: newPassword.length < 6 ? 'not-allowed' : 'pointer',
+                    cursor: newPassword.length < 6 || newPassword !== confirmPassword ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {loading ? 'Création...' : 'Créer mon mot de passe'}
