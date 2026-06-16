@@ -135,7 +135,9 @@ export const verifyAgentOTP = async (req: Request, res: Response) => {
     if (!agent) return res.status(404).json({ error: "Agent introuvable" });
     if (!agent.isActive) return res.status(403).json({ error: "Agent désactivé" });
     if (!agent.authCodeHash) return res.status(400).json({ error: "Aucun code envoyé" });
-    if (isAuthCodeExpired(agent.authCodeIssuedAt)) return res.status(401).json({ error: "Code expiré" });
+    if (!agent.mustChangePassword && isAuthCodeExpired(agent.authCodeIssuedAt)) {
+      return res.status(401).json({ error: "Code expiré" });
+    }
 
     const ok = await bcrypt.compare(code, agent.authCodeHash);
     if (!ok) return res.status(401).json({ error: "Code invalide" });
@@ -306,9 +308,9 @@ if (password) {
 
 // ✅ Pas de password fourni → détection automatique
 if (agent.mustChangePassword || !agent.passwordHash) {
-  // Si un authCode existe déjà : permanent (approbation) OU non expiré → ne pas regénérer
-  if (agent.authCodeHash && !isAuthCodeExpired(agent.authCodeIssuedAt)) {
-    // Code valide, on garde
+  // Si un authCode existe déjà (approbation ou code valide) → ne jamais regénérer
+  if (agent.authCodeHash) {
+    // Garder le code existant, même s'il a une date (compatibilité ancienne approbation)
   } else {
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
     const hashed = await bcrypt.hash(newCode, 10);
