@@ -260,12 +260,11 @@ router.patch("/agents/:id/unsuspend", async (req: any, res: any) => {
       }
     );
     const msg =
-      `Vocoshop Agent ✅\n` +
+      `Vocoshop - Compte reactive\n` +
       `Bonjour ${agent.name},\n` +
-      `Votre compte a été réactivé.\n` +
       `Code: ${agent.code}\n` +
-      `Code d'accès: ${authCode}\n` +
-      `Connectez-vous puis créez votre nouveau mot de passe.`;
+      `Code acces: ${authCode}\n` +
+      `Connectez-vous et creez votre mot de passe.`;
     await sendSMS(String(agent.phone), msg).catch(() => false);
     res.json({ success: true, message: "Agent réactivé + SMS envoyé" });
   } catch (e) {

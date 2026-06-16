@@ -6,6 +6,7 @@ import crypto from "crypto";
 import Agent from "../models/Agent";
 import { getNextSequence } from "../services/counterService";
 import { notifyWelcome, notifyText } from "../services/notificationService";
+import { sendSMS } from "../services/smsService";
 import { normalizePhone } from "../utils/phone";
 
 function randomSuffix(): string {
@@ -238,14 +239,13 @@ authCodeIssuedAt: new Date(),
 );
 
 const msg =
-`Vocoshop Agent ✅\n` +
+`Vocoshop - Compte reactive\n` +
 `Bonjour ${agent.name},\n` +
-`Votre compte a été réactivé.\n` +
 `Code: ${agent.code}\n` +
-`Code d'accès: ${authCode}\n` +
-`Connectez-vous puis créez votre nouveau mot de passe.`;
+`Code acces: ${authCode}\n` +
+`Connectez-vous et creez votre mot de passe.`;
 
-const smsOk = await notifyText(String(agent.phone), msg);
+const smsOk = await sendSMS(String(agent.phone), msg);
 
 const updated = await Agent.findById(id)
 .select("name phone code codeNumber codeSuffix city region isActive mustChangePassword lastLoginAt createdAt updatedAt")
