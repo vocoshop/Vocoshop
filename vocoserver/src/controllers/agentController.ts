@@ -64,10 +64,10 @@ return Number.isFinite(n) && n > 0 ? n : 10;
 }
 
 function isAuthCodeExpired(issuedAt?: Date | null) {
-if (!issuedAt) return true;
-const expMin = getAuthCodeExpiryMinutes();
-const ageMs = Date.now() - new Date(issuedAt).getTime();
-return ageMs > expMin * 60 * 1000;
+  if (!issuedAt) return false; // null = permanent (approbation)
+  const expMin = getAuthCodeExpiryMinutes();
+  const ageMs = Date.now() - new Date(issuedAt).getTime();
+  return ageMs > expMin * 60 * 1000;
 }
 
 /* =====================================================
@@ -306,8 +306,10 @@ if (password) {
 
 // ✅ Pas de password fourni → détection automatique
 if (agent.mustChangePassword || !agent.passwordHash) {
-  // Si un authCode valide existe déjà (ex: envoyé par approveAgent), ne pas le regénérer
-  if (!agent.authCodeHash || isAuthCodeExpired(agent.authCodeIssuedAt)) {
+  // Si un authCode existe déjà : permanent (approbation) OU non expiré → ne pas regénérer
+  if (agent.authCodeHash && !isAuthCodeExpired(agent.authCodeIssuedAt)) {
+    // Code valide, on garde
+  } else {
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
     const hashed = await bcrypt.hash(newCode, 10);
     await Agent.updateOne(

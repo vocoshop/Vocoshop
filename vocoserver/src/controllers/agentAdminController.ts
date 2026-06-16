@@ -313,7 +313,7 @@ await Agent.findByIdAndUpdate(id, {
 isApproved: true,
 isActive: true,
 authCodeHash,
-authCodeIssuedAt: new Date(),
+authCodeIssuedAt: null, // null = ne jamais expirer (code d'approbation permanent)
 mustChangePassword: true,
 });
 
