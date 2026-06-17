@@ -41,6 +41,8 @@ gender: agent.gender || "",
 birthDate: agent.birthDate || "",
 idType: agent.idType || "",
 idNumber: agent.idNumber || "",
+idPhotoPath: agent.idPhotoPath || "",
+selfiePhotoPath: agent.selfiePhotoPath || "",
 isApproved: !!agent.isApproved,
 isActive: !!agent.isActive,
 mustChangePassword: !!agent.mustChangePassword,
@@ -182,7 +184,7 @@ filter.$or = [
 
 const [items, total] = await Promise.all([
 Agent.find(filter)
-.select("name firstName phone code codeNumber codeSuffix city country isApproved isActive mustChangePassword lastLoginAt createdAt updatedAt idType idNumber")
+.select("name firstName phone code codeNumber codeSuffix city country gender birthDate idType idNumber idPhotoPath selfiePhotoPath isApproved isActive mustChangePassword lastLoginAt createdAt updatedAt")
 .sort({ createdAt: -1 })
 .skip(skip)
 .limit(limit)

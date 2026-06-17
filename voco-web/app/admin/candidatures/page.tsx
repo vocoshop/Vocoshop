@@ -420,6 +420,18 @@ export default function Candidatures() {
                     <span style={styles.modalValue}>{selectedCandidate.idNumber}</span>
                   </div>
                 </div>
+                {selectedCandidate.idPhotoPath && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ color: '#71717a', fontSize: 13, marginBottom: 6 }}>Photo de la pièce</div>
+                    <img src={`/uploads/${selectedCandidate.idPhotoPath.replace(/\\/g, '/')}`} alt="Pièce" style={{ width: '100%', maxHeight: 240, borderRadius: 8, objectFit: 'contain', background: '#000' }} />
+                  </div>
+                )}
+                {selectedCandidate.selfiePhotoPath && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ color: '#71717a', fontSize: 13, marginBottom: 6 }}>Selfie avec la pièce</div>
+                    <img src={`/uploads/${selectedCandidate.selfiePhotoPath.replace(/\\/g, '/')}`} alt="Selfie" style={{ width: '100%', maxHeight: 240, borderRadius: 8, objectFit: 'contain', background: '#000' }} />
+                  </div>
+                )}
               </div>
               <div style={styles.modalSection}>
                 <h3>Date de soumission</h3>

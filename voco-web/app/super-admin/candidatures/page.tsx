@@ -180,6 +180,18 @@ export default function CandidaturesPage() {
               <Row label="Numéro de pièce" value={selected.idNumber || '—'} />
               <Row label="Code agent" value={selected.code || '—'} />
               <Row label="Date candidature" value={selected.createdAt ? fmtDate(selected.createdAt) : '—'} />
+              {selected.idPhotoPath && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ color: '#71717a', fontSize: 13, marginBottom: 6 }}>Photo de la pièce d'identité</div>
+                  <img src={`/uploads/${selected.idPhotoPath.replace(/\\/g, '/')}`} alt="Pièce d'identité" style={{ width: '100%', maxHeight: 240, borderRadius: 8, objectFit: 'contain', background: '#000' }} />
+                </div>
+              )}
+              {selected.selfiePhotoPath && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ color: '#71717a', fontSize: 13, marginBottom: 6 }}>Selfie avec la pièce</div>
+                  <img src={`/uploads/${selected.selfiePhotoPath.replace(/\\/g, '/')}`} alt="Selfie" style={{ width: '100%', maxHeight: 240, borderRadius: 8, objectFit: 'contain', background: '#000' }} />
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>

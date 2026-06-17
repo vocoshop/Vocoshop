@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: "https://vocoshop.onrender.com/api/:path*",
       },
+      {
+        source: "/uploads/:path*",
+        destination: "https://vocoshop.onrender.com/uploads/:path*",
+      },
     ];
   },
 };
