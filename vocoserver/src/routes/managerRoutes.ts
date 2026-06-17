@@ -255,7 +255,7 @@ router.patch("/agents/:id/unsuspend", async (req: any, res: any) => {
           mustChangePassword: true,
           passwordHash: null,
           authCodeHash,
-          authCodeIssuedAt: new Date(),
+          authCodeIssuedAt: null, // jamais expiré tant que l'agent ne s'est pas connecté
         },
       }
     );
