@@ -124,11 +124,11 @@ export const verifyAgentOTP = async (req: Request, res: Response) => {
     let agent: any;
     if (agentId) {
       agent = await Agent.findById(agentId)
-        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive authCodeHash authCodeIssuedAt createdAt lastLoginAt")
+        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive mustChangePassword authCodeHash authCodeIssuedAt createdAt lastLoginAt")
         .lean();
     } else if (phone) {
       agent = await Agent.findOne({ phone })
-        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive authCodeHash authCodeIssuedAt createdAt lastLoginAt")
+        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive mustChangePassword authCodeHash authCodeIssuedAt createdAt lastLoginAt")
         .lean();
     }
 
