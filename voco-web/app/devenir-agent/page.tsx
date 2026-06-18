@@ -46,26 +46,30 @@ export default function DevenirAgent() {
 
   useEffect(() => {
     const img = idPhotoRef.current;
-    if (!img) return;
-    if (idPhoto) {
-      const url = URL.createObjectURL(idPhoto);
-      img.src = url;
-      return () => { URL.revokeObjectURL(url); img.src = ''; };
-    } else {
-      img.src = '';
-    }
+    if (!img || !idPhoto) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result;
+      if (typeof result === "string" && result.startsWith("data:image/")) {
+        img.src = result;
+      }
+    };
+    reader.readAsDataURL(idPhoto);
+    return () => { img.src = ""; };
   }, [idPhoto]);
 
   useEffect(() => {
     const img = selfiePhotoRef.current;
-    if (!img) return;
-    if (selfiePhoto) {
-      const url = URL.createObjectURL(selfiePhoto);
-      img.src = url;
-      return () => { URL.revokeObjectURL(url); img.src = ''; };
-    } else {
-      img.src = '';
-    }
+    if (!img || !selfiePhoto) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result;
+      if (typeof result === "string" && result.startsWith("data:image/")) {
+        img.src = result;
+      }
+    };
+    reader.readAsDataURL(selfiePhoto);
+    return () => { img.src = ""; };
   }, [selfiePhoto]);
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));

@@ -76,22 +76,23 @@ PATCH /api/admin/admin-managers/:id — Modifier
 ===================================================== */
 router.patch("/admin-managers/:id", async (req: any, res: any) => {
   try {
-    const update: Record<string, unknown> = {};
-    if (req.body.firstName !== undefined) update.firstName = "" + req.body.firstName;
-    if (req.body.lastName !== undefined) update.lastName = "" + req.body.lastName;
-    if (req.body.phone !== undefined) update.phone = "" + req.body.phone;
-    if (req.body.assignedRegions !== undefined) update.assignedRegions = req.body.assignedRegions;
-    if (req.body.assignedCities !== undefined) update.assignedCities = req.body.assignedCities;
-    if (req.body.isActive !== undefined) update.isActive = req.body.isActive;
-    if (req.body.password) update.passwordHash = await bcrypt.hash(String(req.body.password), 10);
-
     if (!req.params.id || typeof req.params.id !== "string") {
       return res.status(400).json({ error: "ID manager invalide" });
     }
     if (!isValidObjectId(req.params.id)) return res.status(400).json({ error: "ID manager invalide" });
-    const manager = await AdminManager.findByIdAndUpdate(req.params.id, update, { new: true }).select("-passwordHash");
+    const manager = await AdminManager.findById(req.params.id);
     if (!manager) return res.status(404).json({ error: "Manager introuvable" });
-    res.json({ success: true, manager });
+
+    if (req.body.firstName !== undefined) manager.firstName = req.body.firstName;
+    if (req.body.lastName !== undefined) manager.lastName = req.body.lastName;
+    if (req.body.phone !== undefined) manager.phone = req.body.phone;
+    if (req.body.assignedRegions !== undefined) manager.assignedRegions = req.body.assignedRegions;
+    if (req.body.assignedCities !== undefined) manager.assignedCities = req.body.assignedCities;
+    if (req.body.isActive !== undefined) manager.isActive = req.body.isActive;
+    if (req.body.password) manager.passwordHash = await bcrypt.hash(req.body.password, 10);
+
+    await manager.save();
+    res.json({ success: true, manager: { id: manager._id, email: manager.email, firstName: manager.firstName, lastName: manager.lastName, phone: manager.phone, assignedRegions: manager.assignedRegions, assignedCities: manager.assignedCities, isActive: manager.isActive, createdAt: manager.createdAt } });
   } catch (e) {
     console.error("❌ updateManager error", e);
     res.status(500).json({ error: "Erreur serveur" });
