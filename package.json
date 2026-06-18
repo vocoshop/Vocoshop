@@ -16,6 +16,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "expo-image-manipulator": "~14.0.8"
+    "expo-image-manipulator": "~14.0.8",
+    "tar": "^7.5.16"
   }
 }
