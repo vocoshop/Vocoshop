@@ -27,7 +27,8 @@ async function rotate() {
     );
 
     const verify = await bcrypt.compare(newPwd, hash);
-    console.log(`🔑 Admin password (${email}): ${verify ? "✅ ROTATED" : "❌ FAIL"}`);
+    const adminUpdated = verify;
+    console.log("🔑 Admin password mis à jour :", adminUpdated);
   }
 
   // 2. JWT secrets vérifiés (booléens seulement)
@@ -36,23 +37,13 @@ async function rotate() {
   console.log("🔐 JWT_SECRET configuré :", hasJwtSecret);
   console.log("🔐 AGENT_JWT_SECRET configuré :", hasAgentJwtSecret);
 
-  // 3. Vérifier OpenAI
-  const openai = process.env.OPENAI_API_KEY;
-  if (openai && !openai.includes("sk-proj-")) {
-    console.log("🤖 OpenAI key: ✅ ROTATED");
-  } else if (openai && openai.includes("sk-proj-")) {
-    console.log("🤖 OpenAI key: ⚠️ ANCIENNE CLÉ — à rotater sur platform.openai.com");
-  } else {
-    console.log("🤖 OpenAI key: ⬜ à configurer");
-  }
+  // 3. Vérifier OpenAI (booléen seulement)
+  const hasOpenAiKey = !!process.env.OPENAI_API_KEY;
+  console.log("🤖 OPENAI_API_KEY configuré :", hasOpenAiKey);
 
-  // 4. Vérifier MongoDB password
-  const mongoPwd = uri.match(/\/\/([^:]+):([^@]+)@/)?.[2];
-  if (mongoPwd && (mongoPwd === "Vocoshop2026" || mongoPwd.includes("2026"))) {
-    console.log(`🗄️ MongoDB password: ⚠️ ANCIEN — à changer sur Atlas`);
-  } else if (mongoPwd) {
-    console.log(`🗄️ MongoDB password: ✅ ROTATED`);
-  }
+  // 4. Vérifier MongoDB password (booléen seulement)
+  const mongoPwdPresent = !!uri.match(/\/\/([^:]+):([^@]+)@/)?.[2];
+  console.log("🗄️ MongoDB password configuré :", mongoPwdPresent);
 
   await mongoose.disconnect();
   console.log("\n✅ Rotation terminée. Déploie les nouveaux secrets sur Render.");

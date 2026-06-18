@@ -4,6 +4,7 @@ import ProductAlias from "../models/ProductAlias";
 import Product from "../models/Product";
 import Sale from "../models/Sales";
 import { preprocessForVision, analyzeImageQuality } from "./imagePreprocess";
+import { isValidObjectId } from "../utils/helpers";
 
 interface OcrEngineResult {
   rawText: string;
@@ -84,6 +85,7 @@ export class OcrService {
     validatedLines: IOcrLine[],
     feedback?: Record<string, string>
   ): Promise<typeof OcrScan.prototype.toObject> {
+    if (!isValidObjectId(scanId)) throw new Error("ID scan invalide");
     const scan = await OcrScan.findOne({ _id: scanId, storeId });
     if (!scan) throw new Error("Scan introuvable");
 
@@ -106,6 +108,7 @@ export class OcrService {
     scanId: string,
     storeId: string
   ): Promise<{ importedCount: number; errors: string[]; unmatchedCount: number }> {
+    if (!isValidObjectId(scanId)) throw new Error("ID scan invalide");
     const scan = await OcrScan.findOne({ _id: scanId, storeId, status: { $in: ["validated", "pending"] } });
     if (!scan) throw new Error("Scan introuvable. Valide d'abord le scan avant d'importer.");
 
@@ -573,6 +576,7 @@ export class OcrService {
     normalizedName: string,
     productId?: string
   ): Promise<void> {
+    if (productId && !isValidObjectId(productId)) return;
     const product = productId
       ? await Product.findOne({ _id: productId, storeId })
       : await Product.findOne({ storeId, name: normalizedName });

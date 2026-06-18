@@ -123,9 +123,9 @@ app.use("/api/otp", otpLimiter, otpRoutes);
 app.use("/api/ai", generalLimiter, aiRoutes);
 
 // PUBLIC
-app.use("/api/public/report", publicReportRoutes);
-app.use("/api/public", publicInviteRoutes);
-app.use("/api/public/agent", publicAgentRoutes);
+app.use("/api/public/report", generalLimiter, publicReportRoutes);
+app.use("/api/public", generalLimiter, publicInviteRoutes);
+app.use("/api/public/agent", generalLimiter, publicAgentRoutes);
 
 // PRIVÉ (APP boutique)
 app.use("/api/products", productRoutes);
@@ -166,13 +166,13 @@ app.use("/api/admin/config", generalLimiter, adminConfigRoutes);
 app.use("/api/admin/security", generalLimiter, adminSecurityRoutes);
 app.use("/api/admin/blockchain", generalLimiter, adminBlockchainRoutes);
 app.use("/api/admin", generalLimiter, adminPartnerRoutes);
-app.use("/api/blockchain", blockchainRoutes);
+app.use("/api/blockchain", generalLimiter, blockchainRoutes);
 app.use("/api/partner", generalLimiter, partnerRoutes);
 app.use("/api/admin", generalLimiter, adminManagerRoutes);
 app.use("/api/admin-manager/auth", authLimiter, managerAuthRoutes);
 app.use("/api/admin-manager", generalLimiter, managerRoutes);
-app.use("/api/realtime", realtimeRoutes);
-app.use("/api/ocr", ocrRoutes);
+app.use("/api/realtime", generalLimiter, realtimeRoutes);
+app.use("/api/ocr", generalLimiter, ocrRoutes);
 app.use("/api/funding", generalLimiter, fundingRoutes);
 app.use("/api/call-proxy", generalLimiter, callProxyRoutes);
 app.use("/api/manager/support", generalLimiter, managerSupportRoutes);

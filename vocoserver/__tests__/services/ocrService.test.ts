@@ -128,7 +128,7 @@ describe("OcrService", () => {
     it("valide un scan et marque validatedByUser", async () => {
       const mockSave = jest.fn().mockResolvedValue({});
       const mockScan = {
-        _id: "scan_1",
+        _id: "507f191e810c19729de860ea",
         storeId,
         lines: [],
         status: "pending",
@@ -144,7 +144,7 @@ describe("OcrService", () => {
       mockProductFindOne.mockResolvedValue(null);
 
       const validatedLines = [{ text: "test", confidence: 90, corrected: false, type: "unknown" as const }];
-      const result = await ocrService.validateScan("scan_1", storeId, validatedLines);
+      const result = await ocrService.validateScan("507f191e810c19729de860ea", storeId, validatedLines);
 
       expect(result.validatedByUser).toBe(true);
       expect(result.status).toBe("validated");
@@ -154,7 +154,7 @@ describe("OcrService", () => {
     it("apprend les alias pour les lignes corrigées", async () => {
       const mockSave = jest.fn().mockResolvedValue({});
       const mockScan = {
-        _id: "scan_2",
+        _id: "507f191e810c19729de860eb",
         storeId,
         lines: [],
         status: "pending",
@@ -169,7 +169,7 @@ describe("OcrService", () => {
       mockOcrFindOne.mockResolvedValue(mockScan);
 
       const mockProductDoc = {
-        _id: "prod_1",
+        _id: "507f191e810c19729de860ea",
         name: "Savon",
         aliases: [],
         save: jest.fn().mockResolvedValue({}),
@@ -183,14 +183,14 @@ describe("OcrService", () => {
         {
           text: "savon 500F",
           productName: "Savon",
-          productId: "prod_1",
+          productId: "507f191e810c19729de860ea",
           confidence: 85,
           corrected: true,
           type: "sale" as const,
         },
       ];
 
-      await ocrService.validateScan("scan_2", storeId, validatedLines);
+      await ocrService.validateScan("507f191e810c19729de860eb", storeId, validatedLines);
 
       expect(ProductAlias.create).toHaveBeenCalledWith(
         expect.objectContaining({ storeId, rawText: "savon 500F" })
@@ -202,7 +202,7 @@ describe("OcrService", () => {
     it("rejette si scan introuvable", async () => {
       mockOcrFindOne.mockResolvedValue(null);
       await expect(
-        ocrService.validateScan("inexistant", storeId, [])
+        ocrService.validateScan("507f191e810c19729de860ec", storeId, [])
       ).rejects.toThrow("Scan introuvable");
     });
   });
@@ -214,14 +214,14 @@ describe("OcrService", () => {
     it("importe les lignes de type stock_in dans le stock", async () => {
       const mockSave = jest.fn().mockResolvedValue({});
       const mockScan = {
-        _id: "scan_3",
+        _id: "507f191e810c19729de860ee",
         storeId,
         status: "validated",
         lines: [
           {
             text: "appro 10 sacs riz",
             productName: "Riz",
-            productId: "prod_riz",
+            productId: "507f191e810c19729de860ed",
             quantity: 10,
             confidence: 90,
             type: "stock_in" as const,
@@ -232,14 +232,14 @@ describe("OcrService", () => {
       };
 
       mockOcrFindOne.mockResolvedValue(mockScan);
-      mockProductFindById.mockResolvedValue({ _id: "prod_riz", name: "Riz", sellPrice: 500 });
+      mockProductFindById.mockResolvedValue({ _id: "507f191e810c19729de860ed", name: "Riz", sellPrice: 500 });
       mockProductFindByIdAndUpdate.mockResolvedValue({});
 
-      const result = await ocrService.importValidatedScan("scan_3", storeId);
+      const result = await ocrService.importValidatedScan("507f191e810c19729de860ee", storeId);
       expect(result.importedCount).toBe(1);
       expect(result.errors).toHaveLength(0);
       expect(mockProductFindByIdAndUpdate).toHaveBeenCalledWith(
-        "prod_riz",
+        "507f191e810c19729de860ed",
         { $inc: { quantity: 10 } }
       );
     });
@@ -247,7 +247,7 @@ describe("OcrService", () => {
     it("ignore les lignes à faible confiance", async () => {
       const mockSave = jest.fn().mockResolvedValue({});
       const mockScan = {
-        _id: "scan_4",
+        _id: "507f191e810c19729de860ef",
         storeId,
         status: "validated",
         lines: [
@@ -255,7 +255,7 @@ describe("OcrService", () => {
             text: "brouillon",
             confidence: 20,
             type: "stock_in" as const,
-            productId: "prod_1",
+            productId: "507f191e810c19729de860ea",
             quantity: 5,
             corrected: false,
           },
@@ -264,7 +264,7 @@ describe("OcrService", () => {
       };
 
       mockOcrFindOne.mockResolvedValue(mockScan);
-      const result = await ocrService.importValidatedScan("scan_4", storeId);
+      const result = await ocrService.importValidatedScan("507f191e810c19729de860ef", storeId);
       expect(result.importedCount).toBe(0);
       expect(mockProductFindByIdAndUpdate).not.toHaveBeenCalled();
     });
@@ -272,7 +272,7 @@ describe("OcrService", () => {
     it("rejette si le scan n'existe pas", async () => {
       mockOcrFindOne.mockResolvedValue(null);
       await expect(
-        ocrService.importValidatedScan("bad_scan", storeId)
+        ocrService.importValidatedScan("507f191e810c19729de860f0", storeId)
       ).rejects.toThrow("Scan introuvable");
     });
   });

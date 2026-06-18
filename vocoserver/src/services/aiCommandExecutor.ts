@@ -3,6 +3,32 @@ import Store from "../models/Store";
 import Agent from "../models/Agent";
 import Notification from "../models/Notification";
 import Invoice from "../models/Invoice";
+import { isValidObjectId } from "../utils/helpers";
+
+function str(v: any): string {
+  return typeof v === "string" ? v.trim() : String(v || "").trim();
+}
+
+function safeInt(v: any, def: number): number {
+  const n = parseInt(v, 10);
+  return isNaN(n) ? def : n;
+}
+
+function pickStoreQuery(params?: any): { storeId: string } | { _id: string } | null {
+  const raw = params?.storeId || params?.id;
+  if (!raw) return null;
+  const s = str(raw);
+  if (isValidObjectId(s)) return { _id: s };
+  return { storeId: s };
+}
+
+function pickAgentQuery(params?: any): { code: string } | { _id: string } | null {
+  const raw = params?.code || params?.id;
+  if (!raw) return null;
+  const s = str(raw);
+  if (isValidObjectId(s)) return { _id: s };
+  return { code: s };
+}
 
 export interface CommandResult {
   success: boolean;
@@ -17,7 +43,9 @@ export const AICommandExecutor = {
 
     // SUSPENDRE BOUTIQUE
     if (cmd === "suspendre_boutique" || cmd === "suspend_store") {
-      const store = await Store.findOne({ storeId: params?.storeId || params?.id }).select("_id storeName subscriptionStatus");
+      const q = pickStoreQuery(params);
+      if (!q) return { success: false, action: "suspendre_boutique", message: "ID boutique requis" };
+      const store = await Store.findOne(q).select("_id storeName subscriptionStatus");
       if (!store) return { success: false, action: "suspendre_boutique", message: "Boutique non trouvée" };
       await Store.updateOne({ _id: (store as any)._id }, { $set: { subscriptionStatus: "suspended" } });
       return { success: true, action: "suspendre_boutique", message: `Boutique "${store.storeName}" suspendue avec succès`, details: { storeName: store.storeName } };
@@ -25,7 +53,9 @@ export const AICommandExecutor = {
 
     // ACTIVER BOUTIQUE
     if (cmd === "activer_boutique" || cmd === "activate_store") {
-      const store = await Store.findOne({ storeId: params?.storeId || params?.id }).select("_id storeName subscriptionStatus");
+      const q = pickStoreQuery(params);
+      if (!q) return { success: false, action: "activer_boutique", message: "ID boutique requis" };
+      const store = await Store.findOne(q).select("_id storeName subscriptionStatus");
       if (!store) return { success: false, action: "activer_boutique", message: "Boutique non trouvée" };
       const now = new Date();
       now.setDate(now.getDate() + 30);
@@ -35,7 +65,9 @@ export const AICommandExecutor = {
 
     // APPROUVER AGENT
     if (cmd === "approuver_agent" || cmd === "approve_agent") {
-      const agent = await Agent.findOne({ code: params?.code || params?.id }).select("_id name code isApproved");
+      const q = pickAgentQuery(params);
+      if (!q) return { success: false, action: "approuver_agent", message: "Code ou ID agent requis" };
+      const agent = await Agent.findOne(q).select("_id name code isApproved");
       if (!agent) return { success: false, action: "approuver_agent", message: "Agent non trouvé" };
       await Agent.updateOne({ _id: (agent as any)._id }, { $set: { isApproved: true, isActive: true } });
       return { success: true, action: "approuver_agent", message: `Agent "${agent.name}" approuvé avec succès`, details: { name: agent.name, code: agent.code } };
@@ -43,7 +75,9 @@ export const AICommandExecutor = {
 
     // REJETER AGENT
     if (cmd === "rejeter_agent" || cmd === "reject_agent") {
-      const agent = await Agent.findOne({ code: params?.code || params?.id }).select("_id name code isApproved");
+      const q = pickAgentQuery(params);
+      if (!q) return { success: false, action: "rejeter_agent", message: "Code ou ID agent requis" };
+      const agent = await Agent.findOne(q).select("_id name code isApproved");
       if (!agent) return { success: false, action: "rejeter_agent", message: "Agent non trouvé" };
       await Agent.updateOne({ _id: (agent as any)._id }, { $set: { isApproved: false, isActive: false } });
       return { success: true, action: "rejeter_agent", message: `Candidature de "${agent.name}" rejetée`, details: { name: agent.name } };
@@ -51,7 +85,9 @@ export const AICommandExecutor = {
 
     // SUSPENDRE AGENT
     if (cmd === "suspendre_agent" || cmd === "suspend_agent") {
-      const agent = await Agent.findOne({ code: params?.code || params?.id }).select("_id name code isActive");
+      const q = pickAgentQuery(params);
+      if (!q) return { success: false, action: "suspendre_agent", message: "Code ou ID agent requis" };
+      const agent = await Agent.findOne(q).select("_id name code isActive");
       if (!agent) return { success: false, action: "suspendre_agent", message: "Agent non trouvé" };
       await Agent.updateOne({ _id: (agent as any)._id }, { $set: { isActive: false } });
       return { success: true, action: "suspendre_agent", message: `Agent "${agent.name}" suspendu`, details: { name: agent.name } };
@@ -59,9 +95,11 @@ export const AICommandExecutor = {
 
     // EXTENDRE ABONNEMENT
     if (cmd === "etendre_abonnement" || cmd === "extend_subscription") {
-      const store = await Store.findOne({ storeId: params?.storeId || params?.id }).select("_id storeName paidUntil subscriptionStatus");
+      const q = pickStoreQuery(params);
+      if (!q) return { success: false, action: "etendre_abonnement", message: "ID boutique requis" };
+      const store = await Store.findOne(q).select("_id storeName paidUntil subscriptionStatus");
       if (!store) return { success: false, action: "etendre_abonnement", message: "Boutique non trouvée" };
-      const days = params?.days || 30;
+      const days = safeInt(params?.days, 30);
       const currentPaid = (store as any).paidUntil ? new Date((store as any).paidUntil) : new Date();
       if (currentPaid < new Date()) currentPaid.setTime(Date.now());
       currentPaid.setDate(currentPaid.getDate() + days);
@@ -71,24 +109,27 @@ export const AICommandExecutor = {
 
     // ENVOYER NOTIFICATION
     if (cmd === "envoyer_notification" || cmd === "send_notification") {
-      if (!params?.storeId) return { success: false, action: "envoyer_notification", message: "ID boutique requis" };
-      const store = await Store.findOne({ storeId: params.storeId }).select("_id storeName");
+      const storeId = str(params?.storeId);
+      if (!storeId) return { success: false, action: "envoyer_notification", message: "ID boutique requis" };
+      const q = isValidObjectId(storeId) ? { _id: storeId } : { storeId };
+      const store = await Store.findOne(q).select("_id storeName");
       if (!store) return { success: false, action: "envoyer_notification", message: "Boutique non trouvée" };
       await Notification.create({
         storeId: (store as any)._id,
-        title: params.title || "Notification VocoAI",
-        message: params.message || "Message de l'administrateur",
+        title: str(params?.title) || "Notification VocoAI",
+        message: str(params?.message) || "Message de l'administrateur",
         type: "system",
         isRead: false,
       });
-      return { success: true, action: "envoyer_notification", message: `Notification envoyée à "${store.storeName}"`, details: { storeName: store.storeName, title: params.title } };
+      return { success: true, action: "envoyer_notification", message: `Notification envoyée à "${store.storeName}"`, details: { storeName: store.storeName, title: str(params?.title) } };
     }
 
     // SUSPENDRE PAR AGENT CODE
     if (cmd === "suspendre_par_agent" || cmd === "suspend_by_agent") {
-      if (!params?.agentCode) return { success: false, action: "suspendre_par_agent", message: "Code agent requis" };
-      const result = await Store.updateMany({ agentCode: params.agentCode }, { $set: { subscriptionStatus: "suspended" } });
-      return { success: true, action: "suspendre_par_agent", message: `${result.modifiedCount} boutique(s) de l'agent ${params.agentCode} suspendue(s)`, details: { agentCode: params.agentCode, count: result.modifiedCount } };
+      const agentCode = str(params?.agentCode);
+      if (!agentCode) return { success: false, action: "suspendre_par_agent", message: "Code agent requis" };
+      const result = await Store.updateMany({ agentCode }, { $set: { subscriptionStatus: "suspended" } });
+      return { success: true, action: "suspendre_par_agent", message: `${result.modifiedCount} boutique(s) de l'agent ${agentCode} suspendue(s)`, details: { agentCode, count: result.modifiedCount } };
     }
 
     return { success: false, action: cmd, message: "Commande inconnue" };
