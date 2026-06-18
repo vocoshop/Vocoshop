@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { DocumentType } from "../blockchain/types";
 import {
   certifyDocument,
   verifyDocument,
@@ -9,7 +10,7 @@ import { getProofChain } from "../services/blockchainAnchorService";
 
 export async function certifyDocumentHandler(req: Request, res: Response): Promise<void> {
   try {
-    const storeId = req.user?.storeId || req.body.storeId;
+    const storeId = String(req.user?.storeId || req.body.storeId || "").trim();
     if (!storeId) {
       res.status(400).json({ error: "storeId requis" });
       return;
@@ -50,7 +51,7 @@ export async function listCertificationsHandler(req: Request, res: Response): Pr
       return;
     }
 
-    const documentType = req.query.documentType as any || undefined;
+    const documentType = typeof req.query.documentType === "string" ? req.query.documentType as DocumentType : undefined;
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
     const offset = Math.max(Number(req.query.offset) || 0, 0);
 

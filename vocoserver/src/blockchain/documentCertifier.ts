@@ -16,7 +16,7 @@ function computeChainHash(contentHash: string, previousHash: string | null): str
 
 async function getPreviousCertificationHash(storeId: string): Promise<string | null> {
   try {
-    const last = await DocumentCertification.findOne({ storeId })
+    const last = await DocumentCertification.findOne({ storeId: String(storeId) })
       .sort({ createdAt: -1 })
       .lean();
     return last ? last.chainHash : null;
@@ -167,8 +167,8 @@ export async function getStoreCertifications(
   limit = 20,
   offset = 0
 ): Promise<{ certifications: CertificationResult[]; total: number }> {
-  const filter: Record<string, unknown> = { storeId };
-  if (documentType) filter.documentType = documentType;
+  const filter: Record<string, unknown> = { storeId: String(storeId) };
+  if (documentType) filter.documentType = String(documentType);
 
   const [docs, total] = await Promise.all([
     DocumentCertification.find(filter)

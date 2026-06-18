@@ -127,27 +127,27 @@ app.use("/api/public/report", generalLimiter, publicReportRoutes);
 app.use("/api/public", generalLimiter, publicInviteRoutes);
 app.use("/api/public/agent", generalLimiter, publicAgentRoutes);
 
-// PRIVÉ (APP boutique)
-app.use("/api/products", productRoutes);
-app.use("/api/inventory", inventoryRoutes);
-app.use("/api/stocks", stockRoutes);
-app.use("/api/stock-history", stockHistoryRoutes);
-app.use("/api/report", reportRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/sales", salesRoutes);
-app.use("/api/suppliers", supplierRoutes);
+// PRIVÉ (APP boutique) - rate limited
+app.use("/api/products", generalLimiter, productRoutes);
+app.use("/api/inventory", generalLimiter, inventoryRoutes);
+app.use("/api/stocks", generalLimiter, stockRoutes);
+app.use("/api/stock-history", generalLimiter, stockHistoryRoutes);
+app.use("/api/report", generalLimiter, reportRoutes);
+app.use("/api/orders", generalLimiter, orderRoutes);
+app.use("/api/sales", generalLimiter, salesRoutes);
+app.use("/api/suppliers", generalLimiter, supplierRoutes);
 
 // ✅ STORE
-app.use("/api/store", storeRoutes);
+app.use("/api/store", generalLimiter, storeRoutes);
 app.use(storeActivityTracker); // Middleware global pour tracker l'activité boutique
-app.use("/api/subscription", subscriptionRoutes); // ✅ route abonnement (doit être après le tracker pour compter l'activité)
-app.use("/api/notifications", notificationRoutes); // ✅ route notifications (doit être après le tracker pour compter l'activité)
-app.use("/api/push", pushRoutes); // ✅ push tokens
-app.use("/api/invoices", invoiceRoutes); // ✅ route factures (doit être après le tracker pour compter l'activité)
+app.use("/api/subscription", generalLimiter, subscriptionRoutes); // ✅ route abonnement (doit être après le tracker pour compter l'activité)
+app.use("/api/notifications", generalLimiter, notificationRoutes); // ✅ route notifications (doit être après le tracker pour compter l'activité)
+app.use("/api/push", generalLimiter, pushRoutes); // ✅ push tokens
+app.use("/api/invoices", generalLimiter, invoiceRoutes); // ✅ route factures (doit être après le tracker pour compter l'activité)
 // ✅ PATCH RECOMMANDÉ
-app.use("/api/store/analysis", storeAnalysisRoutes);
+app.use("/api/store/analysis", generalLimiter, storeAnalysisRoutes);
 
-app.use("/api/employees", employeeRoutes);
+app.use("/api/employees", generalLimiter, employeeRoutes);
 
 // ✅ AGENT (site web) - rate limited
 app.use("/api/agent", generalLimiter, agentRoutes);
@@ -177,7 +177,7 @@ app.use("/api/funding", generalLimiter, fundingRoutes);
 app.use("/api/call-proxy", generalLimiter, callProxyRoutes);
 app.use("/api/manager/support", generalLimiter, managerSupportRoutes);
 app.use("/api/webhook", generalLimiter, paymentWebhookRoutes);
-app.use("/api/chariow", chariowRoutes);
+app.use("/api/chariow", generalLimiter, chariowRoutes);
 
 
 // ERROR HANDLER

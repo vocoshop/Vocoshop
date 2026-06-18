@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import authMiddleware from "../middleware/authMiddleware";
 import requireOwner from "../middleware/requireOwner";
 import AdminManager from "../models/AdminManager";
+import { isValidObjectId } from "../utils/helpers";
 
 const router = Router();
 router.use(authMiddleware);
@@ -60,6 +61,7 @@ GET /api/admin/admin-managers/:id — Détail
 ===================================================== */
 router.get("/admin-managers/:id", async (req: any, res: any) => {
   try {
+    if (!isValidObjectId(req.params.id)) return res.status(400).json({ error: "ID manager invalide" });
     const manager = await AdminManager.findById(req.params.id).select("-passwordHash").lean();
     if (!manager) return res.status(404).json({ error: "Manager introuvable" });
     res.json({ manager });
@@ -87,6 +89,7 @@ router.patch("/admin-managers/:id", async (req: any, res: any) => {
     if (!req.params.id || typeof req.params.id !== "string") {
       return res.status(400).json({ error: "ID manager invalide" });
     }
+    if (!isValidObjectId(req.params.id)) return res.status(400).json({ error: "ID manager invalide" });
     const manager = await AdminManager.findByIdAndUpdate(req.params.id, update, { new: true }).select("-passwordHash");
     if (!manager) return res.status(404).json({ error: "Manager introuvable" });
     res.json({ success: true, manager });
@@ -101,6 +104,7 @@ DELETE /api/admin/admin-managers/:id — Supprimer
 ===================================================== */
 router.delete("/admin-managers/:id", async (req: any, res: any) => {
   try {
+    if (!isValidObjectId(req.params.id)) return res.status(400).json({ error: "ID manager invalide" });
     const manager = await AdminManager.findByIdAndDelete(req.params.id);
     if (!manager) return res.status(404).json({ error: "Manager introuvable" });
     res.json({ success: true, message: "Admin Manager supprimé" });

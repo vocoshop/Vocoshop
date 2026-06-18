@@ -579,11 +579,11 @@ export class OcrService {
     if (productId && !isValidObjectId(productId)) return;
     const product = productId
       ? await Product.findOne({ _id: productId, storeId })
-      : await Product.findOne({ storeId, name: normalizedName });
+      : await Product.findOne({ storeId, name: String(normalizedName) });
 
     if (!product) return;
 
-    const existing = await ProductAlias.findOne({ storeId, rawText });
+    const existing = await ProductAlias.findOne({ storeId, rawText: String(rawText) });
     if (existing) {
       existing.frequency += 1;
       existing.lastUsed = new Date();

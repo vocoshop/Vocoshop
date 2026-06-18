@@ -35,11 +35,11 @@ export const logSystem = async (
   // Always write to console in structured format
   const consoleMsg = `[${fmtTimestamp()}] [${level.toUpperCase()}] [${source}] ${message}`;
   if (level === "error") {
-    console.error(consoleMsg, options?.details || "", options?.stack || "");
+    console.error(`${consoleMsg} ${options?.details || ""} ${options?.stack || ""}`);
   } else if (level === "warning") {
-    console.warn(consoleMsg, options?.details || "");
+    console.warn(`${consoleMsg} ${options?.details || ""}`);
   } else {
-    console.log(consoleMsg, options?.details || "");
+    console.log(`${consoleMsg} ${options?.details || ""}`);
   }
 
   // Write to MongoDB (non-blocking, fire-and-forget)

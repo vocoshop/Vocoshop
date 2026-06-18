@@ -416,7 +416,7 @@ const validStatuses = ["pending", "info_required", "accepted", "rejected", "clos
     }
 
     const update: any = { status };
-    if (comment) update.adminComment = comment;
+    if (typeof comment === "string") update.adminComment = comment.trim();
 
     const demande = await FundingDemande.findByIdAndUpdate(id, update, { new: true }).lean();
     if (!demande) return res.status(404).json({ error: "Demande introuvable" });
