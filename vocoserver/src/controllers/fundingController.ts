@@ -11,6 +11,7 @@ import DailyReport from "../models/DailyReport";
 import Partner from "../models/Partner";
 import { sendLoanRequestEmail } from "../services/emailService";
 import { getStoreId } from "../utils/storeId";
+import { isValidObjectId } from "../utils/helpers";
 
 /* =====================================================
    CALCUL DU SCORE COMMERCANT V1
@@ -147,11 +148,14 @@ export const createDemande = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Montant et téléphone requis" });
     }
 
-    if (!consentGiven) {
-      return res.status(400).json({ error: "Consentement requis : tu dois autoriser le partage de tes données financières" });
-    }
+if (!consentGiven) {
+return res.status(400).json({ error: "Consentement requis : tu dois autoriser le partage de tes données financières" });
+}
 
-    const partner = await Partner.findOne({ _id: partnerId, active: true }).lean();
+if (!partnerId || !isValidObjectId(partnerId)) {
+return res.status(400).json({ error: "Partenaire invalide" });
+}
+const partner = await Partner.findOne({ _id: partnerId, active: true }).lean();
     const partnerName = partner?.name || "";
     const recipientEmail = partnerEmail || partner?.email || "";
 
@@ -360,9 +364,9 @@ export const getPartners = async (req: Request, res: Response) => {
    ===================================================== */
 export const getAllDemandesAdmin = async (req: Request, res: Response) => {
   try {
-    const { status, page = "1", limit = "20" } = req.query;
-    const filter: any = {};
-    if (status && status !== "all") filter.status = status;
+const { status, page = "1", limit = "20" } = req.query;
+const filter: any = {};
+if (typeof status === "string" && status !== "all") filter.status = status;
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -399,10 +403,14 @@ export const getAllDemandesAdmin = async (req: Request, res: Response) => {
    ===================================================== */
 export const updateDemandeStatus = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { status, comment } = req.body;
+const { id } = req.params;
+if (!id || !isValidObjectId(id)) {
+return res.status(400).json({ error: "ID demande invalide" });
+}
 
-    const validStatuses = ["pending", "info_required", "accepted", "rejected", "closed"];
+const { status, comment } = req.body;
+
+const validStatuses = ["pending", "info_required", "accepted", "rejected", "closed"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: "Statut invalide" });
     }

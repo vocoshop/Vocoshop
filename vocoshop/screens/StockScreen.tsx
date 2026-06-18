@@ -1,5 +1,5 @@
 // screens/StockScreen.tsx
-import React, { useContext, useMemo, useCallback } from "react";
+import React, { useContext, useMemo, useCallback, useState, useEffect } from "react";
 import {
 View,
 Text,
@@ -9,16 +9,17 @@ ScrollView,
 Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { AuthContext } from "../src/api/context/AuthContext";
+import API from "../src/api/api";
 
 type PermKey = "inventory" | "sales" | "reports" | "orders" | "employees";
 
 export default function StockScreen() {
 const navigation = useNavigation<any>();
-const { user } = useContext(AuthContext);
+const { user, token } = useContext(AuthContext);
+const [alertCount, setAlertCount] = useState(0);
 
-// ✅ Permission inventory = accès au module Stock
 const canInventory = useMemo(() => {
 const role = String(user?.role || "");
 if (role === "owner" || role === "admin") return true;
@@ -34,13 +35,26 @@ Alert.alert("Accès limité", "Tu n'as pas l'autorisation d'accéder au module S
 const go = useCallback(
 (screenName: string) => {
 if (!canInventory) return deny();
-
-// VoiceStock est maintenant enregistré dans App.tsx
-// La vérification spéciale n'est plus nécessaire
-
 navigation.navigate(screenName);
 },
 [canInventory, deny, navigation]
+);
+
+const fetchAlertCount = useCallback(async () => {
+try {
+if (!token) return;
+const res = await API.get("/products/alert-count");
+const data = res.data as { count: number };
+setAlertCount(data.count ?? 0);
+} catch {
+setAlertCount(0);
+}
+}, [token]);
+
+useEffect(() => { fetchAlertCount(); }, [fetchAlertCount]);
+
+useFocusEffect(
+useCallback(() => { fetchAlertCount(); }, [fetchAlertCount])
 );
 
 return (
@@ -67,9 +81,31 @@ activeOpacity={0.85}
 <View style={styles.lockBanner}>
 <Ionicons name="lock-closed-outline" size={18} color="#FFB020" />
 <Text style={styles.lockText}>
-Accès limité — demande au patron de t’autoriser l’inventaire.
+Accès limité — demande au patron de t'autoriser l'inventaire.
 </Text>
 </View>
+)}
+
+{/* 🔔 Bandeau alerte stock faible */}
+{alertCount > 0 && (
+<TouchableOpacity
+style={styles.alertBanner}
+onPress={() => go("StockHealth")}
+activeOpacity={0.85}
+>
+<Ionicons name="warning-outline" size={20} color="#FF6B6B" />
+<View style={{ flex: 1 }}>
+<Text style={styles.alertTitle}>
+{alertCount} produit{alertCount > 1 ? "s" : ""} en stock faible
+</Text>
+<Text style={styles.alertDesc}>
+{alertCount > 1
+? "Appuie pour voir et réapprovisionner"
+: "Appuie pour voir et réapprovisionner"}
+</Text>
+</View>
+<Ionicons name="chevron-forward" size={18} color="#FF6B6B" />
+</TouchableOpacity>
 )}
 
 {/* GRID DES 4 MODULES */}
@@ -96,15 +132,15 @@ activeOpacity={0.85}
 <Text style={styles.cardDesc}>Sorties, pertes, casses</Text>
 </TouchableOpacity>
 
-{/* 🎤 STOCK PAR LA VOIX */}
+{/* 📸 PHOTO STOCK */}
 <TouchableOpacity
 style={[styles.card, !canInventory && styles.cardDisabled]}
-onPress={() => go("VoiceStock")}
+onPress={() => go("PhotoStock")}
 activeOpacity={0.85}
 >
-<Ionicons name="mic-outline" size={34} color="#BA8BFF" />
-<Text style={styles.cardTitle}>Stock par la voix</Text>
-<Text style={styles.cardDesc}>Dis "ajoute 10 savons" ou "retire 5 pains"</Text>
+<Ionicons name="camera-outline" size={34} color="#FFB020" />
+<Text style={styles.cardTitle}>Photo Stock</Text>
+<Text style={styles.cardDesc}>Prends en photo des produits → ajout auto</Text>
 </TouchableOpacity>
 
 {/* 📘 HISTORIQUE DU STOCK */}
@@ -178,6 +214,31 @@ fontSize: 13,
 fontWeight: "700",
 flex: 1,
 lineHeight: 18,
+},
+
+alertBanner: {
+marginTop: 14,
+marginBottom: 18,
+backgroundColor: "rgba(255,80,80,0.10)",
+borderColor: "rgba(255,80,80,0.30)",
+borderWidth: 1,
+padding: 14,
+borderRadius: 14,
+flexDirection: "row",
+alignItems: "center",
+gap: 12,
+},
+
+alertTitle: {
+color: "#FF6B6B",
+fontSize: 15,
+fontWeight: "800",
+},
+
+alertDesc: {
+color: "#FF9F9F",
+fontSize: 12,
+marginTop: 2,
 },
 
 grid: {

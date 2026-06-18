@@ -764,7 +764,7 @@ router.get("/commissions", async (req: any, res: any) => {
     if (filter.agentCodes && filter.agentCodes.length > 0) {
       query.agentCode = { $in: filter.agentCodes };
     }
-    if (status && status !== "all") query.status = status;
+    if (typeof status === "string" && status !== "all") query.status = status;
 
     const skip = (Number(page) - 1) * Number(limit);
 

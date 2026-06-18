@@ -37,7 +37,7 @@ async function resolveSupplier(
 storeId: string,
 supplierId?: string
 ): Promise<{ supplierId: string | null; supplierName: string }> {
-if (!supplierId) return { supplierId: null, supplierName: "" };
+if (!supplierId || !mongoose.Types.ObjectId.isValid(supplierId)) return { supplierId: null, supplierName: "" };
 const supplier = await Supplier.findOne({ _id: supplierId, storeId }).lean();
 if (!supplier) return { supplierId: null, supplierName: "" };
 return { supplierId: String(supplier._id), supplierName: supplier.name || "" };

@@ -41,3 +41,13 @@ export function shouldReauth(lastActiveAt: any): boolean {
 export function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
+
+export function isValidObjectId(id: any): id is string {
+  return typeof id === "string" && OBJECTID_REGEX.test(id);
+}
+
+export function sanitizeObjectId(id: any): string | null {
+  return isValidObjectId(id) ? id : null;
+}

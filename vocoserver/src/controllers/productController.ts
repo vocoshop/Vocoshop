@@ -227,6 +227,27 @@ error: "Erreur serveur lors de la récupération du stock faible",
 };
 
 /* -------------------------------------------------------
+🔔 NOMBRE DE PRODUITS EN ALERTE (léger)
+GET /products/alert-count
+------------------------------------------------------- */
+export const getAlertCount = async (req: Request, res: Response) => {
+try {
+const storeId = getStoreId(req as any);
+if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+
+const count = await Product.countDocuments({
+storeId,
+$expr: { $lte: ["$quantity", "$alertLevel"] },
+});
+
+return res.json({ count });
+} catch (err) {
+console.error("getAlertCount error:", err);
+return res.status(500).json({ error: "Erreur serveur" });
+}
+};
+
+/* -------------------------------------------------------
 🔥 PRODUITS BIENTÔT EXPIRÉS
 GET /products/expiring?days=7&limit=50
 ------------------------------------------------------- */

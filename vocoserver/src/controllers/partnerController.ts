@@ -115,7 +115,10 @@ export const partnerVerifyDocument = async (req: Request, res: Response) => {
     const { storeId, reportMonth } = req.body;
     if (!storeId) return res.status(400).json({ error: "storeId requis" });
 
-    const month = reportMonth || new Date().toISOString().slice(0, 7);
+    const month = String(reportMonth || new Date().toISOString().slice(0, 7));
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ error: "Format de mois invalide (attendu YYYY-MM)" });
+    }
     const link = await SharedReportLink.findOne({ storeId, month, isActive: true }).lean();
 
     if (!link) {

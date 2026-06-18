@@ -3,6 +3,8 @@ import { Router } from "express";
 import authMiddleware from "../middleware/authMiddleware";
 import requirePermission from "../middleware/permissionMiddleware";
 import Product from "../models/Product";
+import { PushNotificationService } from "../services/pushNotificationService";
+import { isValidObjectId } from "../utils/helpers";
 
 const router = Router();
 
@@ -12,10 +14,6 @@ const router = Router();
 */
 router.use(authMiddleware);
 router.use(requirePermission("inventory"));
-
-router.get("/test", (req, res) => {
-res.send("Stock route OK");
-});
 
 /** ---------------------------------------
 * HELPERS
@@ -52,7 +50,7 @@ if (!storeId) return res.status(400).json({ error: "storeId manquant." });
 
 const { productId, quantity, expirationDate } = req.body;
 
-if (!productId || quantity === undefined || quantity === null) {
+if (!productId || !isValidObjectId(productId)) {
 return res.status(400).json({ error: "Paramètres manquants." });
 }
 
@@ -126,8 +124,11 @@ if (!storeId) return res.status(400).json({ error: "storeId manquant." });
 
 const { productId, quantity } = req.body;
 
-if (!productId || quantity === undefined || quantity === null) {
-return res.status(400).json({ error: "Paramètres manquants." });
+if (!productId || !isValidObjectId(productId)) {
+return res.status(400).json({ error: "ID produit invalide." });
+}
+if (quantity === undefined || quantity === null) {
+return res.status(400).json({ error: "Quantité requise." });
 }
 
 const q = Number(quantity);
@@ -141,14 +142,20 @@ return res
 const product: any = await Product.findOne({ _id: productId, storeId });
 if (!product) return res.status(404).json({ error: "Produit introuvable" });
 
-if (Number(product.quantity || 0) < q) {
-return res
-.status(400)
-.json({ error: "Quantité supérieure au stock disponible." });
-}
-
-product.quantity = Number(product.quantity || 0) - q;
+product.quantity = Math.max(0, Number(product.quantity || 0) - q);
 await product.save();
+
+// 🔔 Alerte stock faible → push notification
+const alertLevel = Number(product.alertLevel || 0);
+if (alertLevel > 0 && product.quantity <= alertLevel) {
+  const productName = product.name || "Produit";
+  const title = `⚠️ Stock faible : ${productName}`;
+  const body = `Il ne reste que ${product.quantity} unité(s) en stock (seuil: ${alertLevel}).`;
+  PushNotificationService.sendToStore(storeId, title, body, {
+    type: "low_stock",
+    productId: String(product._id),
+  }).catch(() => {});
+}
 
 return res.json({
 message: "Stock retiré avec succès",

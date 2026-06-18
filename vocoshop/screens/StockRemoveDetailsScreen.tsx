@@ -73,8 +73,6 @@ Alert.alert("Succès", "Stock retiré avec succès !");
 
 navigation.goBack();
 } catch (e: any) {
-console.log("❌ Erreur retrait stock :", e?.response?.data || e);
-
 Alert.alert(
 "Erreur",
 e?.response?.data?.error ||
@@ -84,6 +82,35 @@ e?.response?.data?.message ||
 } finally {
 setLoading(false);
 }
+};
+
+// ================================
+// Supprimer le produit de la boutique
+// ================================
+const deleteProduct = () => {
+Alert.alert(
+`Supprimer ${product.name} ?`,
+"Cette action est irréversible. Le produit sera définitivement effacé de ta boutique.",
+[
+{ text: "Annuler", style: "cancel" },
+{
+text: "Supprimer",
+style: "destructive",
+onPress: async () => {
+setLoading(true);
+try {
+await API.delete(`/products/${product._id}`, { headers });
+Alert.alert("Supprimé", `${product.name} a été supprimé.`);
+navigation.goBack();
+} catch (e: any) {
+Alert.alert("Erreur", e?.response?.data?.error || "Impossible de supprimer le produit.");
+} finally {
+setLoading(false);
+}
+},
+},
+]
+);
 };
 
 const offlineNow = isOffline();
@@ -148,6 +175,10 @@ disabled={loading}
 {loading ? "Envoi..." : "Confirmer"}
 </Text>
 </TouchableOpacity>
+
+<TouchableOpacity onPress={deleteProduct} disabled={loading}>
+<Text style={styles.deleteHint}>Supprimer ce produit</Text>
+</TouchableOpacity>
 </View>
 );
 }
@@ -160,19 +191,26 @@ container: {
 flex: 1,
 backgroundColor: "#0c0f14",
 padding: 20,
+paddingTop: 60,
 },
 headerRow: {
 flexDirection: "row",
 alignItems: "center",
-marginBottom: 25,
+marginBottom: 20,
 },
 backBtn: {
-marginRight: 10,
+width: 42,
+height: 42,
+borderRadius: 21,
+backgroundColor: "rgba(255,255,255,0.06)",
+alignItems: "center",
+justifyContent: "center",
+marginRight: 15,
 },
 title: {
 color: "#fff",
-fontSize: 20,
-fontWeight: "bold",
+fontSize: 22,
+fontWeight: "800",
 },
 
 offlineBanner: {
@@ -221,5 +259,14 @@ buttonText: {
 color: "#fff",
 fontWeight: "bold",
 fontSize: 16,
+},
+deleteHint: {
+color: "#FF4444",
+fontSize: 12,
+textAlign: "center",
+marginTop: 10,
+fontWeight: "700",
+textTransform: "uppercase",
+letterSpacing: 0.5,
 },
 });

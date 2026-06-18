@@ -84,7 +84,7 @@ quantity?: number;
 expirationDate?: string;
 };
 
-if (!productId || quantity == null) {
+if (!productId || !mongoose.Types.ObjectId.isValid(productId) || quantity == null) {
 return res.status(400).json({
 error: "productId et quantity nécessaires",
 });
@@ -169,7 +169,7 @@ productId?: string;
 quantity?: number;
 };
 
-if (!productId || quantity == null) {
+if (!productId || !mongoose.Types.ObjectId.isValid(productId) || quantity == null) {
 return res.status(400).json({ error: "productId et quantity nécessaires" });
 }
 

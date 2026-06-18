@@ -5,6 +5,7 @@ import Subscription from "../models/Subscription";
 import { createNotification } from "../services/notificationEngine";
 import { generateCommissions } from "../services/commissionService";
 import { logSystem } from "../utils/systemLogger";
+import { isValidObjectId } from "../utils/helpers";
 
 /* 🧾 FACTURE */
 import Invoice from "../models/Invoice";
@@ -81,7 +82,7 @@ logSystem("webhook", `Webhook: storeId=${storeId} status=${status} txId=${transa
   details: JSON.stringify(body)?.slice(0, 300),
 });
 
-if (!storeId) {
+if (!storeId || !isValidObjectId(storeId)) {
 return res.status(400).json({ error: "storeId manquant" });
 }
 

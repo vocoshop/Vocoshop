@@ -67,6 +67,8 @@ logout: () => Promise<void>;
 getAuthHeaders: () => Record<string, string>;
 applySession: (payload: ApplySessionPayload) => Promise<void>;
 
+refreshUser: () => Promise<void>;
+
 inventoryActive: boolean;
 setInventoryActive: (v: boolean) => void;
 
@@ -148,6 +150,20 @@ const [isOnline, setIsOnline] = useState(true);
 const [isOfflineReady, setIsOfflineReady] = useState(false);
 
 const isReady = useMemo(() => !loading, [loading]);
+
+/* =====================================================
+REFRESH USER
+===================================================== */
+const refreshUser = useCallback(async () => {
+try {
+const res = await API.get("/store/me/user");
+const data = res.data;
+if (data) {
+setUser(data);
+await AsyncStorage.setItem("user", JSON.stringify(data));
+}
+    } catch {} // les permissions en cache restent valables
+}, []);
 
 const getAuthHeaders = useCallback(() => {
 const base: Record<string, string> = {
@@ -409,6 +425,7 @@ isOnline,
 isOfflineReady,
 
 getAuthHeaders,
+refreshUser,
 requestOTP,
 verifyOTP,
 deviceLogin,

@@ -22,9 +22,9 @@ export const getConfig = async (req: Request, res: Response) => {
 export const updateConfig = async (req: Request, res: Response) => {
   try {
     const { key, value } = req.body;
-    if (!key) return res.status(400).json({ error: "Clé requise" });
+    if (!key || typeof key !== "string") return res.status(400).json({ error: "Clé requise" });
 
-    const config = await PlatformConfig.findOne({ key });
+    const config = await PlatformConfig.findOne({ key: String(key) });
     if (!config) return res.status(404).json({ error: "Paramètre introuvable" });
 
     config.value = value;

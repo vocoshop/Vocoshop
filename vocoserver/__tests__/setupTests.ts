@@ -32,12 +32,6 @@ jest.mock('../src/models/Counter', () => ({
   findOneAndUpdate: jest.fn(),
 }));
 
-jest.mock('africastalking', () => ({
-  SMS: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
 global.console = {
   ...console,
   error: jest.fn(),

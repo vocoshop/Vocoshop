@@ -52,7 +52,8 @@ export const sendCommunication = async (req: Request, res: Response) => {
       }
       case "stores_by_city": {
         if (!city) return res.status(400).json({ error: "Ville requise" });
-        const stores = await Store.find({ city: new RegExp(city, "i") }).select("phone storeName ownerName").lean();
+        const escapedCity = city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const stores = await Store.find({ city: new RegExp(escapedCity, "i") }).select("phone storeName ownerName").lean();
         phones = stores.map((s: any) => ({ phone: s.phone, name: s.ownerName || s.storeName })).filter(s => s.phone);
         break;
       }

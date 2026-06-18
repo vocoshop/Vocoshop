@@ -19,7 +19,7 @@ import HomeOverlay from "./components/HomeOverlay";
 const getTodayKey = () => new Date().toISOString().split("T")[0];
 
 export default function HomeScreen() {
-  const { token, storeId, user } = useContext(AuthContext);
+  const { token, storeId, user, refreshUser } = useContext(AuthContext);
   const { subscription } = useSubscription();
   const { t } = useLanguage();
 
@@ -78,11 +78,14 @@ export default function HomeScreen() {
         const last = await AsyncStorage.getItem(key);
         setShowDailyOverlay(last !== today);
       } else { setShowDailyOverlay(false); }
-    } catch (err) { console.log("❌ HomeScreen error:", err); setShowDailyOverlay(false); }
+    } catch { setShowDailyOverlay(false); }
     finally { setOverlayReady(true); }
   }
 
-  useFocusEffect( useCallback(() => { loadData(); }, [token, storeId, canInventory]) );
+  useFocusEffect( useCallback(() => {
+    refreshUser();
+    loadData();
+  }, [token, storeId, canInventory]) );
 
   useFocusEffect( React.useCallback(() => {
     if (subscription?.status === "trial") { setShowSubBanner(true); const t = setTimeout(() => { setShowSubBanner(false); }, 5000); return () => clearTimeout(t); }

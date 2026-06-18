@@ -86,6 +86,9 @@ import SalesScreen from "./screens/SalesScreen";
 import OcrScanScreen from "./screens/OcrScanScreen";
 import OcrValidationScreen from "./screens/OcrValidationScreen";
 
+// 📸 PHOTO STOCK
+import PhotoStockScreen from "./screens/PhotoStockScreen";
+
 // COMMANDES
 import CommanderScreen from "./screens/CommanderScreen";
 import OrdersScreen from "./screens/OrdersScreen";
@@ -411,6 +414,9 @@ component={SubscriptionBlockedScreen}
 {/* 📄 OCR */}
 <Stack.Screen name="OcrScan" component={OcrScanScreen} />
 <Stack.Screen name="OcrValidation" component={OcrValidationScreen} />
+
+{/* 📸 PHOTO STOCK */}
+<Stack.Screen name="PhotoStock" component={PhotoStockScreen} />
 
 </Stack.Navigator>
 

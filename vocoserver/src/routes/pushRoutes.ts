@@ -16,10 +16,10 @@ router.post("/register", async (req: any, res: any) => {
     const { token, platform } = req.body;
     const storeId = req.user?.storeId;
 
-    if (!token) return res.status(400).json({ error: "Token requis" });
+    if (!token || typeof token !== "string") return res.status(400).json({ error: "Token requis" });
 
     await PushToken.findOneAndUpdate(
-      { token },
+      { token: String(token) },
       {
         storeId,
         token,
@@ -43,9 +43,9 @@ Body: { token }
 router.post("/unregister", async (req: any, res: any) => {
   try {
     const { token } = req.body;
-    if (!token) return res.status(400).json({ error: "Token requis" });
+    if (!token || typeof token !== "string") return res.status(400).json({ error: "Token requis" });
 
-    await PushToken.updateOne({ token }, { isActive: false });
+    await PushToken.updateOne({ token: String(token) }, { isActive: false });
     res.json({ message: "Token désactivé" });
   } catch (e) {
     console.error("❌ push/unregister:", e);

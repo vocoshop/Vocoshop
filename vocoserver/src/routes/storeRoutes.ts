@@ -26,6 +26,16 @@ GET /api/store/me
 router.get("/me", getMyStoreProfile);
 
 /* =====================================================
+👤 UTILISATEUR CONNECTÉ (permissions, rôle, etc.)
+GET /api/store/me/user
+===================================================== */
+router.get("/me/user", (req: any, res) => {
+const user = req.user || null;
+if (!user) return res.status(401).json({ error: "Non authentifié" });
+res.json(user);
+});
+
+/* =====================================================
 📊 KPIs BOUTIQUE
 GET /api/store/kpis
 ===================================================== */

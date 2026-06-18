@@ -10,9 +10,9 @@ const storeId = getStoreId(req);
 if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
 const { agentCode } = req.body;
-if (!agentCode) return res.status(400).json({ error: "code agent requis" });
+if (!agentCode || typeof agentCode !== "string") return res.status(400).json({ error: "code agent requis" });
 
-const agent = await Agent.findOne({ code: agentCode }).lean();
+const agent = await Agent.findOne({ code: agentCode.trim() }).lean();
 if (!agent) return res.status(404).json({ error: "Agent introuvable" });
 
 if (!agent.isActive) return res.status(400).json({ error: "Agent indisponible" });

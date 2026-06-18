@@ -4,6 +4,7 @@ dist/
 .expo/
 *.tsbuildinfo
 .env
+.env.render
 .env.local
 .env.production
 !.env.example

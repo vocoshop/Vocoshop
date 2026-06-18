@@ -22,11 +22,11 @@ expirationDates: Date[];
 // 🧠 Marge générée (sellPrice – purchasePrice)
 profitMargin?: number;
 
+// 📐 Unité de mesure (pièce, litre, kg, sachet, carton, etc.)
+unit?: string;
+
 // 🎙️ Alias vocaux pour la reconnaissance (prononciations alternatives, abréviations)
 aliases: string[];
-
-// 📊 Popularité (commandes vocales + ventes) pour tri intelligent
-
 
 // 🏭 Fournisseur associé
 supplierId?: Types.ObjectId;
@@ -69,6 +69,11 @@ default: [],
 },
 
 /**
+* 📐 Unité de mesure
+*/
+unit: { type: String, default: "pièce", trim: true },
+
+/**
 * 🧠 Marge bénéficiaire
 */
 profitMargin: { type: Number, default: 0 },
@@ -81,12 +86,7 @@ type: [String],
 default: [],
 },
 
-/**
-* 📊 Popularité vocale
-*/
-
-
-supplierId: { type: Schema.Types.ObjectId, ref: "Supplier", default: null, index: true },
+    supplierId: { type: Schema.Types.ObjectId, ref: "Supplier", default: null, index: true },
 },
 { timestamps: true }
 );

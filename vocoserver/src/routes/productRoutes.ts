@@ -12,6 +12,7 @@ import {
 createProduct,
 getProducts,
 getLowStock,
+getAlertCount,
 getExpiringProducts,
 updateProduct,
 deleteProduct,
@@ -42,6 +43,12 @@ router.post("/", requirePermission("inventory"), validate(addProductSchema), cre
 ✅ sales OU inventory
 ===================== */
 router.get("/low-stock", requireAnyPermission("sales", "inventory"), getLowStock);
+
+/* =====================
+🔔 COMPTE ALERTES (léger)
+✅ sales OU inventory
+===================== */
+router.get("/alert-count", requireAnyPermission("sales", "inventory"), getAlertCount);
 
 /* =====================
 ⏳ PRODUITS BIENTÔT EXPIRÉS

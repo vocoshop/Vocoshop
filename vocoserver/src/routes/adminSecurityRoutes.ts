@@ -27,8 +27,8 @@ router.get("/logs", async (req: any, res: any) => {
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const filter: any = { createdAt: { $gte: since } };
-    if (level) filter.level = level;
-    if (search) filter.message = { $regex: String(search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+    if (typeof level === "string") filter.level = level;
+    if (typeof search === "string" && search) filter.message = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
 
     const [logs, total] = await Promise.all([
       SystemLog.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),

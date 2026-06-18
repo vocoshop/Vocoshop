@@ -84,6 +84,9 @@ router.patch("/admin-managers/:id", async (req: any, res: any) => {
     if (isActive !== undefined) update.isActive = isActive;
     if (password) update.passwordHash = await bcrypt.hash(password, 10);
 
+    if (!req.params.id || typeof req.params.id !== "string") {
+      return res.status(400).json({ error: "ID manager invalide" });
+    }
     const manager = await AdminManager.findByIdAndUpdate(req.params.id, update, { new: true }).select("-passwordHash");
     if (!manager) return res.status(404).json({ error: "Manager introuvable" });
     res.json({ success: true, manager });

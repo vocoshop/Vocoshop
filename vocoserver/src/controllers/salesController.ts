@@ -5,7 +5,7 @@ import Sale from "../models/Sales";
 import DailyReport from "../models/DailyReport";
 import Store from "../models/Store";
 import { getStoreId } from "../utils/storeId";
-import { getBusinessDate, safeNum as n } from "../utils/helpers";
+import { getBusinessDate, safeNum as n, isValidObjectId } from "../utils/helpers";
 
 /* =====================================================
 HELPERS
@@ -36,7 +36,7 @@ const { productId, quantity, isVoiced } = req.body;
 if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
 const qty = n(quantity);
-if (!productId || qty <= 0) {
+if (!productId || !isValidObjectId(productId) || qty <= 0) {
 return res.status(400).json({ error: "Données invalides" });
 }
 
@@ -96,7 +96,7 @@ for (const item of items) {
 const qty = n(item?.quantity);
 const productId = item?.productId;
 
-if (!productId || qty <= 0) {
+if (!productId || !isValidObjectId(productId) || qty <= 0) {
 return res.status(400).json({ error: "Panier invalide" });
 }
 

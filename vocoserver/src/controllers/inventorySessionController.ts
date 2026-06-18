@@ -124,8 +124,12 @@ try {
 const { sessionId } = req.params;
 const { productId, countedQuantity } = req.body;
 
-if (!productId || countedQuantity == null) {
+if (!productId || !mongoose.Types.ObjectId.isValid(productId) || countedQuantity == null) {
 return res.status(400).json({ error: "productId et countedQuantity nécessaires" });
+}
+
+if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+return res.status(400).json({ error: "Session invalide" });
 }
 
 const session = await InventorySession.findById(sessionId);

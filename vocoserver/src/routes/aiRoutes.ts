@@ -3,11 +3,14 @@ import OpenAI from "openai";
 import authMiddleware from "../middleware/authMiddleware";
 import requireOwner from "../middleware/requireOwner";
 import Store from "../models/Store";
+import Product from "../models/Product";
 import Agent from "../models/Agent";
 import Invoice from "../models/Invoice";
 import { SecurityMonitor } from "../services/securityMonitor";
 import { PlatformAnalyzer } from "../services/platformAnalyzer";
 import { AICommandExecutor } from "../services/aiCommandExecutor";
+import { preprocessForVision } from "../services/imagePreprocess";
+import { getStoreId } from "../utils/storeId";
 
 const router = express.Router();
 
@@ -182,6 +185,215 @@ Plateforme actuelle:
   } catch (err: any) {
     console.error("❌ VocoAI error:", err.message);
     res.status(500).json({ error: "Erreur VocoAI" });
+  }
+});
+
+/* =====================================================
+📸 Route : Reconnaître des produits par photo (Vision IA)
+===================================================== */
+router.post("/vision-products", authMiddleware, async (req, res) => {
+  try {
+    const { images } = req.body;
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: "Images requises" });
+    }
+
+    const storeId = getStoreId(req);
+    if (!storeId) {
+      return res.status(401).json({ error: "Authentification requise" });
+    }
+
+    // Preprocess images for Vision API
+    const processedImages = await Promise.all(
+      images.map(async (img: string) => {
+        try {
+          const result = await preprocessForVision(img);
+          return `data:${result.mimeType};base64,${result.buffer.toString("base64")}`;
+        } catch {
+          return img;
+        }
+      })
+    );
+
+    // Prepare image content parts for OpenAI
+    const imageParts = processedImages.map((img) => ({
+      type: "image_url" as const,
+      image_url: { url: img, detail: "high" as const },
+    }));
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Tu es un assistant de gestion de stock pour boutique africaine. " +
+              "Analyse la/les photo(s) de produits. " +
+              "Réponds UNIQUEMENT avec un JSON valide, sans préambule, sans texte autour, sans balises markdown.\n\n" +
+              "Format JSON attendu:\n" +
+              `{\n` +
+              `  "products": [\n` +
+              `    { "name": "Nom du produit avec taille", "category": "Catégorie", "unit": "pièce", "estimatedQuantity": 1, "suggestedExpirationDate": "", "suggestedSellPrice": 0, "suggestedPurchasePrice": 0 }\n` +
+              `  ]\n` +
+              `}\n\n` +
+              "RÈGLE ABSOLUE — DISTINGUER LES FORMATS/TAILLES:\n" +
+              "Le MÊME produit vendu en DIFFÉRENTES TAILLES/VOLUMES/POIDS doit être listé comme des produits SÉPARÉS avec des noms DIFFÉRENTS.\n" +
+              "Exemples concrets:\n" +
+              "  ❌ FAUX: \"Huile\" → deux entrées identiques\n" +
+              "  ✅ CORRECT: \"Huile 50cl\" et \"Huile 1L\" (deux noms différents !)\n" +
+              "  ❌ FAUX: \"Riz\"\n" +
+              "  ✅ CORRECT: \"Riz 1kg\" et \"Riz 5kg\" et \"Riz 25kg\"\n" +
+              "  ❌ FAUX: \"Savon\"\n" +
+              "  ✅ CORRECT: \"Savon 200g\" et \"Savon 400g\"\n" +
+              "  ❌ FAUX: \"Eau minérale\"\n" +
+              "  ✅ CORRECT: \"Eau minérale 50cl\" et \"Eau minérale 1.5L\"\n\n" +
+              "Règles:\n" +
+              "- Le champ 'name' DOIT TOUJOURS inclure le volume/poids/taille SI visible sur l'emballage. Jamais de nom générique seul.\n" +
+              "- Même si le format n'est pas écrit, déduis-le de la forme de l'emballage (bouteille 50cl vs 1L, sachet 500g vs 1kg)\n" +
+              "- Catégorie en français (ex: Boisson, Épicerie, Laitière, Hygiène, Quincaillerie, etc.)\n" +
+              "- unit = l'unité de vente: pièce, litre, kg, sachet, carton, bouteille, sac, rouleau, paquet, boîte, pot, galon, tasse, portion\n" +
+              "- estimatedQuantity = la quantité estimée visible sur la photo (ex: 1 bouteille = 1, un pack de 6 = 6, un carton de 12 = 12, un lot de 20 savons = 20)\n" +
+              "- suggestedExpirationDate = date d'expiration si visible sur l'emballage (format YYYY-MM-DD ou YYYY-MM, sinon chaîne vide)\n" +
+              "- suggestedSellPrice = prix de vente estimé en FCFA (0 si inconnu)\n" +
+              "- suggestedPurchasePrice = prix d'achat estimé en FCFA (0 si inconnu)\n" +
+              "- Si aucune photo ne montre de produit identifiable, réponds { \"products\": [] }",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Identifie tous les produits visibles sur ces photos. ATTENTION: si un même produit existe en plusieurs tailles/volumes (50cl vs 1L, 1kg vs 5kg, etc.), liste-les comme des produits SÉPARÉS avec des noms DIFFÉRENTS incluant la taille.",
+              },
+              ...imageParts,
+            ],
+          },
+        ],
+        max_tokens: 4096,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("OpenAI Vision API error:", response.status, text);
+      return res.status(502).json({ error: "Erreur API Vision" });
+    }
+
+    const data: any = await response.json();
+    const content = data?.choices?.[0]?.message?.content || "";
+
+    // Extract JSON from response (handle markdown-wrapped JSON)
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return res.status(502).json({ error: "Réponse IA invalide", raw: content });
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    res.json(result);
+  } catch (err: any) {
+    console.error("Vision products error:", err.message);
+    res.status(500).json({ error: "Erreur lors de l'analyse des produits" });
+  }
+});
+
+/* =====================================================
+📌 Route : Importer en stock les produits détectés par photo
+===================================================== */
+router.post("/vision-products/import", authMiddleware, async (req, res) => {
+  try {
+    const { products: productList } = req.body;
+    const storeId = getStoreId(req);
+    if (!storeId) return res.status(401).json({ error: "Authentification requise" });
+
+    if (!Array.isArray(productList) || productList.length === 0) {
+      return res.status(400).json({ error: "Liste de produits requise" });
+    }
+
+    const created: any[] = [];
+    const errors: string[] = [];
+
+    for (const item of productList) {
+      try {
+        if (!item.name || !item.name.trim()) {
+          errors.push("Nom de produit manquant");
+          continue;
+        }
+
+        // Check if product already exists (by name)
+        const existing = await Product.findOne({
+          storeId,
+          name: { $regex: new RegExp(`^${item.name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") },
+        });
+
+        let product;
+        const qty = Math.max(1, parseInt(item.quantity) || 1);
+        const unit = item.unit || "pièce";
+        const updateFields: any = {
+          $inc: { quantity: qty },
+          ...(item.purchasePrice > 0 ? { purchasePrice: item.purchasePrice } : {}),
+          ...(unit !== "pièce" ? { unit } : {}),
+        };
+
+        // Handle expiration date
+        if (item.expirationDate) {
+          const expDate = new Date(item.expirationDate);
+          if (!isNaN(expDate.getTime())) {
+            updateFields.$push = { expirationDates: expDate };
+          }
+        }
+
+        if (existing) {
+          product = await Product.findByIdAndUpdate(
+            existing._id,
+            updateFields,
+            { new: true }
+          );
+          created.push({ product, isNew: false, quantityAdded: qty });
+        } else {
+          const createFields: any = {
+            storeId,
+            name: item.name.trim(),
+            category: item.category || "",
+            unit,
+            sellPrice: Math.max(0, parseInt(item.sellPrice) || 0),
+            purchasePrice: Math.max(0, parseInt(item.purchasePrice) || 0),
+            quantity: qty,
+            alertLevel: 3,
+          };
+          if (item.expirationDate) {
+            const expDate = new Date(item.expirationDate);
+            if (!isNaN(expDate.getTime())) {
+              createFields.expirationDates = [expDate];
+            }
+          }
+          product = await Product.create(createFields);
+          created.push({ product, isNew: true, quantityAdded: qty });
+        }
+      } catch (err: any) {
+        errors.push(`${item.name || "?"}: ${err.message}`);
+      }
+    }
+
+    res.json({
+      created: created.length,
+      errors,
+      products: created.map((c) => ({
+        _id: c.product._id,
+        name: c.product.name,
+        quantity: c.product.quantity,
+        isNew: c.isNew,
+        quantityAdded: c.quantityAdded,
+      })),
+    });
+  } catch (err: any) {
+    console.error("Vision products import error:", err.message);
+    res.status(500).json({ error: "Erreur lors de l'import des produits" });
   }
 });
 
