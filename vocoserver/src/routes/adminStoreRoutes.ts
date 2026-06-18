@@ -314,7 +314,7 @@ router.get("/logs", async (req: any, res: any) => {
     // System logs query
     const systemMatch: any = {};
     if (filterLevel) systemMatch.level = filterLevel;
-    if (search) systemMatch.message = { $regex: search, $options: "i" };
+    if (search) systemMatch.message = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
 
     const [systemLogs, totalSystem, levelBreakdown] = await Promise.all([
       require("mongoose").connection.collection("systemlogs")

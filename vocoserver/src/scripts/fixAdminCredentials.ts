@@ -14,7 +14,7 @@ async function fix() {
     { upsert: true }
   );
   console.log('DB admin credentials mis à jour !');
-  console.log('Email:', process.env.ADMIN_EMAIL);
+  console.log('Admin email configured');
 
   const doc = await PC.findOne({ key: 'admin_auth' }).lean();
   const match = await bcrypt.compare(process.env.ADMIN_PASSWORD, (doc as any).value.passwordHash);

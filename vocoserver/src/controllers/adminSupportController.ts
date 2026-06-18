@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import SupportTicket from "../models/SupportTicket";
+import { isValidObjectId } from "../utils/helpers";
 
 /* =====================================================
 GET /api/admin/support
@@ -55,7 +56,9 @@ export const updateTicket = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Rien à mettre à jour" });
     }
 
-    const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, { $set: update }, { new: true }).lean();
+    const id = String(req.params.id || "").trim();
+    if (!isValidObjectId(id)) return res.status(400).json({ error: "ID invalide" });
+    const ticket = await SupportTicket.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
     if (!ticket) return res.status(404).json({ error: "Ticket introuvable" });
 
     res.json({ ticket });

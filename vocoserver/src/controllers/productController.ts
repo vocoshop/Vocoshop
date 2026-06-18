@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import Product from "../models/Product";
 import { createNotification } from "../services/notificationEngine";
 import { getStoreId } from "../utils/storeId";
+import { isValidObjectId } from "../utils/helpers";
 
 /* -------------------------------------------------------
 🗓 Safe Date Parse
@@ -300,6 +301,7 @@ const storeId = getStoreId(req as any);
 if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID produit invalide" });
 const product: any = await Product.findOne({ _id: id, storeId });
 if (!product) return res.status(404).json({ error: "Produit introuvable" });
 
@@ -404,6 +406,7 @@ const storeId = getStoreId(req as any);
 if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID produit invalide" });
 const deleted = await Product.findOneAndDelete({ _id: id, storeId });
 
 if (!deleted) return res.status(404).json({ error: "Produit introuvable" });
@@ -426,6 +429,7 @@ const storeId = getStoreId(req as any);
 if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID produit invalide" });
 const product = await Product.findOne({ _id: id, storeId }).lean();
 
 if (!product) return res.status(404).json({ error: "Produit introuvable" });

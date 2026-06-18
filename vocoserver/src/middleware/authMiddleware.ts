@@ -146,11 +146,9 @@ return next();
 if (decoded?.userId) {
 const userId = String(decoded.userId);
 
-console.log("🔍 Auth: Looking for user:", userId);
 const user = await User.findById(userId)
 .select("_id store role isActive permissions")
 .lean();
-console.log("🔍 Auth: Found user:", user);
 
 if (!user)
 return res.status(401).json({ error: "Utilisateur invalide" });
@@ -158,7 +156,6 @@ return res.status(401).json({ error: "Utilisateur invalide" });
 		if (!user.store) {
 			// ✅ CAS B1: Admin sans store (owner sans boutique)
 			if ((user as any).role === "owner") {
-				console.log("🔍 Auth: Owner without store - allowing");
 				req.user = {
 				id: String(user._id),
 				userId: String(user._id),
@@ -168,7 +165,6 @@ return res.status(401).json({ error: "Utilisateur invalide" });
 			};
 				return next();
 			}
-			console.log("🔍 Auth: No store but role is:", user.role);
 			// On laisse passer pour les autres, req.user = null pour que le contrôleur gère le cas
 req.user = undefined;
 return next();

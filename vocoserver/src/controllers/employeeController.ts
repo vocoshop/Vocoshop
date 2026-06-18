@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
+import { isValidObjectId } from "../utils/helpers";
 
 function safePhone(p: any) {
 return String(p || "").replace(/\s+/g, "").trim();
@@ -192,6 +193,7 @@ export const toggleEmployee = async (req: Request, res: Response) => {
 try {
 const storeId = String(req.user?.storeId || "");
 const employeeId = String(req.params.id || "");
+if (!isValidObjectId(employeeId)) return res.status(400).json({ error: "ID employé invalide" });
 
 const user = await User.findOne({ _id: employeeId, store: storeId });
 if (!user) return res.status(404).json({ error: "Employé introuvable" });
@@ -220,6 +222,7 @@ export const deleteEmployee = async (req: Request, res: Response) => {
 try {
 const storeId = String(req.user?.storeId || "");
 const employeeId = String(req.params.id || "");
+if (!isValidObjectId(employeeId)) return res.status(400).json({ error: "ID employé invalide" });
 
 const user = await User.findOne({ _id: employeeId, store: storeId });
 if (!user) return res.status(404).json({ error: "Employé introuvable" });

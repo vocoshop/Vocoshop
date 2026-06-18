@@ -32,7 +32,7 @@ export async function certifyDocumentHandler(req: Request, res: Response): Promi
 export async function verifyDocumentHandler(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const content = req.body?.content || req.query?.content as string | undefined;
+    const content = typeof req.body?.content === "string" ? req.body.content.trim() : typeof req.query?.content === "string" ? req.query.content.trim() : undefined;
 
     const result = await verifyDocument(id, content);
     res.json(result);
@@ -44,7 +44,7 @@ export async function verifyDocumentHandler(req: Request, res: Response): Promis
 
 export async function listCertificationsHandler(req: Request, res: Response): Promise<void> {
   try {
-    const storeId = req.user?.storeId || req.query.storeId as string;
+    const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
     if (!storeId) {
       res.status(400).json({ error: "storeId requis" });
       return;
@@ -64,7 +64,7 @@ export async function listCertificationsHandler(req: Request, res: Response): Pr
 
 export async function certifyScoreHandler(req: Request, res: Response): Promise<void> {
   try {
-    const storeId = req.user?.storeId || req.body.storeId;
+    const storeId = String(req.user?.storeId || req.body.storeId || "").trim();
     if (!storeId) {
       res.status(400).json({ error: "storeId requis" });
       return;
@@ -80,7 +80,7 @@ export async function certifyScoreHandler(req: Request, res: Response): Promise<
 
 export async function getScoreHandler(req: Request, res: Response): Promise<void> {
   try {
-    const storeId = req.user?.storeId || req.query.storeId as string;
+    const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
     if (!storeId) {
       res.status(400).json({ error: "storeId requis" });
       return;
@@ -96,7 +96,7 @@ export async function getScoreHandler(req: Request, res: Response): Promise<void
 
 export async function verifyScoreHandler(req: Request, res: Response): Promise<void> {
   try {
-    const storeId = req.user?.storeId || req.query.storeId as string || req.params.storeId;
+    const storeId = String(req.user?.storeId || req.query.storeId || req.params.storeId || "").trim();
     if (!storeId) {
       res.status(400).json({ error: "storeId requis" });
       return;
@@ -112,7 +112,7 @@ export async function verifyScoreHandler(req: Request, res: Response): Promise<v
 
 export async function getScoreHistoryHandler(req: Request, res: Response): Promise<void> {
   try {
-    const storeId = req.user?.storeId || req.query.storeId as string;
+    const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
     if (!storeId) {
       res.status(400).json({ error: "storeId requis" });
       return;

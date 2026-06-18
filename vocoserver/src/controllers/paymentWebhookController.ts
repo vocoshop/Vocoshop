@@ -79,7 +79,6 @@ logSystem("webhook", `Webhook: storeId=${storeId} status=${status} txId=${transa
   source: "webhook",
   path: "/api/webhook",
   ip,
-  details: JSON.stringify(body)?.slice(0, 300),
 });
 
 if (!storeId || !isValidObjectId(storeId)) {

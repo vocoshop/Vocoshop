@@ -30,9 +30,11 @@ async function rotate() {
     console.log(`🔑 Admin password (${email}): ${verify ? "✅ ROTATED" : "❌ FAIL"}`);
   }
 
-  // 2. JWT secrets vérifiés (masqués)
-  if (process.env.JWT_SECRET) console.log(`🔐 JWT_SECRET: ✅ présent (${process.env.JWT_SECRET.length} chars)`);
-  if (process.env.AGENT_JWT_SECRET) console.log(`🔐 AGENT_JWT_SECRET: ✅ présent (${process.env.AGENT_JWT_SECRET.length} chars)`);
+  // 2. JWT secrets vérifiés (booléens seulement)
+  const hasJwtSecret = !!process.env.JWT_SECRET;
+  const hasAgentJwtSecret = !!process.env.AGENT_JWT_SECRET;
+  console.log("🔐 JWT_SECRET configuré :", hasJwtSecret);
+  console.log("🔐 AGENT_JWT_SECRET configuré :", hasAgentJwtSecret);
 
   // 3. Vérifier OpenAI
   const openai = process.env.OPENAI_API_KEY;

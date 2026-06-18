@@ -11,7 +11,7 @@ import inventoryRoutes from "./routes/inventoryRoutes";
 import authRoutes from "./routes/authRoutes";
 import otpRoutes from "./routes/otpRoutes";
 import aiRoutes from "./routes/aiRoutes";
-import { authLimiter, otpLimiter, generalLimiter } from "./middleware/rateLimiter";
+import { authLimiter, otpLimiter, generalLimiter, registerLimiter } from "./middleware/rateLimiter";
 
 import stockRoutes from "./routes/stockRoutes";
 import stockHistoryRoutes from "./routes/stockHistoryRoutes";
@@ -149,34 +149,34 @@ app.use("/api/store/analysis", storeAnalysisRoutes);
 
 app.use("/api/employees", employeeRoutes);
 
-// ✅ AGENT (site web)
-app.use("/api/agent", agentRoutes);
-app.use("/api/agent/withdrawals", agentWithdrawalRoutes);
-app.use("/api/agent/activity", activityRoutes);
+// ✅ AGENT (site web) - rate limited
+app.use("/api/agent", generalLimiter, agentRoutes);
+app.use("/api/agent/withdrawals", generalLimiter, agentWithdrawalRoutes);
+app.use("/api/agent/activity", generalLimiter, activityRoutes);
 
-// ✅ ADMIN OWNER: agents
-app.use("/api/admin/auth", adminAuthRoutes);
-app.use("/api/admin/agents", agentAdminRoutes);
-app.use("/api/admin", adminStoreRoutes);
-app.use("/api/admin/withdrawals", adminWithdrawalRoutes);
-app.use("/api/admin/notifications", adminNotificationRoutes);
-app.use("/api/admin/support", adminSupportRoutes);
-app.use("/api/admin/communication", communicationRoutes);
-app.use("/api/admin/config", adminConfigRoutes);
-app.use("/api/admin/security", adminSecurityRoutes);
-app.use("/api/admin/blockchain", adminBlockchainRoutes);
-app.use("/api/admin", adminPartnerRoutes);
+// ✅ ADMIN OWNER: agents - rate limited
+app.use("/api/admin/auth", authLimiter, adminAuthRoutes);
+app.use("/api/admin/agents", generalLimiter, agentAdminRoutes);
+app.use("/api/admin", generalLimiter, adminStoreRoutes);
+app.use("/api/admin/withdrawals", generalLimiter, adminWithdrawalRoutes);
+app.use("/api/admin/notifications", generalLimiter, adminNotificationRoutes);
+app.use("/api/admin/support", generalLimiter, adminSupportRoutes);
+app.use("/api/admin/communication", generalLimiter, communicationRoutes);
+app.use("/api/admin/config", generalLimiter, adminConfigRoutes);
+app.use("/api/admin/security", generalLimiter, adminSecurityRoutes);
+app.use("/api/admin/blockchain", generalLimiter, adminBlockchainRoutes);
+app.use("/api/admin", generalLimiter, adminPartnerRoutes);
 app.use("/api/blockchain", blockchainRoutes);
-app.use("/api/partner", partnerRoutes);
-app.use("/api/admin", adminManagerRoutes);
-app.use("/api/admin-manager/auth", managerAuthRoutes);
-app.use("/api/admin-manager", managerRoutes);
+app.use("/api/partner", generalLimiter, partnerRoutes);
+app.use("/api/admin", generalLimiter, adminManagerRoutes);
+app.use("/api/admin-manager/auth", authLimiter, managerAuthRoutes);
+app.use("/api/admin-manager", generalLimiter, managerRoutes);
 app.use("/api/realtime", realtimeRoutes);
 app.use("/api/ocr", ocrRoutes);
-app.use("/api/funding", fundingRoutes);
-app.use("/api/call-proxy", callProxyRoutes);
-app.use("/api/manager/support", managerSupportRoutes);
-app.use("/api/webhook", paymentWebhookRoutes);
+app.use("/api/funding", generalLimiter, fundingRoutes);
+app.use("/api/call-proxy", generalLimiter, callProxyRoutes);
+app.use("/api/manager/support", generalLimiter, managerSupportRoutes);
+app.use("/api/webhook", generalLimiter, paymentWebhookRoutes);
 app.use("/api/chariow", chariowRoutes);
 
 

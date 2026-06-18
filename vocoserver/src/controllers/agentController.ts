@@ -513,11 +513,12 @@ const limit = Math.min(100, Math.max(1, parseInt(String(req.query?.limit || "20"
 
 const baseFilter: any = { agentCode };
 if (q) {
+const eq = escapeRegex(q);
 baseFilter.$or = [
-{ storeName: { $regex: q, $options: "i" } },
-{ shopId: { $regex: q, $options: "i" } },
-{ phone: { $regex: q, $options: "i" } },
-{ city: { $regex: q, $options: "i" } },
+{ storeName: { $regex: eq, $options: "i" } },
+{ shopId: { $regex: eq, $options: "i" } },
+{ phone: { $regex: eq, $options: "i" } },
+{ city: { $regex: eq, $options: "i" } },
 ];
 }
 

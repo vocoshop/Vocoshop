@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Partner from "../models/Partner";
 import SharedReportLink from "../models/SharedReportLink";
 import Product from "../models/Product";
+import { isValidObjectId } from "../utils/helpers";
 
 /* =====================================================
    GET /api/admin/partners
@@ -98,7 +99,9 @@ export const updatePartner = async (req: Request, res: Response) => {
    ===================================================== */
 export const deletePartner = async (req: Request, res: Response) => {
   try {
-    const partner = await Partner.findByIdAndDelete(req.params.id).lean();
+    const id = String(req.params.id || "").trim();
+    if (!isValidObjectId(id)) return res.status(400).json({ error: "ID invalide" });
+    const partner = await Partner.findByIdAndDelete(id).lean();
     if (!partner) return res.status(404).json({ error: "Partenaire introuvable" });
     res.json({ message: "Partenaire supprimé" });
   } catch (err) {
@@ -112,8 +115,9 @@ export const deletePartner = async (req: Request, res: Response) => {
    ===================================================== */
 export const partnerVerifyDocument = async (req: Request, res: Response) => {
   try {
-    const { storeId, reportMonth } = req.body;
-    if (!storeId) return res.status(400).json({ error: "storeId requis" });
+    const storeId = String(req.body?.storeId || "").trim();
+    if (!isValidObjectId(storeId)) return res.status(400).json({ error: "storeId invalide" });
+    const reportMonth = req.body?.reportMonth;
 
     const month = String(reportMonth || new Date().toISOString().slice(0, 7));
     if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -144,8 +148,8 @@ export const partnerVerifyDocument = async (req: Request, res: Response) => {
    ===================================================== */
 export const partnerVerifyScore = async (req: Request, res: Response) => {
   try {
-    const { storeId } = req.params;
-    if (!storeId) return res.status(400).json({ error: "storeId requis" });
+    const storeId = String(req.params.storeId || "").trim();
+    if (!isValidObjectId(storeId)) return res.status(400).json({ error: "storeId invalide" });
 
     const products = await Product.find({ storeId }).lean();
     const totalProducts = products.length;

@@ -130,6 +130,7 @@ if (!storeId)
 return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
 
 const order = await Order.findOne({ _id: id, storeId }).lean();
 if (!order)
@@ -152,6 +153,7 @@ if (!storeId)
 return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
 const order: any = await Order.findOne({ _id: id, storeId });
 
 if (!order)
@@ -202,6 +204,7 @@ if (!storeId)
 return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
 const order: any = await Order.findOne({ _id: id, storeId });
 
 if (!order)
@@ -241,6 +244,7 @@ if (!storeId)
 return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
 const order: any = await Order.findOne({ _id: id, storeId });
 
 if (!order)
@@ -273,6 +277,7 @@ if (!storeId)
 return res.status(400).json({ error: "storeId manquant" });
 
 const { id } = req.params;
+if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
 
 const order: any = await Order.findOne({ _id: id, storeId });
 

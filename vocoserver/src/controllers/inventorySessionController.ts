@@ -174,6 +174,10 @@ export const validateInventorySession = async (req: Request, res: Response) => {
 try {
 const { sessionId } = req.params;
 
+if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+return res.status(400).json({ error: "Session invalide" });
+}
+
 const session = await InventorySession.findById(sessionId)
 .populate("lines.productId", "name category quantity")
 .lean();
@@ -208,6 +212,10 @@ if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 if (!employeeId) return res.status(400).json({ error: "employeeId manquant" });
 if (!sessionId) return res.status(400).json({ error: "sessionId manquant" });
 
+if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+return res.status(400).json({ error: "Session invalide" });
+}
+
 const session = await InventorySession.findById(sessionId).lean();
 if (!session) return res.status(404).json({ error: "Session introuvable" });
 
@@ -241,6 +249,10 @@ GET /api/inventory/session/:sessionId
 export const getInventorySession = async (req: Request, res: Response) => {
 try {
 const { sessionId } = req.params;
+
+if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+return res.status(400).json({ error: "Session invalide" });
+}
 
 const session = await InventorySession.findById(sessionId).populate(
 "lines.productId",
@@ -282,6 +294,10 @@ GET /api/inventory/session/:sessionId/analyze
 export const analyzeInventorySession = async (req: Request, res: Response) => {
 try {
 const { sessionId } = req.params;
+
+if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+return res.status(400).json({ error: "Session invalide" });
+}
 
 const session = await InventorySession.findById(sessionId).lean();
 if (!session) return res.status(404).json({ error: "Session introuvable" });

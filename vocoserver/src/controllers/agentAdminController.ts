@@ -8,6 +8,7 @@ import { getNextSequence } from "../services/counterService";
 import { notifyWelcome, notifyText } from "../services/notificationService";
 import { sendSMS } from "../services/smsService";
 import { normalizePhone } from "../utils/phone";
+import { escapeRegex } from "../utils/helpers";
 
 function randomSuffix(): string {
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -100,7 +101,7 @@ const authCode = generateAuthCode(6);
 const authCodeHash = await bcrypt.hash(authCode, 10);
 
 if (process.env.NODE_ENV === "development") {
-  console.log("🔐 AUTHCODE (DEV) =", authCode, "| phone =", phone, "| code =", code);
+  console.log("🔐 Auth code generated (DEV) | code =", code);
 }
 
 const agent = await Agent.create({
@@ -153,7 +154,7 @@ GET /api/admin/agents?q=&status=&page=&limit=
 ===================================================== */
 export const listAgents = async (req: Request, res: Response) => {
 try {
-console.log("🔍 listAgents called - user:", (req as any).user);
+console.log("🔍 listAgents called - role:", (req as any).user?.role);
 const q = String(req.query?.q || "").trim();
 const status = String(req.query?.status || "").trim(); // active | inactive | all
 const approved = String(req.query?.approved || "").trim(); // approved | pending | all
@@ -173,12 +174,13 @@ if (approved && approved !== "all") {
 }
 
 if (q) {
+const eq = escapeRegex(q);
 filter.$or = [
-{ name: { $regex: q, $options: "i" } },
-{ phone: { $regex: q, $options: "i" } },
-{ code: { $regex: q, $options: "i" } },
-{ city: { $regex: q, $options: "i" } },
-{ region: { $regex: q, $options: "i" } },
+{ name: { $regex: eq, $options: "i" } },
+{ phone: { $regex: eq, $options: "i" } },
+{ code: { $regex: eq, $options: "i" } },
+{ city: { $regex: eq, $options: "i" } },
+{ region: { $regex: eq, $options: "i" } },
 ];
 }
 

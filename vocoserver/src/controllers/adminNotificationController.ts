@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import AdminNotification from "../models/AdminNotification";
 import Store from "../models/Store";
+import { isValidObjectId } from "../utils/helpers";
 
 /* =====================================================
 POST /api/admin/notifications
@@ -116,7 +117,9 @@ Détail d'une notification
 ===================================================== */
 export const getAdminNotificationById = async (req: Request, res: Response) => {
   try {
-    const notification = await AdminNotification.findById(req.params.id).lean();
+    const id = String(req.params.id || "").trim();
+    if (!isValidObjectId(id)) return res.status(400).json({ error: "ID invalide" });
+    const notification = await AdminNotification.findById(id).lean();
     if (!notification) {
       return res.status(404).json({ error: "Notification introuvable" });
     }
