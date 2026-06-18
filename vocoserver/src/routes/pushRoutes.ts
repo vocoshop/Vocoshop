@@ -20,12 +20,7 @@ router.post("/register", async (req: any, res: any) => {
 
     await PushToken.findOneAndUpdate(
       { token: String(token) },
-      {
-        storeId,
-        token,
-        platform: platform || "android",
-        isActive: true,
-      },
+      { $set: { storeId: String(storeId), token: String(token), platform: String(platform || "android"), isActive: true } },
       { upsert: true }
     );
 

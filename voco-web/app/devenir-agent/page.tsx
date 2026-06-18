@@ -320,7 +320,7 @@ export default function DevenirAgent() {
                       }}
                     >
                       {idPhotoPreview ? (
-                        <img src={idPhotoPreview} alt="Pièce" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
+                        <img src={idPhotoPreview.startsWith('blob:') ? idPhotoPreview : ''} alt="Pièce" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
                       ) : (
                         <div>
                           <div style={{ fontSize: 28, marginBottom: 8 }}>📷</div>
@@ -355,7 +355,7 @@ export default function DevenirAgent() {
                       }}
                     >
                       {selfiePhotoPreview ? (
-                        <img src={selfiePhotoPreview} alt="Selfie" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
+                        <img src={selfiePhotoPreview.startsWith('blob:') ? selfiePhotoPreview : ''} alt="Selfie" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
                       ) : (
                         <div>
                           <div style={{ fontSize: 28, marginBottom: 8 }}>🤳</div>

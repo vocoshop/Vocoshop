@@ -415,7 +415,7 @@ const validStatuses = ["pending", "info_required", "accepted", "rejected", "clos
       return res.status(400).json({ error: "Statut invalide" });
     }
 
-    const update: any = { status };
+    const update: Record<string, unknown> = { status: String(status) };
     if (typeof comment === "string") update.adminComment = comment.trim();
 
     const demande = await FundingDemande.findByIdAndUpdate(id, update, { new: true }).lean();

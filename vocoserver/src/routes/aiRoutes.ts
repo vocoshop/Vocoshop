@@ -124,7 +124,15 @@ router.post("/admin-chat", authMiddleware, requireOwner, async (req: any, res: a
     }
 
     if (lower.includes("logs") || lower.includes("activité") || lower.includes("activity") || lower.includes("historique")) {
-      const days = lower.includes("jour") ? parseInt(msg.match(/(\d+)\s*jour/i)?.[1] || "7") : 7;
+      let days = 7;
+      const jourIdx = lower.indexOf("jour");
+      if (jourIdx > 0) {
+        let i = jourIdx - 1;
+        while (i >= 0 && lower[i] === " ") i--;
+        let end = i + 1;
+        while (i >= 0 && lower[i] >= "0" && lower[i] <= "9") i--;
+        if (i + 1 < end) days = parseInt(lower.slice(i + 1, end), 10);
+      }
       const feed = await SecurityMonitor.getActivityFeed(days);
       let text = `📋 Activité système (${days} derniers jours):\n\n`;
       feed.slice(0, 15).forEach((l: any) => {

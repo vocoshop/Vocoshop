@@ -576,9 +576,9 @@ export class OcrService {
     normalizedName: string,
     productId?: string
   ): Promise<void> {
-    if (productId && !isValidObjectId(productId)) return;
-    const product = productId
-      ? await Product.findOne({ _id: productId, storeId })
+    const safeProductId = productId && isValidObjectId(productId) ? productId : undefined;
+    const product = safeProductId
+      ? await Product.findOne({ _id: safeProductId, storeId })
       : await Product.findOne({ storeId, name: String(normalizedName) });
 
     if (!product) return;

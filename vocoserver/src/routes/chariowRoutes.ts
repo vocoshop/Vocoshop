@@ -13,7 +13,10 @@ const router = Router();
    Validation email simple
    ===================================================== */
 function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const at = email.indexOf("@");
+  if (at <= 0 || at !== email.lastIndexOf("@")) return false;
+  const dot = email.lastIndexOf(".");
+  return dot > at + 1 && dot < email.length - 1;
 }
 
 /* =====================================================

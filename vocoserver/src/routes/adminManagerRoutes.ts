@@ -77,10 +77,10 @@ PATCH /api/admin/admin-managers/:id — Modifier
 router.patch("/admin-managers/:id", async (req: any, res: any) => {
   try {
     const { firstName, lastName, phone, assignedRegions, assignedCities, isActive, password } = req.body;
-    const update: any = {};
-    if (firstName !== undefined) update.firstName = firstName;
-    if (lastName !== undefined) update.lastName = lastName;
-    if (phone !== undefined) update.phone = phone;
+    const update: Record<string, unknown> = {};
+    if (firstName !== undefined) update.firstName = String(firstName);
+    if (lastName !== undefined) update.lastName = String(lastName);
+    if (phone !== undefined) update.phone = String(phone);
     if (assignedRegions !== undefined) update.assignedRegions = assignedRegions;
     if (assignedCities !== undefined) update.assignedCities = assignedCities;
     if (isActive !== undefined) update.isActive = isActive;
