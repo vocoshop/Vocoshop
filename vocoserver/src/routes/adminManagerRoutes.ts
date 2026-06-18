@@ -76,15 +76,14 @@ PATCH /api/admin/admin-managers/:id — Modifier
 ===================================================== */
 router.patch("/admin-managers/:id", async (req: any, res: any) => {
   try {
-    const { firstName, lastName, phone, assignedRegions, assignedCities, isActive, password } = req.body;
     const update: Record<string, unknown> = {};
-    if (firstName !== undefined) update.firstName = String(firstName);
-    if (lastName !== undefined) update.lastName = String(lastName);
-    if (phone !== undefined) update.phone = String(phone);
-    if (assignedRegions !== undefined) update.assignedRegions = assignedRegions;
-    if (assignedCities !== undefined) update.assignedCities = assignedCities;
-    if (isActive !== undefined) update.isActive = isActive;
-    if (password) update.passwordHash = await bcrypt.hash(password, 10);
+    if (req.body.firstName !== undefined) update.firstName = "" + req.body.firstName;
+    if (req.body.lastName !== undefined) update.lastName = "" + req.body.lastName;
+    if (req.body.phone !== undefined) update.phone = "" + req.body.phone;
+    if (req.body.assignedRegions !== undefined) update.assignedRegions = req.body.assignedRegions;
+    if (req.body.assignedCities !== undefined) update.assignedCities = req.body.assignedCities;
+    if (req.body.isActive !== undefined) update.isActive = req.body.isActive;
+    if (req.body.password) update.passwordHash = await bcrypt.hash(String(req.body.password), 10);
 
     if (!req.params.id || typeof req.params.id !== "string") {
       return res.status(400).json({ error: "ID manager invalide" });

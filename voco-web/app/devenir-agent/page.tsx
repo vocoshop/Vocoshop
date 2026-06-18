@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
@@ -41,19 +41,38 @@ export default function DevenirAgent() {
   });
   const [idPhoto, setIdPhoto] = useState<File | null>(null);
   const [selfiePhoto, setSelfiePhoto] = useState<File | null>(null);
-  const [idPhotoPreview, setIdPhotoPreview] = useState('');
-  const [selfiePhotoPreview, setSelfiePhotoPreview] = useState('');
+  const idPhotoRef = useRef<HTMLImageElement>(null);
+  const selfiePhotoRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const img = idPhotoRef.current;
+    if (!img) return;
+    if (idPhoto) {
+      const url = URL.createObjectURL(idPhoto);
+      img.src = url;
+      return () => { URL.revokeObjectURL(url); img.src = ''; };
+    } else {
+      img.src = '';
+    }
+  }, [idPhoto]);
+
+  useEffect(() => {
+    const img = selfiePhotoRef.current;
+    if (!img) return;
+    if (selfiePhoto) {
+      const url = URL.createObjectURL(selfiePhoto);
+      img.src = url;
+      return () => { URL.revokeObjectURL(url); img.src = ''; };
+    } else {
+      img.src = '';
+    }
+  }, [selfiePhoto]);
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
   const handleFileChange = (field: 'id' | 'selfie', file: File | null) => {
-    if (field === 'id') {
-      setIdPhoto(file);
-      setIdPhotoPreview(file ? URL.createObjectURL(file) : '');
-    } else {
-      setSelfiePhoto(file);
-      setSelfiePhotoPreview(file ? URL.createObjectURL(file) : '');
-    }
+    if (field === 'id') setIdPhoto(file);
+    else setSelfiePhoto(file);
   };
 
   const handleSubmit = async () => {
@@ -309,7 +328,7 @@ export default function DevenirAgent() {
                     <div
                       onClick={() => document.getElementById('idPhotoInput')?.click()}
                       style={{
-                        padding: idPhotoPreview ? 0 : 24,
+                        padding: idPhoto ? 0 : 24,
                         borderRadius: 12,
                         border: '1px dashed #3f3f46',
                         background: '#0a0a0b',
@@ -319,8 +338,8 @@ export default function DevenirAgent() {
                         position: 'relative',
                       }}
                     >
-                      {idPhotoPreview ? (
-                        <img src={idPhotoPreview.startsWith('blob:') ? idPhotoPreview : ''} alt="Pièce" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
+                      {idPhoto ? (
+                        <img ref={idPhotoRef} alt="Pièce" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
                       ) : (
                         <div>
                           <div style={{ fontSize: 28, marginBottom: 8 }}>📷</div>
@@ -344,7 +363,7 @@ export default function DevenirAgent() {
                     <div
                       onClick={() => document.getElementById('selfiePhotoInput')?.click()}
                       style={{
-                        padding: selfiePhotoPreview ? 0 : 24,
+                        padding: selfiePhoto ? 0 : 24,
                         borderRadius: 12,
                         border: '1px dashed #3f3f46',
                         background: '#0a0a0b',
@@ -354,8 +373,8 @@ export default function DevenirAgent() {
                         position: 'relative',
                       }}
                     >
-                      {selfiePhotoPreview ? (
-                        <img src={selfiePhotoPreview.startsWith('blob:') ? selfiePhotoPreview : ''} alt="Selfie" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
+                      {selfiePhoto ? (
+                        <img ref={selfiePhotoRef} alt="Selfie" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 12 }} />
                       ) : (
                         <div>
                           <div style={{ fontSize: 28, marginBottom: 8 }}>🤳</div>
