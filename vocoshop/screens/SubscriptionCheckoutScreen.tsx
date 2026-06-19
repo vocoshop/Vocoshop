@@ -49,10 +49,13 @@ method === "mobile_money" && phone && phone.length >= 6;
 const isCardValid =
 method === "card" && card && expiry && cvc;
 
+const isYabetooValid =
+method === "yabetoo" && email && email.includes("@");
+
 const isChariowValid =
 method === "chariow" && phone && phone.length >= 6;
 
-const canPay = isMobileValid || isCardValid || isChariowValid;
+const canPay = isMobileValid || isCardValid || isYabetooValid || isChariowValid;
 
 /* =====================================================
 🔥 DETECTION OPERATEUR UX (FRONT ONLY)
@@ -135,7 +138,19 @@ Carte Visa / MasterCard
 </Text>
 </TouchableOpacity>
 
-{/* 🔶 CHARIOW — Pas de société requise */}
+{/* 🟢 YABETOO — Mobile Money Congo */}
+<TouchableOpacity
+style={styles.option}
+onPress={()=>setMethod("yabetoo")}
+>
+<Ionicons name="globe-outline" size={22} color="#22c55e" />
+<Text style={styles.optionText}>
+Yabetoo (Mobile Money MTN / Airtel)
+</Text>
+<Text style={styles.optionSubtext}>Paiement 100% Mobile Money</Text>
+</TouchableOpacity>
+
+{/* 🔶 CHARIOW — fallback */}
 <TouchableOpacity
 style={styles.option}
 onPress={()=>setMethod("chariow")}
@@ -144,7 +159,7 @@ onPress={()=>setMethod("chariow")}
 <Text style={styles.optionText}>
 Chariow (Mobile Money / Carte)
 </Text>
-<Text style={styles.optionSubtext}>Sans compte entreprise</Text>
+<Text style={styles.optionSubtext}>Alternative de paiement</Text>
 </TouchableOpacity>
 
 {/* =====================================================
@@ -162,7 +177,9 @@ styles.overlayCard,
 >
 
 <Text style={styles.formTitle}>
-{method === "card"
+{method === "yabetoo"
+? "Paiement via Yabetoo"
+: method === "card"
 ? "Paiement Carte Bancaire"
 : method === "chariow"
 ? "Paiement via Chariow"
@@ -256,6 +273,24 @@ keyboardType="numeric"
 </>
 )}
 
+{/* 🟢 YABETOO INPUT */}
+{method === "yabetoo" && !waitingValidation && (
+<>
+<Text style={{ color:"#22c55e", fontSize:12, marginBottom:8, textAlign:"center" }}>
+Tu seras redirigé vers la page de paiement Yabetoo
+</Text>
+<TextInput
+placeholder="Email (pour la confirmation)"
+placeholderTextColor="#888"
+style={styles.input}
+value={email}
+onChangeText={setEmail}
+keyboardType="email-address"
+autoCapitalize="none"
+/>
+</>
+)}
+
 {/* 🔶 CHARIOW INPUTS */}
 {method === "chariow" && !waitingValidation && (
 <>
@@ -309,6 +344,11 @@ Alert.alert("Carte incomplète","Vérifiez vos informations.");
 return;
 }
 
+if(method === "yabetoo" && !email){
+Alert.alert("Email requis","Entrez votre email pour la confirmation.");
+return;
+}
+
 if(method === "chariow" && !phone){
 Alert.alert("Numéro requis","Entrez votre numéro de téléphone.");
 return;
@@ -318,7 +358,7 @@ setLoading(true);
 setWaitingValidation(true);
 
 const result = await handleSubscriptionPayment({
-method: method === "chariow" ? "chariow" : method === "card" ? "card" : "mobile_money",
+method: method === "yabetoo" ? "yabetoo" : method === "chariow" ? "chariow" : method === "card" ? "card" : "mobile_money",
 phone,
 card,
 expiry,

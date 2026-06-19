@@ -11,7 +11,7 @@ import inventoryRoutes from "./routes/inventoryRoutes";
 import authRoutes from "./routes/authRoutes";
 import otpRoutes from "./routes/otpRoutes";
 import aiRoutes from "./routes/aiRoutes";
-import { authLimiter, otpLimiter, generalLimiter, registerLimiter } from "./middleware/rateLimiter";
+import { authLimiter, otpLimiter, generalLimiter, registerLimiter, yabetooCheckoutLimiter } from "./middleware/rateLimiter";
 
 import stockRoutes from "./routes/stockRoutes";
 import stockHistoryRoutes from "./routes/stockHistoryRoutes";
@@ -45,6 +45,7 @@ import { storeActivityTracker } from "./middleware/storeActivityTracker";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
 import paymentWebhookRoutes from "./routes/paymentWebhookRoutes";
 import chariowRoutes from "./routes/chariowRoutes";
+import yabetooRoutes from "./routes/yabetooRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import { startNotificationScheduler } from "./scheduler/notificationScheduler";
 import { startSubscriptionRenewalScheduler } from "./scheduler/subscriptionRenewalScheduler";
@@ -178,6 +179,7 @@ app.use("/api/call-proxy", generalLimiter, callProxyRoutes);
 app.use("/api/manager/support", generalLimiter, managerSupportRoutes);
 app.use("/api/webhook", generalLimiter, paymentWebhookRoutes);
 app.use("/api/chariow", generalLimiter, chariowRoutes);
+app.use("/api/yabetoo", yabetooCheckoutLimiter, yabetooRoutes);
 
 
 // ERROR HANDLER

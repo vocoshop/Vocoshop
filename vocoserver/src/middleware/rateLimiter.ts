@@ -76,3 +76,19 @@ export const registerLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const yabetooCheckoutLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 3,
+  message: { error: "Trop de tentatives de paiement. Veuillez attendre 5 minutes.", code: "YABETOO_CHECKOUT_LIMIT" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const yabetooWebhookLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 30,
+  message: { error: "Trop de webhooks.", code: "YABETOO_WEBHOOK_LIMIT" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

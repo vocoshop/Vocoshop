@@ -1,7 +1,7 @@
 import API from "../api";
 
 type PaymentPayload = {
-method: "mobile_money" | "card" | "chariow";
+method: "mobile_money" | "card" | "chariow" | "yabetoo";
 phone?: string;
 card?: string;
 expiry?: string;
@@ -12,11 +12,31 @@ countryCode?: string;
 
 /**
  * 🔥 PAYMENT HANDLER GLOBAL
- * - Flutterwave (société requise)
- * - Chariow (pas de société requise — pour test)
+ * - Yabetoo (Mobile Money — recommandé)
+ * - Chariow (fallback)
  */
 export async function handleSubscriptionPayment(payload: PaymentPayload): Promise<true | { checkoutUrl: string }> {
 try {
+
+/* =====================================================
+📱 YABETOO (Mobile Money Congo)
+===================================================== */
+if (payload.method === "yabetoo") {
+
+if (!payload.email) {
+throw new Error("Email requis");
+}
+
+const res: any = await API.post("/yabetoo/checkout", {
+email: payload.email,
+});
+
+if (res.data?.checkoutUrl) {
+return { checkoutUrl: res.data.checkoutUrl };
+}
+
+throw new Error(res.data?.error || "Échec Yabetoo");
+}
 
 /* =====================================================
 📱 MOBILE MONEY
@@ -55,7 +75,7 @@ return true;
 }
 
 /* =====================================================
-🔶 CHARIOW (pas de société requise)
+🔶 CHARIOW (fallback)
 ===================================================== */
 if (payload.method === "chariow") {
 
