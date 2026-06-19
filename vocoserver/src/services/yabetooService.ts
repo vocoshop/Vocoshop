@@ -1,6 +1,4 @@
-import dotenv from "dotenv";
 import { logSystem } from "../utils/systemLogger";
-dotenv.config();
 
 const EXPECTED_AMOUNT = 3900;
 
@@ -31,7 +29,13 @@ type YabetooSessionResult = {
 
 export function isConfigured(): boolean {
   const key = apiKey();
-  return Boolean(key && key !== "your_yabetoo_api_key");
+  const configured = Boolean(key && key !== "your_yabetoo_api_key");
+  if (!configured) {
+    logSystem("warning", `Yabetoo isConfigured=false (key length=${key.length}, prefix="${key.slice(0, 8)}")`, {
+      source: "yabetoo_service",
+    });
+  }
+  return configured;
 }
 
 export async function createCheckoutSession(
