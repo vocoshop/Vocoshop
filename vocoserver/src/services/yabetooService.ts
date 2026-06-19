@@ -1,11 +1,26 @@
+import dotenv from "dotenv";
 import { logSystem } from "../utils/systemLogger";
-
-const YABETOO_API_KEY = process.env.YABETOO_API_KEY || "";
-const YABETOO_BASE = "https://api.yabetoo.com/v1";
-const YABETOO_SUCCESS_URL = process.env.YABETOO_SUCCESS_URL || "";
-const YABETOO_CANCEL_URL = process.env.YABETOO_CANCEL_URL || "";
+dotenv.config();
 
 const EXPECTED_AMOUNT = 3900;
+
+function apiKey(): string {
+  return process.env.YABETOO_API_KEY || "";
+}
+
+function apiBase(): string {
+  const key = apiKey();
+  if (key.startsWith("sk_test_")) return "https://buy.api.yabetoopay.com";
+  return "https://api.yabetoo.com";
+}
+
+function successUrl(): string {
+  return process.env.YABETOO_SUCCESS_URL || "";
+}
+
+function cancelUrl(): string {
+  return process.env.YABETOO_CANCEL_URL || "";
+}
 
 type YabetooSessionResult = {
   success: boolean;
@@ -15,7 +30,8 @@ type YabetooSessionResult = {
 };
 
 export function isConfigured(): boolean {
-  return Boolean(YABETOO_API_KEY && YABETOO_API_KEY !== "your_yabetoo_api_key");
+  const key = apiKey();
+  return Boolean(key && key !== "your_yabetoo_api_key");
 }
 
 export async function createCheckoutSession(
@@ -30,8 +46,8 @@ export async function createCheckoutSession(
 
   try {
     const body: Record<string, any> = {
-      success_url: YABETOO_SUCCESS_URL ? `${YABETOO_SUCCESS_URL}?store_id=${storeId}` : "",
-      cancel_url: YABETOO_CANCEL_URL || "",
+      success_url: successUrl() ? `${successUrl()}?store_id=${storeId}` : "",
+      cancel_url: cancelUrl() || "",
       mode: "payment",
       line_items: [
         {
@@ -52,10 +68,17 @@ export async function createCheckoutSession(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const res = await fetch(`${YABETOO_BASE}/checkout/sessions`, {
+    const base = apiBase();
+    const key = apiKey();
+
+    logSystem("info", `Yabetoo: appel API ${base}/checkout/sessions (key prefix: ${key.slice(0, 8)}...)`, {
+      source: "yabetoo_service",
+    });
+
+    const res = await fetch(`${base}/v1/checkout/sessions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${YABETOO_API_KEY}`,
+        Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
@@ -69,7 +92,7 @@ export async function createCheckoutSession(
       const msg = data.message || `Erreur Yabetoo ${res.status}`;
       logSystem("error", `Yabetoo API error ${res.status}: ${msg}`, {
         source: "yabetoo_service",
-        details: JSON.stringify({ status: res.status }).slice(0, 300),
+        details: JSON.stringify({ status: res.status, body: data }).slice(0, 500),
       });
       return { success: false, error: msg };
     }
@@ -91,7 +114,9 @@ export async function createCheckoutSession(
 export function getConfig() {
   return {
     configured: isConfigured(),
-    successUrl: YABETOO_SUCCESS_URL ? "✓ configuré" : "✗ manquant",
-    cancelUrl: YABETOO_CANCEL_URL ? "✓ configuré" : "✗ manquant",
+    keyPrefix: apiKey().slice(0, 8) + "...",
+    baseUrl: apiBase(),
+    successUrl: successUrl() ? "✓ configuré" : "✗ manquant",
+    cancelUrl: cancelUrl() ? "✓ configuré" : "✗ manquant",
   };
 }
