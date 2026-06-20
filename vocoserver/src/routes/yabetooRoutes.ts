@@ -78,23 +78,6 @@ router.get("/config", (req, res) => {
   return res.json(getConfig());
 });
 
-router.post("/webhook", yabetooWebhookLimiter, (req, res, next) => {
-  if (!req.body || typeof req.body === "string") {
-    let data = "";
-    req.on("data", (chunk: Buffer) => { data += chunk.toString(); });
-    req.on("end", () => {
-      try {
-        (req as any).rawBody = data;
-        req.body = JSON.parse(data);
-        next();
-      } catch {
-        return res.status(400).json({ error: "JSON invalide" });
-      }
-    });
-  } else {
-    (req as any).rawBody = JSON.stringify(req.body);
-    next();
-  }
-}, yabetooWebhook);
+router.post("/webhook", yabetooWebhookLimiter, yabetooWebhook);
 
 export default router;

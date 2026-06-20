@@ -56,17 +56,27 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
     }
 
     const body = req.body || {};
-    const eventType = req.headers["x-yabetoo-webhook-event"] as string || body.type;
+    const eventType = req.headers["x-yabetoo-webhook-event"] as string || body.type || "";
+    const rawBodyPreview = ((req as any).rawBody || JSON.stringify(body)).slice(0, 300);
 
-    if (eventType !== "checkout.session.completed" && eventType !== "intent.completed") {
+    logSystem("info", `Yabetoo webhook reçu: eventType="${eventType}" headers=${JSON.stringify(Object.keys(req.headers).filter(h => h.includes("yabetoo") || h.includes("webhook")))}`, {
+      source: "yabetoo_webhook", path: "/api/yabetoo/webhook", ip: ip || "unknown",
+      details: `rawBody preview: ${rawBodyPreview}`,
+    });
+
+    const completedEvents = [
+      "checkout.session.completed", "intent.completed",
+      "payment.completed", "checkout.completed", "transaction.completed",
+    ];
+    if (!completedEvents.includes(eventType)) {
       logSystem("info", `Yabetoo webhook: événement ignoré "${eventType}"`, { source: "yabetoo_webhook" });
       return res.json({ ok: true });
     }
 
-    const session = body.data?.object || body.data || {};
-    const sessionId = session.id || body.id;
-    const storeId = session.client_reference_id || session.metadata?.store_id || body.metadata?.store_id;
-    const amount = session.amount_total || session.amount;
+    const session = body.data?.object || body.data || body.session || {};
+    const sessionId = session.id || body.id || body.session_id || "";
+    const storeId = session.client_reference_id || session.metadata?.store_id || body.metadata?.store_id || body.store_id || "";
+    const amount = session.amount_total || session.amount || body.amount || 0;
 
     if (!storeId || typeof storeId !== "string") {
       logSystem("warning", `Yabetoo webhook REJETÉ — storeId invalide: "${storeId}"`, {

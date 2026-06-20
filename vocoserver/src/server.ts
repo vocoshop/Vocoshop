@@ -90,7 +90,12 @@ app.use(cors({
   origin: allowedOrigins.length > 0 ? allowedOrigins : false,
   credentials: true,
 }));
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({
+  limit: "10mb",
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf.toString();
+  },
+}));
 app.use(morgan("dev"));
 app.use(systemLoggerMiddleware);
 
