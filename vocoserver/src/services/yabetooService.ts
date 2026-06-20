@@ -2,8 +2,16 @@ import { logSystem } from "../utils/systemLogger";
 
 const EXPECTED_AMOUNT = 3900;
 
+// DEBUG: module load time
+const debugLoadKey = process.env.YABETOO_API_KEY;
+const debugAllYabetoo = Object.keys(process.env).filter(k => k.includes("YABETOO") || k.includes("yabetoo"));
+console.log(`⚡ [yabetooService] LOAD TIME: YABETOO_API_KEY exists=${!!debugLoadKey}, length=${debugLoadKey?.length ?? "N/A"}, keys_with_yabetoo=${JSON.stringify(debugAllYabetoo)}`);
+
 function apiKey(): string {
-  return process.env.YABETOO_API_KEY || "";
+  const val = process.env.YABETOO_API_KEY;
+  const exists = val !== undefined && val !== null && val !== "";
+  console.log(`🔍 [yabetooService] apiKey() called: exists=${!!val}, type=${typeof val}, length=${val?.length ?? 0}, val_8="${val?.slice(0, 8) ?? "N/A"}"`);
+  return val || "";
 }
 
 function apiBase(): string {
