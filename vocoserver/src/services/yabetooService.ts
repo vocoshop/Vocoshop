@@ -9,10 +9,23 @@ console.log(`⚡ [yabetooService] LOAD TIME: YABETOO_API_KEY exists=${!!debugLoa
 
 function apiKey(): string {
   const val = process.env.YABETOO_API_KEY;
-  const exists = val !== undefined && val !== null && val !== "";
-  console.log(`🔍 [yabetooService] apiKey() called: exists=${!!val}, type=${typeof val}, length=${val?.length ?? 0}, val_8="${val?.slice(0, 8) ?? "N/A"}"`);
+  const keysNow = Object.keys(process.env).filter(k => k.includes("YABETOO") || k.includes("yabetoo"));
+  console.log(`🔍 [yabetooService] apiKey() called: exists=${!!val}, type=${typeof val}, length=${val?.length ?? 0}, keys_now=${JSON.stringify(keysNow)}`);
   return val || "";
 }
+
+// DEBUG: check if YABETOO_API_KEY survives startup
+setTimeout(() => {
+  const stillThere = process.env.YABETOO_API_KEY;
+  const keys = Object.keys(process.env).filter(k => k.includes("YABETOO"));
+  console.log(`⏱️ [yabetooService] 5s after load: exists=${!!stillThere}, keys=${JSON.stringify(keys)}`);
+}, 5000);
+
+setTimeout(() => {
+  const stillThere = process.env.YABETOO_API_KEY;
+  const keys = Object.keys(process.env).filter(k => k.includes("YABETOO"));
+  console.log(`⏱️ [yabetooService] 30s after load: exists=${!!stillThere}, keys=${JSON.stringify(keys)}`);
+}, 30000);
 
 function apiBase(): string {
   const key = apiKey();
