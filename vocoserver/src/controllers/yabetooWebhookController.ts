@@ -11,10 +11,12 @@ import Subscription from "../models/Subscription";
 const EXPECTED_AMOUNT = 3900;
 
 const processedEvents = new Set<string>();
+const intentStoreMap = new Map<string, string>(); // intentId → storeId
 const MAX_CACHE_SIZE = 10000;
 
 setInterval(() => {
   if (processedEvents.size > MAX_CACHE_SIZE) processedEvents.clear();
+  if (intentStoreMap.size > MAX_CACHE_SIZE) intentStoreMap.clear();
 }, 60 * 60 * 1000);
 
 function verifySignature(req: Request): boolean {
@@ -73,6 +75,7 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
       "checkout.session.completed", "intent.completed",
       "payment.completed", "checkout.completed", "transaction.completed",
       "payment.succeeded", "charge.succeeded", "subscription.created",
+      "intent.succeeded",
     ];
     if (!completedEvents.includes(eventType)) {
       console.log("[yabetoo_webhook] Event type ignoré (pas dans completedEvents):", eventType);
@@ -80,13 +83,39 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
     }
     console.log("[yabetoo_webhook] Event type reconnu ✓");
 
-    const session = body.data?.object || body.data || body.session || {};
-    const sessionId = session.id || body.id || body.session_id || "";
-    const storeId = session.client_reference_id || session.metadata?.store_id || body.metadata?.store_id || body.store_id || "";
-    const amount = session.amount_total ?? session.amount ?? body.amount ?? 0;
+    // Handle intent.created: store mapping intentId → storeId
+    if (eventType === "intent.created") {
+      const intent = body.data?.intent || {};
+      const intentId = intent.id || "";
+      const meta = intent.metadata || {};
+      const storeId = meta.store_id || meta.clientReferenceId || "";
+      if (intentId && storeId) {
+        intentStoreMap.set(intentId, storeId);
+        console.log("[yabetoo_webhook] Intent store mapping:", intentId, "→", storeId);
+      }
+      console.log("[yabetoo_webhook] intent.created enregistré, pas de traitement");
+      return res.json({ ok: true });
+    }
+
+    // For intent.succeeded: extract from data.charge
+    const charge = body.data?.charge || {};
+    const intentId = charge.intentId || "";
+    const transactionId = charge.transactionId || charge.externalId || charge.id || body.id || "";
+    const amount = charge.amount ?? body.amount ?? 0;
+
+    // Get storeId from intentStoreMap, or fallback to metadata
+    let storeId = intentStoreMap.get(intentId) || "";
+    if (!storeId) {
+      const intent = body.data?.intent || {};
+      const meta = intent.metadata || body.metadata || {};
+      storeId = meta.store_id || meta.clientReferenceId || body.store_id || "";
+    }
+
+    console.log("[yabetoo_webhook] intentId:", intentId, "| storeId:", storeId, "| transactionId:", transactionId, "| amount:", amount);
 
     console.log("[yabetoo_webhook] StoreId extrait:", JSON.stringify(storeId));
-    console.log("[yabetoo_webhook] SessionId:", JSON.stringify(sessionId));
+    console.log("[yabetoo_webhook] TransactionId:", JSON.stringify(transactionId));
+    console.log("[yabetoo_webhook] IntentId:", JSON.stringify(intentId));
     console.log("[yabetoo_webhook] Montant:", amount);
 
     if (!storeId || typeof storeId !== "string") {
@@ -94,12 +123,12 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "storeId invalide" });
     }
 
-    if (!sessionId) {
-      console.log("[yabetoo_webhook] SessionId manquant — rejet");
-      return res.status(400).json({ error: "sessionId manquant" });
+    if (!transactionId) {
+      console.log("[yabetoo_webhook] TransactionId manquant — rejet");
+      return res.status(400).json({ error: "transactionId manquant" });
     }
 
-    const dedupKey = `${storeId}_${sessionId}`;
+    const dedupKey = `${storeId}_${transactionId}`;
     if (processedEvents.has(dedupKey)) {
       console.log("[yabetoo_webhook] Événement déjà traité (dedup):", dedupKey);
       return res.json({ ok: true, deduped: true });
@@ -122,12 +151,12 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Store not found" });
     }
 
-    if (store.lastPaymentId === sessionId) {
-      console.log("[yabetoo_webhook] Paiement déjà traité (lastPaymentId match):", sessionId);
+    if (store.lastPaymentId === transactionId) {
+      console.log("[yabetoo_webhook] Paiement déjà traité (lastPaymentId match):", transactionId);
       return res.json({ ok: true, alreadyProcessed: true });
     }
 
-    store.lastPaymentId = sessionId;
+    store.lastPaymentId = transactionId;
 
     const now = new Date();
     let baseDate = store.paidUntil && new Date(store.paidUntil) > now ? new Date(store.paidUntil) : now;
@@ -154,7 +183,7 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
     try {
       await Invoice.create({
         storeId: store._id, plan: "PRO", amount: EXPECTED_AMOUNT, currency: "XAF",
-        invoiceNumber: generateInvoiceNumber(), transactionId: sessionId,
+        invoiceNumber: generateInvoiceNumber(), transactionId: transactionId,
         billingPeriodStart: now, billingPeriodEnd: billingEnd, paidAt: now,
       });
       console.log("[yabetoo_webhook] Facture créée ✓");
@@ -166,7 +195,7 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
       await createNotification({
         storeId: store._id, title: "Abonnement activé",
         message: "Votre abonnement PRO est maintenant actif (via Yabetoo).",
-        type: "subscription", uniqueKey: `subscription_active_yabetoo_${store._id}_${sessionId}`,
+        type: "subscription", uniqueKey: `subscription_active_yabetoo_${store._id}_${transactionId}`,
       });
       console.log("[yabetoo_webhook] Notification créée ✓");
     } catch (notifErr) {
@@ -212,7 +241,7 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
             await createNotification({
               storeId: sponsor._id, title: "Bonus débloqué",
               message: "Vous avez gagné 1 mois gratuit grâce à vos parrainages !",
-              type: "referral_bonus", uniqueKey: `referral_bonus_yabetoo_${sponsor._id}_${sessionId}`,
+              type: "referral_bonus", uniqueKey: `referral_bonus_yabetoo_${sponsor._id}_${transactionId}`,
             });
             sponsor.paidReferrals = 0;
           }
