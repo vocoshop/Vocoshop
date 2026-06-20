@@ -86,6 +86,7 @@ const yabetooCancel = process.env.YABETOO_CANCEL_URL || "(vide)";
 console.log(`🔍 RENDER_ENV_DEBUG: YABETOO_API_KEY="${yabetooKey.slice(0, 12)}..." YABETOO_SUCCESS_URL="${yabetooSuccess}" YABETOO_CANCEL_URL="${yabetooCancel}"`);
 
 const app = express();
+app.set("trust proxy", 1); // Render proxy → X-Forwarded-For fiable
 
 app.disable("etag"); // Désactive les ETags pour éviter les problèmes de cache sur les PUT/PATCH récents
 
