@@ -79,11 +79,6 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16) {
   process.exit(1);
 }
 
-// Debug Render env vars
-const yabetooKey = process.env.YABETOO_API_KEY || "(vide)";
-const yabetooSuccess = process.env.YABETOO_SUCCESS_URL || "(vide)";
-const yabetooCancel = process.env.YABETOO_CANCEL_URL || "(vide)";
-console.log(`🔍 RENDER_ENV_DEBUG: YABETOO_API_KEY="${yabetooKey.slice(0, 12)}..." YABETOO_SUCCESS_URL="${yabetooSuccess}" YABETOO_CANCEL_URL="${yabetooCancel}"`);
 
 const app = express();
 app.set("trust proxy", 1); // Render proxy → X-Forwarded-For fiable
