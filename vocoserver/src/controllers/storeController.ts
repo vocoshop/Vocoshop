@@ -289,7 +289,7 @@ if (!agent) {
 return res.status(200).json({ agent: null });
 }
 
-const contactPhone = safeTrim(process.env.VOCOSHOP_CONTACT_PHONE);
+const contactPhone = safeTrim(process.env.VOCOSHOP_CONTACT_PHONE) || "+242067423532";
 
 const payload = {
 name: safeTrim((agent as any)?.name),
