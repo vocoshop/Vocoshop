@@ -1,11 +1,11 @@
-import { Request, Response } from "express";
+﻿import { Request, Response } from "express";
 import Store from "../models/Store";
 import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
 
 /* =====================================================
-⛳ Génère le JWT
+â›³ GÃ©nÃ¨re le JWT
 ===================================================== */
 function generateToken(storeId: string, phone?: string) {
 return jwt.sign(
@@ -16,7 +16,7 @@ process.env.JWT_SECRET || "",
 }
 
 /* =====================================================
-🔹 REGISTER (inscription boutique) — V9 REFERRAL SAFE
+ðŸ”¹ REGISTER (inscription boutique) â€” V9 REFERRAL SAFE
 ===================================================== */
 export const registerStore = async (req: Request, res: Response) => {
 try {
@@ -25,11 +25,11 @@ const { phone, storeName, ownerName, ownerPhone, deviceId, referralCodeUsed } = 
 const phoneNorm = normalizePhone(phone);
 
 if (!phoneNorm) {
-return res.status(400).json({ error: "Numéro requis" });
+return res.status(400).json({ error: "NumÃ©ro requis" });
 }
 
 /* --------------------------------------------------
-🔐 Vérifie si déjà existant
+ðŸ” VÃ©rifie si dÃ©jÃ  existant
 -------------------------------------------------- */
 const exists = await Store.findOne({ phone: phoneNorm })
 .select("_id")
@@ -37,12 +37,12 @@ const exists = await Store.findOne({ phone: phoneNorm })
 
 if (exists) {
 return res.status(400).json({
-error: "Ce numéro est déjà utilisé",
+error: "Ce numÃ©ro est dÃ©jÃ  utilisÃ©",
 });
 }
 
 /* --------------------------------------------------
-🔥 FIX CRITIQUE V9 — REFERRAL SAFE
+ðŸ”¥ FIX CRITIQUE V9 â€” REFERRAL SAFE
 -------------------------------------------------- */
 
 const referralSafe =
@@ -51,43 +51,40 @@ typeof referralCodeUsed === "string"
 : "";
 
 /* --------------------------------------------------
-🏪 CREATE STORE
+ðŸª CREATE STORE
 -------------------------------------------------- */
+
+const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
 const store = await Store.create({
 phone: phoneNorm,
 storeName:
-typeof storeName === "string" ? storeName.trim() : "",
+typeof storeName === 'string' ? storeName.trim() : '',
 ownerName:
-typeof ownerName === "string" ? ownerName.trim() : undefined,
+typeof ownerName === 'string' ? ownerName.trim() : undefined,
 ownerPhone:
-typeof ownerPhone === "string" ? ownerPhone.trim() : undefined,
+typeof ownerPhone === 'string' ? ownerPhone.trim() : undefined,
 deviceId: deviceId || null,
 
-// ⭐ ULTRA IMPORTANT POUR TON WEBHOOK
 referralCodeUsed: referralSafe,
 
 loginCount: 1,
 lastActiveAt: new Date(),
+trialEnd,
 });
 
-/* --------------------------------------------------
-🔥 CREATE SUBSCRIPTION (AUTO)
--------------------------------------------------- */
 await Subscription.create({
 storeId: store._id,
-plan: "STANDARD",
-status: "trial",
+plan: 'STANDARD',
+status: 'trial',
 trialStart: new Date(),
-trialEnd: new Date(
-Date.now() + 30 * 24 * 60 * 60 * 1000
-),
+trialEnd,
 referralCount: 0,
 referralRewarded: 0,
 });
 
 /* --------------------------------------------------
-🔑 TOKEN
+ðŸ”‘ TOKEN
 -------------------------------------------------- */
 const token = generateToken(
 store._id.toString(),
@@ -95,7 +92,7 @@ store.phone
 );
 
 return res.json({
-message: "Compte créé",
+message: "Compte crÃ©Ã©",
 storeId: store._id,
 token,
 isOnboarded:
@@ -109,11 +106,11 @@ String(store.storeName).trim().length > 0
 } catch (err: any) {
 if (err?.code === 11000) {
 return res.status(400).json({
-error: "Ce numéro est déjà utilisé",
+error: "Ce numÃ©ro est dÃ©jÃ  utilisÃ©",
 });
 }
 
-console.error("❌ registerStore:", err);
+console.error("âŒ registerStore:", err);
 
 return res.status(500).json({
 error: "Erreur serveur",
@@ -122,7 +119,7 @@ error: "Erreur serveur",
 };
 
 /* =====================================================
-🔹 LOGIN — V9 STABLE
+ðŸ”¹ LOGIN â€” V9 STABLE
 ===================================================== */
 export const loginStore = async (req: Request, res: Response) => {
 try {
@@ -131,7 +128,7 @@ const { phone, deviceId } = req.body;
 const phoneNorm = normalizePhone(phone);
 
 if (!phoneNorm) {
-return res.status(400).json({ error: "Numéro requis" });
+return res.status(400).json({ error: "NumÃ©ro requis" });
 }
 
 if (!deviceId) {
@@ -147,12 +144,12 @@ error: "Compte introuvable",
 }
 
 /* --------------------------------------------------
-🔐 DEVICE LOCK
+ðŸ” DEVICE LOCK
 -------------------------------------------------- */
 if (store.deviceId && store.deviceId !== deviceId) {
 return res.status(401).json({
 error:
-"Ce compte est déjà utilisé sur un autre appareil",
+"Ce compte est dÃ©jÃ  utilisÃ© sur un autre appareil",
 });
 }
 
@@ -161,7 +158,7 @@ store.deviceId = deviceId;
 }
 
 /* --------------------------------------------------
-🔥 TRACKING LOGIN (ABONNEMENT ENGINE)
+ðŸ”¥ TRACKING LOGIN (ABONNEMENT ENGINE)
 -------------------------------------------------- */
 await Store.updateOne(
 { _id: store._id },
@@ -180,7 +177,7 @@ store.phone
 );
 
 return res.json({
-message: "Connexion réussie",
+message: "Connexion rÃ©ussie",
 storeId: store._id,
 token,
 isOnboarded:
@@ -192,10 +189,11 @@ String(store.storeName).trim().length > 0
 ),
 });
 } catch (err) {
-console.error("❌ loginStore:", err);
+console.error("âŒ loginStore:", err);
 
 return res.status(500).json({
 error: "Erreur serveur",
 });
 }
 };
+

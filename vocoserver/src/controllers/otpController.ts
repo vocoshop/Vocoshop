@@ -182,28 +182,12 @@ if (!deviceId) {
 return res.status(400).json({ error: "deviceId manquant" });
 }
 
-// 🔍 DEBUG OTP
-const allOtps = await OTP.find({ phone }).lean();
-console.log("=== OTP DEBUG ===");
-console.log("PHONE:", phone);
-console.log("CODE RECEIVED:", code, `(type: ${typeof code}, len: ${code.length})`);
-console.log("OTPs in DB for this phone:", allOtps.length);
-allOtps.forEach((o, i) => {
-  console.log(`  [${i}] _id:${o._id} code:"${o.code}" (type:${typeof o.code} len:${o.code.length}) expiresAt:${o.expiresAt}`);
-});
 const otp = await OTP.findOne({
-  phone,
-  code,
-  expiresAt: { $gte: new Date() },
+phone,
+code,
+expiresAt: { $gte: new Date() },
 });
-console.log("OTP MATCH FOUND:", !!otp);
-if (!otp) {
-  // Tente sans le filtre expiration pour voir
-  const anyOtp = await OTP.findOne({ phone, code }).lean();
-  console.log("OTP WITHOUT EXPIRY FILTER:", !!anyOtp);
-  if (anyOtp) console.log("  → expiré ?", anyOtp.expiresAt < new Date());
-  return res.status(400).json({ error: "Code incorrect ou expiré" });
-}
+if (!otp) return res.status(400).json({ error: "Code incorrect ou expiré" });
 
 // Nettoyer l’OTP après succès
 await OTP.deleteOne({ _id: otp._id }).catch(() => {});
@@ -224,6 +208,7 @@ ownerName: ownerName || undefined,
 ownerPhone: ownerPhone || undefined,
 deviceId: deviceId || null,
 // isOnboarded default false (schema)
+trialEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
 });
 
 // tracking install + activity

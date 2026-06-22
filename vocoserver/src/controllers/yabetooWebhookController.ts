@@ -159,7 +159,12 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
     store.lastPaymentId = transactionId;
 
     const now = new Date();
-    let baseDate = store.paidUntil && new Date(store.paidUntil) > now ? new Date(store.paidUntil) : now;
+    let baseDate = now;
+    if (store.paidUntil && new Date(store.paidUntil) > now) {
+      baseDate = new Date(store.paidUntil);
+    } else if (store.trialEnd && new Date(store.trialEnd) > now) {
+      baseDate = new Date(store.trialEnd);
+    }
 
     const newEnd = new Date(baseDate);
     newEnd.setMonth(newEnd.getMonth() + 1);
