@@ -147,7 +147,7 @@ onPress={()=>setMethod("yabetoo")}
 <Text style={styles.optionText}>
 Yabetoo (Mobile Money MTN / Airtel)
 </Text>
-<Text style={styles.optionSubtext}>Paiement 100% Mobile Money</Text>
+          <Text style={styles.optionSubtext}>Paiement Mobile Money intégré</Text>
 </TouchableOpacity>
 
 {/* 🔶 CHARIOW — fallback */}
@@ -276,9 +276,9 @@ keyboardType="numeric"
 {/* 🟢 YABETOO INPUT */}
 {method === "yabetoo" && !waitingValidation && (
 <>
-<Text style={{ color:"#22c55e", fontSize:12, marginBottom:8, textAlign:"center" }}>
-Tu seras redirigé vers la page de paiement Yabetoo
-</Text>
+          <Text style={{ color:"#22c55e", fontSize:12, marginBottom:8, textAlign:"center" }}>
+            Paiement sécurisé intégré à Vocoshop
+          </Text>
 <TextInput
 placeholder="Email (pour la confirmation)"
 placeholderTextColor="#888"
@@ -367,12 +367,22 @@ email: email || `client_${Date.now()}@vocoshop.com`,
 countryCode: "CG",
 });
 
-// Si Chariow retourne une URL de checkout, on ouvre le navigateur
-if (result && typeof result === "object" && "checkoutUrl" in result) {
+// 🟢 YABETOO → WebView intégrée
+if (method === "yabetoo" && result && typeof result === "object" && "checkoutUrl" in result) {
+setMethod(null);
+navigation.navigate("YabetooWebView", {
+checkoutUrl: result.checkoutUrl,
+});
+return;
+}
+
+// 🔶 Chariow → navigateur externe
+if (method === "chariow" && result && typeof result === "object" && "checkoutUrl" in result) {
 const Linking = require("expo-linking");
 Linking.openURL(result.checkoutUrl);
 }
 
+// 📱 Mobile Money / Carte → validation sur téléphone
 Alert.alert(
 "Paiement en cours",
 "📲 Validez la demande sur votre téléphone."

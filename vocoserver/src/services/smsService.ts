@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { sendSMSAfrica, isAfricanNumber } from "./africasTalkingService";
+import { sendSMSAfrica, isAtSupportedCountry } from "./africasTalkingService";
 
 // Vonage (ex-Nexmo) — fallback pour numéros non-africains
 const VONAGE_API_KEY = process.env.VONAGE_API_KEY || "";
@@ -14,8 +14,8 @@ export const sendSMS = async (phone: string, message: string): Promise<boolean> 
   if (formatted.startsWith("00")) formatted = "+" + formatted.slice(2);
   if (!formatted.startsWith("+")) formatted = "+" + formatted;
 
-  // Route les numéros africains via Africa's Talking
-  if (isAfricanNumber(formatted)) {
+  // Route via Africa's Talking si le pays est supporté
+  if (isAtSupportedCountry(formatted)) {
     return sendSMSAfrica(formatted, message);
   }
 

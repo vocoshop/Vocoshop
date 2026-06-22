@@ -60,6 +60,7 @@ import SubscriptionBlockedScreen from "./screens/SubscriptionBlockedScreen";
 import SubscriptionScreen from "./screens/SubscriptionScreen";
 import SubscriptionPayScreen from "./screens/SubscriptionPayScreen";
 import SubscriptionCheckoutScreen from "./screens/SubscriptionCheckoutScreen";
+import YabetooWebViewScreen from "./screens/YabetooWebViewScreen";
 import { NotificationProvider } from "./src/api/context/NotificationContext";
 
 // 🧑‍💼 MON AGENT
@@ -390,6 +391,7 @@ component={SubscriptionBlockedScreen}
 <Stack.Screen name="Subscription" component={SubscriptionScreen} />
 <Stack.Screen name="SubscriptionPay" component={SubscriptionPayScreen} />
 <Stack.Screen name="SubscriptionCheckout" component={SubscriptionCheckoutScreen} />
+<Stack.Screen name="YabetooWebView" component={YabetooWebViewScreen} />
 
 {/* 👥 EMPLOYÉS */}
 <Stack.Screen name="Employees" component={EmployeesScreen} />
