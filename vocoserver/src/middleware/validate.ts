@@ -21,6 +21,11 @@ export const otpRequestSchema = z.object({
 export const otpVerifySchema = z.object({
   phone: z.string().min(8),
   code: z.string().length(6, "Le code doit contenir 6 chiffres"),
+  deviceId: z.string().min(1, "deviceId requis"),
+  forceRelink: z.boolean().optional(),
+  storeName: z.string().optional(),
+  ownerName: z.string().optional(),
+  ownerPhone: z.string().optional(),
 });
 
 export const addSaleSchema = z.object({

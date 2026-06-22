@@ -142,8 +142,12 @@ if (!phone) return res.status(400).json({ error: "Téléphone manquant" });
 
 const code = generateCode();
 
-// Sauvegarde OTP temporaire (sur phone NORMALISÉ)
-await OTP.findOneAndUpdate({ phone }, { phone, code }, { upsert: true, new: true });
+// Supprime les anciens OTP pour ce téléphone
+await OTP.deleteMany({ phone }).catch(() => {});
+
+// Sauvegarde OTP temporaire avec expiration 10 min
+const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+await OTP.create({ phone, code, expiresAt });
 
 await sendSMS(phone, `Votre code de connexion Vocoshop est : ${code}`);
 
@@ -178,8 +182,28 @@ if (!deviceId) {
 return res.status(400).json({ error: "deviceId manquant" });
 }
 
-const otp = await OTP.findOne({ phone, code });
-if (!otp) return res.status(400).json({ error: "Code incorrect" });
+// 🔍 DEBUG OTP
+const allOtps = await OTP.find({ phone }).lean();
+console.log("=== OTP DEBUG ===");
+console.log("PHONE:", phone);
+console.log("CODE RECEIVED:", code, `(type: ${typeof code}, len: ${code.length})`);
+console.log("OTPs in DB for this phone:", allOtps.length);
+allOtps.forEach((o, i) => {
+  console.log(`  [${i}] _id:${o._id} code:"${o.code}" (type:${typeof o.code} len:${o.code.length}) expiresAt:${o.expiresAt}`);
+});
+const otp = await OTP.findOne({
+  phone,
+  code,
+  expiresAt: { $gte: new Date() },
+});
+console.log("OTP MATCH FOUND:", !!otp);
+if (!otp) {
+  // Tente sans le filtre expiration pour voir
+  const anyOtp = await OTP.findOne({ phone, code }).lean();
+  console.log("OTP WITHOUT EXPIRY FILTER:", !!anyOtp);
+  if (anyOtp) console.log("  → expiré ?", anyOtp.expiresAt < new Date());
+  return res.status(400).json({ error: "Code incorrect ou expiré" });
+}
 
 // Nettoyer l’OTP après succès
 await OTP.deleteOne({ _id: otp._id }).catch(() => {});

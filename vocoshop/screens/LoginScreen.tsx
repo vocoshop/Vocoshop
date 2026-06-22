@@ -101,7 +101,10 @@ resetLock();
 
 const buildFullPhone = () => {
 const prefix = callingCode;
-return `+${prefix}${safeTrim(phone)}`;
+const raw = safeTrim(phone);
+// Supprime le 0 initial (indicatif domestique) avant d'ajouter le code pays
+const cleaned = raw.replace(/^0+/, "");
+return `+${prefix}${cleaned}`;
 };
 
 const continueWithPhone = async () => {
