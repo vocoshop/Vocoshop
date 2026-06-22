@@ -2,20 +2,34 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-// Vonage (ex-Nexmo) — SMS OTP
-// Docs: https://developer.vonage.com/en/api/sms
+import { sendSMSAfrica, isAfricanNumber } from "./africasTalkingService";
+
+// Vonage (ex-Nexmo) — fallback pour numéros non-africains
 const VONAGE_API_KEY = process.env.VONAGE_API_KEY || "";
 const VONAGE_API_SECRET = process.env.VONAGE_API_SECRET || "";
 const VONAGE_FROM = process.env.VONAGE_FROM || "VocoShop";
 
 export const sendSMS = async (phone: string, message: string): Promise<boolean> => {
+  let formatted = phone.replace(/[\s\-()]/g, "");
+  if (formatted.startsWith("00")) formatted = "+" + formatted.slice(2);
+  if (!formatted.startsWith("+")) formatted = "+" + formatted;
+
+  // Route les numéros africains via Africa's Talking
+  if (isAfricanNumber(formatted)) {
+    return sendSMSAfrica(formatted, message);
+  }
+
+  // Fallback Vonage pour les autres numéros
+  return sendSMSVonage(formatted, message);
+};
+
+async function sendSMSVonage(phone: string, message: string): Promise<boolean> {
   if (!VONAGE_API_KEY || !VONAGE_API_SECRET) {
     console.warn("⚠️ Vonage non configuré (VONAGE_API_KEY ou VONAGE_API_SECRET manquant)");
     return false;
   }
 
-  // Formater le numéro : retirer espaces, tirets, parenthèses
-  let formatted = phone.replace(/[\s\-()]/g, "");
+  let formatted = phone.replace(/[^+\d]/g, "");
   if (formatted.startsWith("+")) formatted = formatted.slice(1);
 
   try {
@@ -36,7 +50,7 @@ export const sendSMS = async (phone: string, message: string): Promise<boolean> 
     const data: any = await res.json();
 
     if (data.messages && data.messages[0]?.status === "0") {
-      console.log("✅ SMS Vonage envoyé:", formatted);
+      console.log("✅ Vonage SMS envoyé:", formatted);
       return true;
     }
 
@@ -46,4 +60,4 @@ export const sendSMS = async (phone: string, message: string): Promise<boolean> 
     console.error("❌ Vonage SMS exception:", err);
     return false;
   }
-};
+}
