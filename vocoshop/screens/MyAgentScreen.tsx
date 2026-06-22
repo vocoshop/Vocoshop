@@ -1,4 +1,4 @@
-// screens/MyAgentScreen.tsx
+﻿// screens/MyAgentScreen.tsx
 import React, { useCallback, useMemo, useState, useContext } from "react";
 import {
 View,
@@ -47,8 +47,9 @@ setLoading(true);
 const res = await getMyAgent(headers);
 setData(res);
 } catch (e: any) {
-console.log("❌ MyAgentScreen load:", e?.response?.data || e?.message || e);
-Alert.alert("Erreur", "Impossible de charger les infos de l’agent.");
+const errMsg = e?.response?.data?.error || e?.message || "Erreur inconnue";
+console.log("MyAgentScreen load:", errMsg);
+Alert.alert("Erreur", errMsg);
 } finally {
 setLoading(false);
 }
@@ -66,7 +67,7 @@ const name = useMemo(() => String(agent?.name || "").trim(), [agent]);
 const code = useMemo(() => String(agent?.code || "").trim(), [agent]);
 const photoUrl = useMemo(() => String(agent?.photoUrl || "").trim(), [agent]);
 
-// ✅ affichage masqué + contact proxy
+// affichage masque + contact proxy
 const displayPhone = useMemo(() => String(agent?.displayPhone || "—").trim(), [agent]);
 const contactPhone = useMemo(() => String(agent?.contactPhone || "").trim(), [agent]);
 
@@ -103,7 +104,7 @@ return (
 
 <ScrollView
 contentContainerStyle={{
-paddingBottom: 120, // ✅ laisse la place au footer sticky
+paddingBottom: 120,
 }}
 >
 {loading ? (
@@ -115,11 +116,11 @@ paddingBottom: 120, // ✅ laisse la place au footer sticky
 <View style={styles.card}>
 <Text style={styles.cardTitle}>Aucune information agent</Text>
 <Text style={styles.muted}>
-Astuce : lors de l’onboarding, renseigne un code agent valide pour lier la boutique.
+Astuce : lors de l'onboarding, renseigne un code agent valide pour lier la boutique.
 </Text>
 
 <TouchableOpacity onPress={load} style={[styles.btn, { marginTop: 16 }]} activeOpacity={0.85}>
-<Text style={styles.btnText}>Rafraîchir</Text>
+<Text style={styles.btnText}>Rafraichir</Text>
 </TouchableOpacity>
 </View>
 ) : (
@@ -136,14 +137,14 @@ Astuce : lors de l’onboarding, renseigne un code agent valide pour lier la bou
 <View style={{ flex: 1 }}>
 <Text style={styles.name}>{name || "Agent Vocoshop"}</Text>
 <Text style={styles.meta}>Code agent : {code || "—"}</Text>
-<Text style={styles.meta}>Téléphone : {displayPhone || "—"}</Text>
+<Text style={styles.meta}>Telephone : {displayPhone || "—"}</Text>
 
 {!agent.isActive && <Text style={styles.badgeDanger}>Agent indisponible</Text>}
 </View>
 </View>
 
 <Text style={styles.note}>
-Pour protéger l’agent et permettre le contrôle qualité, les contacts passent par un numéro Vocoshop.
+Pour proteger l'agent et permettre le controle qualite, les contacts passent par un numero Vocoshop.
 </Text>
 </View>
     )}

@@ -290,11 +290,6 @@ return res.status(200).json({ agent: null });
 }
 
 const contactPhone = safeTrim(process.env.VOCOSHOP_CONTACT_PHONE);
-if (!contactPhone) {
-return res.status(500).json({
-error: "VOCOSHOP_CONTACT_PHONE manquant côté serveur",
-});
-}
 
 const payload = {
 name: safeTrim((agent as any)?.name),
@@ -302,12 +297,12 @@ code: safeTrim((agent as any)?.code),
 photoUrl: (agent as any)?.photoUrl || null,
 isActive: !!(agent as any)?.isActive,
 displayPhone: DEFAULT_MASKED_PHONE,
-contactPhone,
+contactPhone: contactPhone || null,
 };
 
 return res.status(200).json(payload);
-} catch (e) {
-console.error("❌ getMyAgent:", e);
+} catch (e: any) {
+console.error("❌ getMyAgent:", e?.message || e);
 return res.status(500).json({ error: "Erreur serveur" });
 }
 };
