@@ -91,7 +91,6 @@ export async function sendSMSAfrica(
       to: [formatted],
       message,
       from: AT_SENDER_ID,
-      retryDurationInHours: 1,
     });
 
     const entry = result?.SMSMessageData?.Recipients?.[0];
