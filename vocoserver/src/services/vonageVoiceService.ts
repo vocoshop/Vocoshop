@@ -44,7 +44,7 @@ export async function initiateProxyCall(
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    const data: any = await res.json();
 
     if (res.ok && data.uuid) {
       console.log("✅ Vonage Voice call initiated:", data.uuid);
