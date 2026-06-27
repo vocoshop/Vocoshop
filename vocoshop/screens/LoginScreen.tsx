@@ -35,6 +35,9 @@ const [phone, setPhone] = useState("");
 const [password, setPassword] = useState("");
 const [confirmPassword, setConfirmPassword] = useState("");
 const [storeName, setStoreName] = useState("");
+const [ownerName, setOwnerName] = useState("");
+const [ownerPhone, setOwnerPhone] = useState("");
+const [agentCode, setAgentCode] = useState("");
 const [step, setStep] = useState<Step>("phone");
 const [mode, setMode] = useState<"login" | "register">("login");
 const [loading, setLoading] = useState(false);
@@ -45,6 +48,9 @@ const [errorMsg, setErrorMsg] = useState("");
 const passwordRef = useRef<TextInput>(null);
 const confirmRef = useRef<TextInput>(null);
 const storeNameRef = useRef<TextInput>(null);
+const ownerNameRef = useRef<TextInput>(null);
+const ownerPhoneRef = useRef<TextInput>(null);
+const agentCodeRef = useRef<TextInput>(null);
 const phoneRef = useRef<any>(null);
 
 const glowAnim = useRef(new Animated.Value(0)).current;
@@ -78,6 +84,9 @@ setStep("phone");
 setPassword("");
 setConfirmPassword("");
 setStoreName("");
+setOwnerName("");
+setOwnerPhone("");
+setAgentCode("");
 setErrorMsg("");
 };
 
@@ -165,7 +174,10 @@ setErrorMsg("");
 
 try {
 const name = safeTrim(storeName) || undefined;
-await registerWithPassword(cleanPhone, pwd, name);
+const owner = safeTrim(ownerName) || undefined;
+const ownerTel = safeTrim(ownerPhone) || undefined;
+const code = safeTrim(agentCode) || undefined;
+await registerWithPassword(cleanPhone, pwd, name, owner, ownerTel, code);
 navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
 } catch (e: any) {
 const data = e?.response?.data;
@@ -329,6 +341,34 @@ ref={storeNameRef}
 value={storeName}
 onChangeText={setStoreName}
 placeholder="Nom de votre boutique (optionnel)"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={styles.input}
+/>
+
+<TextInput
+ref={ownerNameRef}
+value={ownerName}
+onChangeText={setOwnerName}
+placeholder="Nom du proprietaire (optionnel)"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={styles.input}
+/>
+
+<TextInput
+ref={ownerPhoneRef}
+value={ownerPhone}
+onChangeText={setOwnerPhone}
+keyboardType="phone-pad"
+placeholder="Tel. du proprietaire (optionnel)"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={styles.input}
+/>
+
+<TextInput
+ref={agentCodeRef}
+value={agentCode}
+onChangeText={setAgentCode}
+placeholder="Code agent / parrain (optionnel)"
 placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.input}
 />
