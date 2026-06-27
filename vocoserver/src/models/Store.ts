@@ -16,6 +16,9 @@ agentCode?: string;
 ownerName?: string;
 ownerPhone?: string;
 
+phoneVerified: boolean;
+phoneVerifiedAt?: Date | null;
+
 deviceId?: string;
 deviceLastChangedAt?: Date | null;
 deviceChangeCount: number;
@@ -28,6 +31,7 @@ shopId: string;
 📦 ABONNEMENT
 ========================= */
 plan: string;
+subscriptionActive: boolean;
 subscriptionStatus: string;
 
 paidUntil?: Date | null;
@@ -96,6 +100,13 @@ ownerName: { type: String, trim: true },
 ownerPhone: { type: String, trim: true },
 
 /* =========================
+📱 VÉRIFICATION TÉLÉPHONE
+========================= */
+
+phoneVerified: { type: Boolean, default: false, index: true },
+phoneVerifiedAt: { type: Date, default: null },
+
+/* =========================
 📱 DEVICE CONTROL
 ========================= */
 
@@ -119,6 +130,12 @@ index: true,
 plan: {
 type: String,
 default: "Essai gratuit",
+},
+
+subscriptionActive: {
+type: Boolean,
+default: false,
+index: true,
 },
 
 subscriptionStatus: {

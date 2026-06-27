@@ -7,6 +7,7 @@ VALIDATION MIDDLEWARE — Zod
 
 export const storeRegistrationSchema = z.object({
   phone: z.string().min(8, "Numéro de téléphone trop court"),
+  password: z.string().min(6, "Mot de passe trop court (min 6 caractères)"),
   storeName: z.string().optional(),
   ownerName: z.string().optional(),
   ownerPhone: z.string().optional(),

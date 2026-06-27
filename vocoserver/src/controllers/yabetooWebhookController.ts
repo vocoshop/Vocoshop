@@ -173,9 +173,15 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
     console.log("[yabetoo_webhook] Mise à jour store: plan=PRO, status=active");
 
     store.plan = "PRO";
+    store.subscriptionActive = true;
     store.subscriptionStatus = "active";
     store.paidUntil = newEnd;
     store.graceUntil = null;
+
+    if (!store.phoneVerified) {
+      store.phoneVerified = true;
+      store.phoneVerifiedAt = new Date();
+    }
 
     if (store.agentCode) {
       console.log("[yabetoo_webhook] AgentCode présent, génération commissions...");

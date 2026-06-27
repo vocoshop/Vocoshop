@@ -50,6 +50,8 @@ export const PushService = {
 
   async registerToken(token: string): Promise<void> {
     try {
+      const authToken = await AsyncStorage.getItem("token");
+      if (!authToken) return;
       await pushApi.post('/push/register', { token, platform: Platform.OS });
     } catch (e) {
       console.log('❌ registerToken error:', e);

@@ -43,6 +43,22 @@ type DeviceLoginResult =
 | { ok: true }
 | { ok: false; reason: "OTP_REQUIRED" | "NO_ACCOUNT" | "UNKNOWN" };
 
+type CheckPhoneResult = {
+exists: boolean;
+hasPassword: boolean;
+phoneVerified: boolean;
+subscriptionActive: boolean;
+};
+
+type LoginResponseData = {
+message: string;
+storeId: string;
+token: string;
+isOnboarded: boolean;
+phoneVerified: boolean;
+subscriptionActive: boolean;
+};
+
 interface AuthContextType {
 user: any;
 token: string | null;
@@ -61,6 +77,10 @@ options?: VerifyOtpOptions
 ) => Promise<boolean>;
 
 deviceLogin: (phone: string) => Promise<DeviceLoginResult>;
+
+checkPhone: (phone: string) => Promise<CheckPhoneResult>;
+loginWithPassword: (phone: string, password: string) => Promise<LoginResponseData>;
+registerWithPassword: (phone: string, password: string, storeName?: string) => Promise<LoginResponseData>;
 
 logout: () => Promise<void>;
 
@@ -301,6 +321,36 @@ load();
 }, []);
 
 /* =====================================================
+CHECK PHONE
+===================================================== */
+const checkPhone = async (phone: string): Promise<CheckPhoneResult> => {
+const res = await API.post<CheckPhoneResult>("/auth/check-phone", { phone });
+return res.data;
+};
+
+const loginWithPassword = async (phone: string, password: string) => {
+const deviceId = await getStableDeviceId();
+const res = await API.post<LoginResponseData>("/auth/login", { phone, password, deviceId });
+await applySession({
+token: res.data.token,
+storeId: res.data.storeId,
+isOnboarded: res.data.isOnboarded,
+});
+return res.data;
+};
+
+const registerWithPassword = async (phone: string, password: string, storeName?: string) => {
+const deviceId = await getStableDeviceId();
+const res = await API.post<LoginResponseData>("/auth/register", { phone, password, storeName, deviceId });
+await applySession({
+token: res.data.token,
+storeId: res.data.storeId,
+isOnboarded: res.data.isOnboarded,
+});
+return res.data;
+};
+
+/* =====================================================
 OTP
 ===================================================== */
 const requestOTP = async (phone: string) => {
@@ -429,6 +479,9 @@ refreshUser,
 requestOTP,
 verifyOTP,
 deviceLogin,
+checkPhone,
+loginWithPassword,
+registerWithPassword,
 logout,
 applySession,
 

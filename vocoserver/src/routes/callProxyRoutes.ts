@@ -1,12 +1,12 @@
-// routes/callProxyRoutes.ts
 import { Router } from "express";
 import authMiddleware from "../middleware/authMiddleware";
-import { initiateCall } from "../controllers/callProxyController";
+import { initiateCall, answerWebhook, eventWebhook } from "../controllers/callProxyController";
 
 const router = Router();
 
-router.use(authMiddleware);
+router.post("/initiate", authMiddleware, initiateCall);
 
-router.post("/initiate", initiateCall);
+router.post("/webhook/answer/:proxyId", answerWebhook);
+router.post("/webhook/event/:proxyId", eventWebhook);
 
 export default router;
