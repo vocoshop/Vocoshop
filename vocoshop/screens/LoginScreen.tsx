@@ -10,6 +10,8 @@ Alert,
 ScrollView,
 KeyboardAvoidingView,
 Platform,
+Animated,
+Easing,
 } from "react-native";
 
 import PhoneInput from "react-native-phone-number-input";
@@ -49,12 +51,23 @@ const [ownerPhone, setOwnerPhone] = useState("");
 const [agentCode, setAgentCode] = useState("");
 const [errorMsg, setErrorMsg] = useState("");
 
+const glowAnim = useRef(new Animated.Value(0)).current;
+
+useEffect(() => {
+Animated.loop(
+Animated.sequence([
+Animated.timing(glowAnim,{toValue:1,duration:900,useNativeDriver:false,easing:Easing.ease}),
+Animated.timing(glowAnim,{toValue:0,duration:900,useNativeDriver:false,easing:Easing.ease}),
+])
+).start();
+},[]);
+
 const phoneRef = useRef<any>(null);
-const passwordRef = useRef<TextInput>(null);
+const hiddenRef = useRef<TextInput>(null);
 
 useEffect(() => {
 if (step === "password") {
-setTimeout(() => passwordRef.current?.focus(), 300);
+setTimeout(() => hiddenRef.current?.focus(), 300);
 }
 }, [step]);
 
@@ -97,15 +110,21 @@ setLoading(false);
 }
 };
 
+const handlePasswordChange = (t: string) => {
+const clean = t.replace(/[^0-9]/g, "").slice(0, 6);
+setPassword(clean);
+setErrorMsg("");
+};
+
 const handleSubmit = async () => {
 if (loading) return;
 const cleanPhone = buildFullPhone();
-const pwd = safeTrim(password);
-if (!pwd || pwd.length < 6) {
-setErrorMsg("Mot de passe trop court (min 6)");
+const pwd = password;
+if (!pwd || pwd.length !== 6) {
+setErrorMsg("Le mot de passe doit contenir 6 chiffres");
 return;
 }
-if (isNewAccount && pwd !== safeTrim(confirmPassword)) {
+if (isNewAccount && pwd !== confirmPassword) {
 setErrorMsg("Les mots de passe ne correspondent pas");
 return;
 }
@@ -141,7 +160,7 @@ return (
 </Text>
 
 <Text style={styles.subtitle}>
-{step === "phone" ? t("login.subtitle.phone") : isNewAccount ? "Créez votre compte Vocoshop" : "Saisissez votre mot de passe"}
+{step === "phone" ? t("login.subtitle.phone") : isNewAccount ? "Créez votre compte Vocoshop" : "Entrez votre code secret 6 chiffres"}
 </Text>
 
 {step === "phone" ? (
@@ -182,19 +201,26 @@ style={styles.phoneCustomInput}
 
 <View style={styles.formCard}>
 
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83D\uDD10"}</Text>
+<TouchableOpacity activeOpacity={1} onPress={() => hiddenRef.current?.focus()}>
 <TextInput
-ref={passwordRef}
-style={styles.fieldInput}
+ref={hiddenRef}
+style={styles.hiddenInput}
+keyboardType="numeric"
 value={password}
-onChangeText={(t) => { setPassword(t); setErrorMsg(""); }}
-secureTextEntry
-placeholder="Mot de passe"
-placeholderTextColor="rgba(255,255,255,0.35)"
-autoCapitalize="none"
+onChangeText={handlePasswordChange}
+maxLength={6}
 />
+<View style={styles.otpRow}>
+{[0, 1, 2, 3, 4, 5].map((i) => (
+<Animated.View
+key={i}
+style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgroundColor: glowAnim.interpolate({ inputRange: [0, 1], outputRange: ["#1F1F2A", "rgba(108,99,255,0.22)"] }) }]}
+>
+<Text style={styles.otpText}>{password[i] || ""}</Text>
+</Animated.View>
+))}
 </View>
+</TouchableOpacity>
 
 {isNewAccount && (
 <>
@@ -203,11 +229,11 @@ autoCapitalize="none"
 <TextInput
 style={styles.fieldInput}
 value={confirmPassword}
-onChangeText={setConfirmPassword}
-secureTextEntry
-placeholder="Confirmer le mot de passe"
+onChangeText={(t) => setConfirmPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
+keyboardType="numeric"
+placeholder="Confirmer le code 6 chiffres"
 placeholderTextColor="rgba(255,255,255,0.35)"
-autoCapitalize="none"
+maxLength={6}
 />
 </View>
 
@@ -316,6 +342,14 @@ phoneCustomInput: { flex: 1, color: "#fff", fontSize: 16 },
 infoText: { color: "rgba(255,255,255,0.40)", marginTop: 8, marginBottom: 14, fontSize: 12, textAlign: "center" },
 
 formCard: { width: "100%" },
+
+hiddenInput: { position: "absolute", opacity: 0 },
+
+otpRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
+
+otpBox: { width: 48, height: 58, borderRadius: 12, backgroundColor: "#1C1C26", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+
+otpText: { color: "#fff", fontSize: 24, fontWeight: "900" },
 
 fieldGroup: { flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 14, height: 54, paddingHorizontal: 14, marginBottom: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
 
