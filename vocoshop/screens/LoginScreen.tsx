@@ -129,10 +129,12 @@ return (
 <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
+{step === "phone" && (
 <View style={styles.langRow}>
 <View />
 <LanguagePicker />
 </View>
+)}
 
 <Text style={styles.title}>
 {step === "phone" ? t("login.title.phone") : isNewAccount ? "Nouveau compte" : "Bienvenue"}
