@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { sendSMSAfrica, isAtSupportedCountry } from "./africasTalkingService";
+import { sendSMSAfricala } from "./smsAfricalaService";
 
 // Vonage (ex-Nexmo) — fallback pour numéros non-africains
 const VONAGE_API_KEY = process.env.VONAGE_API_KEY || "";
@@ -17,6 +18,11 @@ export const sendSMS = async (phone: string, message: string): Promise<boolean> 
   // Route via Africa's Talking si le pays est supporté
   if (isAtSupportedCountry(formatted)) {
     return sendSMSAfrica(formatted, message);
+  }
+
+  // Route Congo-Brazzaville (+242) via Africala (connexions directes MTN/Airtel Congo)
+  if (formatted.startsWith("+242")) {
+    return sendSMSAfricala(formatted, message);
   }
 
   // Fallback Vonage pour les autres numéros
