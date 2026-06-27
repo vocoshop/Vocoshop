@@ -201,6 +201,39 @@ style={styles.phoneCustomInput}
 
 <View style={styles.formCard}>
 
+{isNewAccount ? (
+<>
+
+<View style={styles.fieldGroup}>
+<Text style={styles.fieldIcon}>{"\uD83D\uDD10"}</Text>
+<TextInput
+style={styles.fieldInput}
+value={password}
+onChangeText={handlePasswordChange}
+keyboardType="numeric"
+placeholder="Code secret 6 chiffres"
+placeholderTextColor="rgba(255,255,255,0.35)"
+maxLength={6}
+/>
+</View>
+
+<View style={styles.fieldGroup}>
+<Text style={styles.fieldIcon}>{"\uD83D\uDD10"}</Text>
+<TextInput
+style={styles.fieldInput}
+value={confirmPassword}
+onChangeText={(t) => setConfirmPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
+keyboardType="numeric"
+placeholder="Confirmer le code 6 chiffres"
+placeholderTextColor="rgba(255,255,255,0.35)"
+maxLength={6}
+/>
+</View>
+
+</>
+) : (
+<>
+
 <TouchableOpacity activeOpacity={1} onPress={() => hiddenRef.current?.focus()}>
 <TextInput
 ref={hiddenRef}
@@ -222,20 +255,11 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 </View>
 </TouchableOpacity>
 
+</>
+)}
+
 {isNewAccount && (
 <>
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83D\uDD10"}</Text>
-<TextInput
-style={styles.fieldInput}
-value={confirmPassword}
-onChangeText={(t) => setConfirmPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
-keyboardType="numeric"
-placeholder="Confirmer le code 6 chiffres"
-placeholderTextColor="rgba(255,255,255,0.35)"
-maxLength={6}
-/>
-</View>
 
 <View style={styles.sectionLabel}>
 <Text style={styles.sectionLabelText}>INFORMATIONS BOUTIQUE</Text>
@@ -290,6 +314,7 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 autoCapitalize="characters"
 />
 </View>
+
 </>
 )}
 
