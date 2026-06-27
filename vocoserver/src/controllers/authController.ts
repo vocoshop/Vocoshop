@@ -111,7 +111,7 @@ await Store.updateOne(
 );
 
 const token = generateToken(store._id.toString(), store.phone);
-return res.json({
+    return res.json({
 message: "Connexion reussie",
 storeId: store._id,
 token,
@@ -123,22 +123,24 @@ subscriptionActive: store.subscriptionActive || false,
 });
 }
 
-if (!deviceId) return res.status(400).json({ error: "deviceId requis" });
+// Pas de mot de passe encore enregistre (ancien compte OTP)
+// Le premier mot de passe saisi devient le mot de passe du compte
+if (!password) return res.status(400).json({ error: "Mot de passe requis" });
+if (password.length < 6) return res.status(400).json({ error: "Mot de passe trop court" });
 
-if (store.deviceId && store.deviceId !== deviceId) {
-return res.status(401).json({ error: "Ce compte est deja utilise sur un autre appareil" });
-}
+const passwordHash = await bcrypt.hash(password, 10);
+store.passwordHash = passwordHash;
 
-if (!store.deviceId) store.deviceId = deviceId;
+if (!store.deviceId && deviceId) store.deviceId = deviceId;
 
 await Store.updateOne(
 { _id: store._id },
-{ $inc: { loginCount: 1 }, $set: { lastActiveAt: new Date(), deviceId: store.deviceId } }
+{ $inc: { loginCount: 1 }, $set: { lastActiveAt: new Date(), passwordHash, deviceId: store.deviceId } }
 );
 
 const token = generateToken(store._id.toString(), store.phone);
 return res.json({
-message: "Connexion reussie",
+message: "Mot de passe enregistre",
 storeId: store._id,
 token,
 isOnboarded: typeof (store as any).isOnboarded === "boolean"
