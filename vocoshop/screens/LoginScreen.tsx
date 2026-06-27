@@ -308,8 +308,8 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 <TextInput
 style={styles.fieldInput}
 value={agentCode}
-onChangeText={(t) => setAgentCode(formatAgentCode(t))}
-placeholder="Code agent (ex: AG-1234-A)"
+onChangeText={(t) => setAgentCode(t.toUpperCase())}
+placeholder="Code parrain (agent ou boutique)"
 placeholderTextColor="rgba(255,255,255,0.35)"
 autoCapitalize="characters"
 />

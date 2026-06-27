@@ -236,7 +236,7 @@ export const chariowWebhook = async (req: Request, res: Response) => {
       typeof store.referralCodeUsed === "string" &&
       store.referralCodeUsed.trim().length > 0
     ) {
-      const sponsor: any = await Store.findOne({ referralCode: store.referralCodeUsed });
+      const sponsor: any = await Store.findOne({ $or: [{ referralCode: store.referralCodeUsed }, { agentCode: store.referralCodeUsed }] });
 
       if (
         sponsor &&

@@ -184,7 +184,7 @@ store.referralCodeUsed.trim().length > 0
 ) {
 
 const sponsor: any = await Store.findOne({
-referralCode: store.referralCodeUsed
+$or: [{ referralCode: store.referralCodeUsed }, { agentCode: store.referralCodeUsed }]
 });
 
 if (!sponsor) {

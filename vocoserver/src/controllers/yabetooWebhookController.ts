@@ -233,7 +233,7 @@ export const yabetooWebhook = async (req: Request, res: Response) => {
 
     if (store.referralCodeUsed && typeof store.referralCodeUsed === "string" && store.referralCodeUsed.trim().length > 0) {
       try {
-        const sponsor: any = await Store.findOne({ referralCode: store.referralCodeUsed });
+        const sponsor: any = await Store.findOne({ $or: [{ referralCode: store.referralCodeUsed }, { agentCode: store.referralCodeUsed }] });
         if (sponsor && sponsor._id.toString() !== store._id.toString() && !store.referralRewarded) {
           sponsor.paidReferrals = Number(sponsor.paidReferrals || 0) + 1;
           sponsor.referredCount = Number(sponsor.referredCount || 0) + 1;
