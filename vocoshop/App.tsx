@@ -225,11 +225,22 @@ setOnboarded(true);
 navigation.reset({ index: 0, routes: [{ name: "Home" }] });
 return;
 }
+} else {
+// Token invalide (401/404) → nettoyer et rediriger Login
+await AsyncStorage.multiRemove(["token", "storeId", "isOnboarded"]);
+if (cancelled) return;
+navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+return;
 }
 } catch {
-// ignore -> fallback onboarding
+// Token invalide ou serveur injoignable → nettoyer et rediriger vers Login
+await AsyncStorage.multiRemove(["token", "isOnboarded"]);
+if (cancelled) return;
+navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+return;
 }
 
+// isOnboarded === false → Onboarding
 navigation.reset({ index: 0, routes: [{ name: "Onboarding" }] });
 };
 
