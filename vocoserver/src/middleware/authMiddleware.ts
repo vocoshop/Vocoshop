@@ -132,7 +132,7 @@ id: `owner:${storeId}`,
 userId: `owner:${storeId}`,
 storeId,
 role: "owner",
-permissions: { "*": true },
+permissions: ["inventory", "sales", "reports", "stock", "orders", "employees"],
 agentCode: safeTrim((store as any).agentCode),
 storeName: safeTrim((store as any).storeName),
 };
