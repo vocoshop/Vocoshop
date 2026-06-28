@@ -72,25 +72,16 @@ if (part3) result += "-" + part3;
 return result;
 };
 
-const formatReferralCode = (value: string) => {
-let raw = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-let part1 = raw.slice(0, 3);
-let part2 = raw.slice(3, 10);
-
-let result = part1;
-
-if (part2) result += "-" + part2;
-
-return result;
-};
+const masked = (s: string) => s.replace(/./g, "•");
+const dotted = (s: string) => (showPassword ? s : masked(s));
+const display = (s: string) => (s + "______").slice(0, 6).split("").join(" ");
 
 const handleAgentCodeChange = (value: string) => {
 setAgentCode(formatAgentCode(value));
 };
 
 const handleReferralCodeChange = (value: string) => {
-setReferralCode(formatReferralCode(value));
+setReferralCode(value.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
 };
 
 /* =====================================================
@@ -352,14 +343,15 @@ autoCorrect={false}
 <Text style={styles.label}>Code secret 6 chiffres *</Text>
 <View style={styles.inputWrap}>
 <TextInput
-value={password}
-onChangeText={(t) => setPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
-keyboardType="numeric"
-maxLength={6}
-placeholder="Entrez 6 chiffres"
-placeholderTextColor="rgba(255,255,255,0.35)"
+value={display(dotted(password))}
+onChangeText={(t) => {
+const digits = t.replace(/[^0-9]/g, "").slice(0, 6);
+setPassword(digits);
+setConfirmPassword("");
+}}
 style={styles.input}
-secureTextEntry={!showPassword}
+keyboardType="numeric"
+autoCorrect={false}
 />
 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="rgba(255,255,255,0.5)" />
@@ -369,14 +361,14 @@ secureTextEntry={!showPassword}
 <Text style={styles.label}>Confirmer le code secret *</Text>
 <View style={styles.inputWrap}>
 <TextInput
-value={confirmPassword}
-onChangeText={(t) => setConfirmPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
-keyboardType="numeric"
-maxLength={6}
-placeholder="Retaper les 6 chiffres"
-placeholderTextColor="rgba(255,255,255,0.35)"
+value={display(dotted(confirmPassword))}
+onChangeText={(t) => {
+const digits = t.replace(/[^0-9]/g, "").slice(0, 6);
+setConfirmPassword(digits);
+}}
 style={styles.input}
-secureTextEntry={!showPassword}
+keyboardType="numeric"
+autoCorrect={false}
 />
 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="rgba(255,255,255,0.5)" />
