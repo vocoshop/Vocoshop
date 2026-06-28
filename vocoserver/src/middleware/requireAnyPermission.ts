@@ -6,14 +6,20 @@ type PermKey = "inventory" | "sales" | "reports" | "orders" | "employees";
 export default function requireAnyPermission(...permissions: PermKey[]) {
 return async (req: Request, res: Response, next: NextFunction) => {
 try {
-const userId = String(req.user?.id || "");
-if (!userId) {
-return res.status(401).json({ error: "Non authentifié" });
-}
+  const userId = String(req.user?.id || "");
+      if (!userId) {
+        return res.status(401).json({ error: "Non authentifié" });
+      }
 
-const user = await User.findById(userId)
-.select("role isActive permissions")
-.lean();
+      // ✅ owner / admin : accès total (sans lookup User)
+      const role = String(req.user?.role || "");
+      if (role === "owner" || role === "admin" || userId.startsWith("owner:")) {
+        return next();
+      }
+
+      const user = await User.findById(userId)
+        .select("role isActive permissions")
+        .lean();
 
 if (!user) {
 return res.status(401).json({ error: "Utilisateur introuvable" });
