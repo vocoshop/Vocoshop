@@ -180,6 +180,24 @@ prev.filter((c) => c.product._id !== productId)
 );
 };
 
+const setItemQty = (productId: string, qty: number) => {
+if (qty <= 0) {
+removeFromCart(productId);
+return;
+}
+setCart((prev) =>
+prev.map((c) => {
+if (c.product._id !== productId) return c;
+const clamped = Math.min(qty, c.product.quantity);
+return {
+...c,
+qty: clamped,
+total: clamped * c.product.sellPrice,
+};
+})
+);
+};
+
 /* =====================================================
 CART TOTAL
 ===================================================== */
@@ -314,6 +332,7 @@ return {
   increaseQty,
   decreaseQty,
   removeFromCart,
+  setItemQty,
   finalizeSale,
   quickSell,
 };

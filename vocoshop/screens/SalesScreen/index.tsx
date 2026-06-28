@@ -10,6 +10,7 @@ Modal,
 ActivityIndicator,
 StyleSheet,
 FlatList,
+Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -32,9 +33,10 @@ cartTotal,
 selling,
 applySearch,
 addToCart,
-increaseQty,
-decreaseQty,
-removeFromCart,
+  increaseQty,
+  decreaseQty,
+  removeFromCart,
+  setItemQty,
 finalizeSale,
 } = useSales();
 
@@ -43,6 +45,7 @@ const { dayModal, dayLoading, daySummary, closeDay, setDayModal } = useCloseDay(
 const [qty, setQty] = useState("1");
 const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 const [cartModal, setCartModal] = useState(false);
+const [editingQty, setEditingQty] = useState<string | null>(null);
 const [saleMsg, setSaleMsg] = useState<{ type: "success" | "offline" | "error"; text: string } | null>(null);
 
 const handleFinalize = async () => {
@@ -239,45 +242,53 @@ setSelectedProduct(null);
 <ScrollView>
 {cart.map((item) => (
 <View key={item.product._id} style={styles.cartLine}>
-<View>
+<View style={styles.cartLineTop}>
 <Text style={styles.cartName}>{item.product.name}</Text>
-<Text style={styles.cartQty}>
-{item.qty} × {item.product.sellPrice} FCFA
-</Text>
-</View>
-
-<View style={styles.cartActions}>
 <TouchableOpacity
-onPress={() => decreaseQty(item.product._id)}
+onPress={() => {
+Alert.alert(
+"Retirer du panier",
+`Supprimer "${item.product.name}" ?`,
+[
+{ text: "Annuler", style: "cancel" },
+{
+text: "Supprimer",
+style: "destructive",
+onPress: () => removeFromCart(item.product._id),
+},
+]
+);
+}}
 activeOpacity={0.8}
+hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
 >
-<Ionicons
-name="remove-circle-outline"
-size={22}
-color="#A78BFA"
-/>
-</TouchableOpacity>
-
-<TouchableOpacity
-onPress={() => increaseQty(item.product._id)}
-activeOpacity={0.8}
->
-<Ionicons
-name="add-circle-outline"
-size={22}
-color="#A78BFA"
-/>
-</TouchableOpacity>
-
-<TouchableOpacity
-onPress={() => removeFromCart(item.product._id)}
-activeOpacity={0.8}
->
-<Ionicons name="trash-outline" size={22} color="#EF4444" />
+<Ionicons name="trash-outline" size={20} color="#EF4444" />
 </TouchableOpacity>
 </View>
 
-<Text style={styles.cartTotalLine}>{item.total} FCFA</Text>
+<View style={styles.cartLineBottom}>
+{editingQty === item.product._id ? (
+<TextInput
+value={String(item.qty)}
+onChangeText={(v) => {
+const n = parseInt(v, 10);
+if (!isNaN(n)) setItemQty(item.product._id, n);
+}}
+onBlur={() => setEditingQty(null)}
+keyboardType="numeric"
+style={styles.cartQtyInput}
+autoFocus
+/>
+) : (
+<TouchableOpacity onPress={() => setEditingQty(item.product._id)}>
+<Text style={styles.cartQtyEdit}>{item.qty}</Text>
+</TouchableOpacity>
+)}
+
+<Text style={styles.cartQtyLabel}>× {item.product.sellPrice} FCFA</Text>
+
+<Text style={styles.cartTotalLine}>= {item.total} FCFA</Text>
+</View>
 </View>
 ))}
 </ScrollView>
@@ -513,23 +524,54 @@ padding: 12,
 borderRadius: 10,
 marginBottom: 10,
 },
+cartLineTop: {
+flexDirection: "row",
+justifyContent: "space-between",
+alignItems: "center",
+marginBottom: 8,
+},
 cartName: {
 color: "#fff",
 fontWeight: "700",
+flex: 1,
 },
-cartQty: {
-color: "#9CA3AF",
-fontSize: 12,
-},
-cartActions: {
+cartLineBottom: {
 flexDirection: "row",
-gap: 12,
-marginTop: 8,
+alignItems: "center",
+gap: 6,
+},
+cartQtyEdit: {
+color: "#A78BFA",
+fontSize: 18,
+fontWeight: "800",
+backgroundColor: "#2D2547",
+paddingHorizontal: 12,
+paddingVertical: 4,
+borderRadius: 8,
+overflow: "hidden",
+minWidth: 40,
+textAlign: "center",
+},
+cartQtyInput: {
+backgroundColor: "#2D2547",
+color: "#A78BFA",
+fontSize: 18,
+fontWeight: "800",
+paddingHorizontal: 12,
+paddingVertical: 4,
+borderRadius: 8,
+minWidth: 50,
+textAlign: "center",
+},
+cartQtyLabel: {
+color: "#9CA3AF",
+fontSize: 13,
 },
 cartTotalLine: {
 color: "#A78BFA",
 fontWeight: "700",
-marginTop: 6,
+fontSize: 14,
+marginLeft: "auto",
 },
 total: {
 color: "#fff",
