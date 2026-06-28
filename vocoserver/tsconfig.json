@@ -6,6 +6,8 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "strict": false,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,

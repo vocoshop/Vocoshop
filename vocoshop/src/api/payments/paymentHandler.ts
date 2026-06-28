@@ -1,7 +1,7 @@
 import API from "../api";
 
 type PaymentPayload = {
-method: "mobile_money" | "card" | "chariow" | "yabetoo";
+method: "mobile_money" | "card" | "yabetoo";
 phone?: string;
 card?: string;
 expiry?: string;
@@ -13,7 +13,6 @@ countryCode?: string;
 /**
  * 🔥 PAYMENT HANDLER GLOBAL
  * - Yabetoo (Mobile Money — recommandé)
- * - Chariow (fallback)
  */
 export async function handleSubscriptionPayment(payload: PaymentPayload): Promise<true | { checkoutUrl: string }> {
 try {
@@ -72,28 +71,6 @@ cvc: payload.cvc,
 });
 
 return true;
-}
-
-/* =====================================================
-🔶 CHARIOW (fallback)
-===================================================== */
-if (payload.method === "chariow") {
-
-if (!payload.email || !payload.phone) {
-throw new Error("Email et numéro requis");
-}
-
-const res: any = await API.post("/chariow/checkout", {
-email: payload.email,
-phone: payload.phone,
-countryCode: payload.countryCode || "CG",
-});
-
-if (res.data?.checkoutUrl) {
-return { checkoutUrl: res.data.checkoutUrl };
-}
-
-throw new Error(res.data?.error || "Échec Chariow");
 }
 
 throw new Error("Méthode inconnue");

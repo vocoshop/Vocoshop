@@ -115,7 +115,7 @@ touchLastActiveThrottled(storeId);
 try {
 const sub = await evaluateSubscription(storeId);
 
-req.subscription = sub;
+req.subscription = sub ?? undefined;
 
 if (!sub?.access && !isSubscriptionAllowedRoute(req)) {
 return res.status(402).json({
@@ -153,22 +153,22 @@ const user = await User.findById(userId)
 if (!user)
 return res.status(401).json({ error: "Utilisateur invalide" });
 
-		if (!user.store) {
-			// ✅ CAS B1: Admin sans store (owner sans boutique)
-			if ((user as any).role === "owner") {
-				req.user = {
-				id: String(user._id),
-				userId: String(user._id),
-				storeId: null,
-				role: "owner",
-				permissions: { "*": true },
-			};
-				return next();
-			}
-			// On laisse passer pour les autres, req.user = null pour que le contrôleur gère le cas
+if (!user.store) {
+// ✅ CAS B1: Admin sans store (owner sans boutique)
+if ((user as any).role === "owner") {
+req.user = {
+id: String(user._id),
+userId: String(user._id),
+storeId: null,
+role: "owner",
+permissions: { "*": true },
+};
+return next();
+}
+// On laisse passer pour les autres, req.user = null pour que le contrôleur gère le cas
 req.user = undefined;
 return next();
-		}
+}
 
 if ((user as any).isActive === false)
 return res.status(403).json({
@@ -203,7 +203,7 @@ touchLastActiveThrottled(storeId);
 try {
 const sub = await evaluateSubscription(storeId);
 
-req.subscription = sub;
+req.subscription = sub ?? undefined;
 
 if (!sub?.access && !isSubscriptionAllowedRoute(req)) {
 return res.status(402).json({

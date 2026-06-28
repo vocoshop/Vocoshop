@@ -118,7 +118,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
     // Generate JWT
     const adminName = [ADMIN_NAME, ADMIN_SURNAME].filter(Boolean).join(' ');
 
-    const JWT_SECRET = process.env.JWT_SECRET;
+    const JWT_SECRET = process.env.JWT_SECRET!;
     const token = jwt.sign(
       { role: "owner", email: config.email, name: adminName },
       JWT_SECRET,

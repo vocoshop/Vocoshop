@@ -11,7 +11,7 @@ return String(p || "").replace(/\s+/g, "").trim();
 function signAppJwt(userId: string) {
 return jwt.sign(
 { userId },
-process.env.JWT_SECRET,
+process.env.JWT_SECRET!,
 { expiresIn: "30d" }
 );
 }
@@ -58,7 +58,7 @@ isActive: false,
 // ✅ token d’invitation (pas JWT final)
 const inviteToken = jwt.sign(
 { userId: String(user._id), purpose: "employee_invite" },
-process.env.JWT_SECRET,
+process.env.JWT_SECRET!,
 { expiresIn: "7d" }
 );
 
@@ -95,7 +95,7 @@ if (!token) return res.status(400).json({ error: "Token manquant" });
 
 let decoded: any;
 try {
-decoded = jwt.verify(token, process.env.JWT_SECRET);
+decoded = jwt.verify(token, process.env.JWT_SECRET!);
 } catch {
 return res.status(400).json({ error: "Token invalide ou expiré" });
 }

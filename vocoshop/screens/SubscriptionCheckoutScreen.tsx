@@ -52,10 +52,7 @@ method === "card" && card && expiry && cvc;
 const isYabetooValid =
 method === "yabetoo" && email && email.includes("@");
 
-const isChariowValid =
-method === "chariow" && phone && phone.length >= 6;
-
-const canPay = isMobileValid || isCardValid || isYabetooValid || isChariowValid;
+const canPay = isMobileValid || isCardValid || isYabetooValid;
 
 /* =====================================================
 🔥 DETECTION OPERATEUR UX (FRONT ONLY)
@@ -150,18 +147,6 @@ Yabetoo (Mobile Money MTN / Airtel)
           <Text style={styles.optionSubtext}>Paiement Mobile Money intégré</Text>
 </TouchableOpacity>
 
-{/* 🔶 CHARIOW — fallback */}
-<TouchableOpacity
-style={styles.option}
-onPress={()=>setMethod("chariow")}
->
-<Ionicons name="wallet-outline" size={22} color="#FFA500" />
-<Text style={styles.optionText}>
-Chariow (Mobile Money / Carte)
-</Text>
-<Text style={styles.optionSubtext}>Alternative de paiement</Text>
-</TouchableOpacity>
-
 {/* =====================================================
 🔥 OVERLAY CENTER PAYMENT
 ===================================================== */}
@@ -181,8 +166,6 @@ styles.overlayCard,
 ? "Paiement via Yabetoo"
 : method === "card"
 ? "Paiement Carte Bancaire"
-: method === "chariow"
-? "Paiement via Chariow"
 : "Paiement Mobile Money"}
 </Text>
 
@@ -291,32 +274,6 @@ autoCapitalize="none"
 </>
 )}
 
-{/* 🔶 CHARIOW INPUTS */}
-{method === "chariow" && !waitingValidation && (
-<>
-<Text style={{ color:"#FFA500", fontSize:12, marginBottom:8, textAlign:"center" }}>
-Tu seras redirigé vers la page de paiement Chariow
-</Text>
-<TextInput
-placeholder="Numéro de téléphone"
-placeholderTextColor="#888"
-style={styles.input}
-value={phone}
-onChangeText={setPhone}
-keyboardType="phone-pad"
-/>
-<TextInput
-placeholder="Email (pour la confirmation)"
-placeholderTextColor="#888"
-style={styles.input}
-value={email}
-onChangeText={setEmail}
-keyboardType="email-address"
-autoCapitalize="none"
-/>
-</>
-)}
-
 {/* 🔥 PAY BTN — VERSION ULTRA PRO */}
 <Animated.View style={{ transform:[{ scale:pulseAnim }] }}>
 <TouchableOpacity
@@ -349,16 +306,11 @@ Alert.alert("Email requis","Entrez votre email pour la confirmation.");
 return;
 }
 
-if(method === "chariow" && !phone){
-Alert.alert("Numéro requis","Entrez votre numéro de téléphone.");
-return;
-}
-
 setLoading(true);
 setWaitingValidation(true);
 
 const result = await handleSubscriptionPayment({
-method: method === "yabetoo" ? "yabetoo" : method === "chariow" ? "chariow" : method === "card" ? "card" : "mobile_money",
+method: method === "yabetoo" ? "yabetoo" : method === "card" ? "card" : "mobile_money",
 phone,
 card,
 expiry,
@@ -374,12 +326,6 @@ navigation.navigate("YabetooWebView", {
 checkoutUrl: result.checkoutUrl,
 });
 return;
-}
-
-// 🔶 Chariow → navigateur externe
-if (method === "chariow" && result && typeof result === "object" && "checkoutUrl" in result) {
-const Linking = require("expo-linking");
-Linking.openURL(result.checkoutUrl);
 }
 
 // 📱 Mobile Money / Carte → validation sur téléphone

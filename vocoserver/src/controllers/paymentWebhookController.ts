@@ -51,12 +51,12 @@ if (!verifyFlutterwaveSignature(req)) {
   return res.status(401).json({ error: "Signature invalide" });
 }
 
-const ip = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || null;
+const ip = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || undefined;
 
 // Support both legacy and Flutterwave webhook formats
-let storeId: string | null = null;
-let status: string | null = null;
-let transactionId: string | null = null;
+let storeId: string | undefined = undefined;
+let status: string | undefined = undefined;
+let transactionId: string | undefined = undefined;
 
 const body = req.body || {};
 if (body.event && body.event.type === "CHARGED" && body.event.data) {
@@ -100,19 +100,16 @@ return res.status(404).json({ error: "Store not found" });
 const now = new Date();
 
 /* =====================================================
-🛑 ANTI DOUBLE WEBHOOK
+🛑 ANTI DOUBLE WEBHOOK — VÉRIFICATION AVANT TOUTE ACTION
 ===================================================== */
 
-if (transactionId) {
-if (store.lastPaymentId === transactionId) {
+if (transactionId && store.lastPaymentId === transactionId) {
 console.log("⛔ Webhook déjà traité:", transactionId);
 return res.json({ ok: true });
 }
-store.lastPaymentId = transactionId;
-}
 
 /* =====================================================
-🔥 ACTIVER ABONNEMENT CLIENT
+🔥 ACTIVER ABONNEMENT CLIENT + SAUVEGARDE IMMÉDIATE
 ===================================================== */
 
 let baseDate =
@@ -127,17 +124,23 @@ store.plan = "PRO";
 store.subscriptionStatus = "active";
 store.paidUntil = newEnd;
 store.graceUntil = null;
+if (transactionId) store.lastPaymentId = transactionId;
+
+// 💾 Sauvegarde immédiate : si le serveur crash après, le webhook ne sera pas retraité
+await store.save();
 
 console.log("✅ Abonnement activé jusqu'au:", newEnd);
 
-// Commission pour l'agent affilié
+// Commission pour l'agent affilié (fire-and-forget, échouera silencieusement)
 if (store.agentCode) {
   const now2 = new Date();
-  generateCommissions(store.agentCode, now2.getMonth() + 1, now2.getFullYear()).catch(() => {});
+  generateCommissions(store.agentCode, now2.getMonth() + 1, now2.getFullYear()).catch((err) => {
+    console.error("❌ generateCommissions échoué:", err);
+  });
 }
 
 /* =====================================================
-🧾 CREATION FACTURE AUTOMATIQUE (NOUVEAU)
+🧾 CREATION FACTURE AUTOMATIQUE
 ===================================================== */
 
 const billingStart = now;

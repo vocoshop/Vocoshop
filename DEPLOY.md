@@ -60,8 +60,6 @@
 - [ ] Flutterwave : configurer le webhook URL
   - URL : `https://api.vocoshop.com/api/webhook/flutterwave`
   - Secret Hash : `FLUTTERWAVE_SECRET_HASH`
-- [ ] Chariow : configurer le webhook URL
-  - URL : `https://api.vocoshop.com/api/chariow/webhook`
 
 ## ÉTAPE 6 — Africa's Talking + WhatsApp
 - [ ] Créer un compte sur africastalking.com
@@ -95,7 +93,6 @@
 - [ ] Tester dashboard admin → /super-admin/dashboard
 - [ ] Tester dashboard agent → /agent/dashboard
 - [ ] Tester un scan OCR (mobile)
-- [ ] Tester un paiement (Chariow en test)
 - [ ] Vérifier les logs serveur (pas d'erreurs)
 - [ ] Vérifier que les CORS fonctionnent
 

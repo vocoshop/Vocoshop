@@ -8,8 +8,8 @@ export default async function systemLogger(req: Request, res: Response, next: Ne
   res.send = function (body: any) {
     const duration = Date.now() - start;
 
-    const ip = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || null;
-    const ua = req.headers["user-agent"] as string || null;
+    const ip = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || undefined;
+    const ua = req.headers["user-agent"] as string || undefined;
     const path = req.originalUrl || req.url || "";
     const method = req.method || "";
     const status = res.statusCode || 500;

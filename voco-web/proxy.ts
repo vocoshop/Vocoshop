@@ -11,7 +11,10 @@ function getSecret(role: "admin" | "manager" | "agent"): Uint8Array {
     role === "agent"
       ? process.env.AGENT_JWT_SECRET
       : process.env.JWT_SECRET;
-  return new TextEncoder().encode(s || "fallback-secret");
+  if (!s) {
+    throw new Error(`❌ ${role === "agent" ? "AGENT_JWT_SECRET" : "JWT_SECRET"} non configuré`);
+  }
+  return new TextEncoder().encode(s);
 }
 
 async function verifyToken(token: string, role: "admin" | "manager" | "agent"): Promise<boolean> {

@@ -250,7 +250,7 @@ const partner = await Partner.findOne({ _id: partnerId, active: true }).lean();
             expiresAt,
             dataHash,
             storeName: merchantName,
-          });
+          }) as any;
         }
 
         const base = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get("host")}`;

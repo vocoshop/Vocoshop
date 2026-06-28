@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import AdminManager from "../models/AdminManager";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRY = "7d";
 
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
@@ -72,7 +72,7 @@ export const login = async (req: Request, res: Response) => {
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
-    const manager = await AdminManager.findById(req.manager.managerId).select("-passwordHash");
+    const manager = await AdminManager.findById(req.manager!.managerId).select("-passwordHash");
     if (!manager) return res.status(404).json({ error: "Manager introuvable" });
     res.json({ user: manager });
   } catch (e) {

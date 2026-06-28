@@ -1,11 +1,10 @@
 import { detectOperator } from "../utils/operatorDetector";
-import { createChariowCheckout, isChariowConfigured } from "./chariowService";
 
 /* =====================================================
 TYPES
 ===================================================== */
 type PaymentPayload = {
-  method: "mobile_money" | "card" | "chariow";
+  method: "mobile_money" | "card";
   phone?: string;
   card?: string;
   expiry?: string;
@@ -174,35 +173,6 @@ export async function processSubscriptionPayment(
       throw new Error("Carte invalide");
     }
     return chargeCard(payload.card, payload.expiry, payload.cvc, payload.storeId);
-  }
-
-  /* =====================================================
-     CHARIOW — Checkout URL (alternative sans société)
-     ===================================================== */
-  if (payload.method === "chariow") {
-    if (!payload.email || !payload.phone) {
-      throw new Error("email et phone requis pour Chariow");
-    }
-    const result = await createChariowCheckout({
-      email: payload.email,
-      firstName: "Client",
-      lastName: "Vocoshop",
-      phone: payload.phone,
-      countryCode: payload.countryCode || "CG",
-      metadata: {
-        store_id: payload.storeId,
-        plan: "PRO",
-        source: "vocoshop_app",
-      },
-    });
-    if (!result.success) {
-      throw new Error(result.error || "Échec Chariow");
-    }
-    return {
-      success: true,
-      txRef: result.transactionId,
-      flwRef: result.saleId,
-    };
   }
 
   throw new Error("Méthode inconnue");

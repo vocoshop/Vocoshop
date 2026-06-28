@@ -44,7 +44,7 @@ import adminConfigRoutes from "./routes/adminConfigRoutes";
 import { storeActivityTracker } from "./middleware/storeActivityTracker";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
 import paymentWebhookRoutes from "./routes/paymentWebhookRoutes";
-import chariowRoutes from "./routes/chariowRoutes";
+
 import yabetooRoutes from "./routes/yabetooRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import { startNotificationScheduler } from "./scheduler/notificationScheduler";
@@ -74,11 +74,30 @@ patchConsole();
 
 dotenv.config();
 
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16) {
-  console.error("❌ JWT_SECRET manquant ou trop court (min 16 caractères). Arrêt.");
+// Gestion des rejets de promesses non catchées
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ UNHANDLED REJECTION:", reason instanceof Error ? reason.message : reason);
+  console.error(reason instanceof Error ? reason.stack : "");
+  process.exit(1);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("🔥 UNCAUGHT EXCEPTION:", err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+// Validation des variables d'env critiques
+const REQUIRED_ENV_VARS = ["MONGO_URI", "JWT_SECRET", "AGENT_JWT_SECRET"] as const;
+const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]);
+if (missingVars.length > 0) {
+  console.error(`❌ Variables d'environnement manquantes : ${missingVars.join(", ")}`);
   process.exit(1);
 }
-
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 16) {
+  console.error("❌ JWT_SECRET trop court (min 16 caractères). Arrêt.");
+  process.exit(1);
+}
 
 const app = express();
 app.set("trust proxy", 1); // Render proxy → X-Forwarded-For fiable
@@ -185,7 +204,7 @@ app.use("/api/funding", generalLimiter, fundingRoutes);
 app.use("/api/call-proxy", generalLimiter, callProxyRoutes);
 app.use("/api/manager/support", generalLimiter, managerSupportRoutes);
 app.use("/api/webhook", generalLimiter, paymentWebhookRoutes);
-app.use("/api/chariow", generalLimiter, chariowRoutes);
+
 app.use("/api/yabetoo", yabetooCheckoutLimiter, yabetooRoutes);
 
 
@@ -196,13 +215,32 @@ res.status(500).json({ error: "Erreur interne serveur" });
 });
 
 // DB
-mongoose
-.connect(process.env.MONGO_URI as string)
-.then(async () => {
-  console.log("🚀 MongoDB connecté avec succès");
-  await seedPlatformConfig().catch(() => {});
-})
-.catch((err) => console.log("❌ Erreur MongoDB :", err));
+const MONGO_URI = process.env.MONGO_URI as string;
+
+async function connectWithRetry(retries = 5, delay = 5000): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await mongoose.connect(MONGO_URI, {
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 10,
+      });
+      console.log("🚀 MongoDB connecté avec succès");
+      await seedPlatformConfig().catch(() => {});
+      return;
+    } catch (err) {
+      console.error(`❌ Erreur MongoDB (tentative ${i + 1}/${retries}):`, err);
+      if (i < retries - 1) {
+        console.log(`🔄 Nouvelle tentative dans ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
+        console.error("❌ MongoDB inaccessible après plusieurs tentatives. Arrêt.");
+        process.exit(1);
+      }
+    }
+  }
+}
+
+connectWithRetry();
 
 // START
 const PORT = process.env.PORT || 5000;

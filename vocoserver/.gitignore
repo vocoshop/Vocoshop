@@ -24,3 +24,6 @@ yarn-error.log*
 
 # Local history backups
 .history/
+
+# uploaded PII (agent photos, selfies, voice recordings)
+/uploads/

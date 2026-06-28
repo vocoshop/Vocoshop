@@ -44,28 +44,6 @@ export const partnerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-export const chariowCheckoutLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 3, // 3 tentatives de checkout par 5 min
-  message: {
-    error: "Trop de tentatives de paiement. Veuillez attendre 5 minutes.",
-    code: "CHARIOW_CHECKOUT_LIMIT",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-export const chariowWebhookLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // 30 webhooks par minute (suffisant)
-  message: {
-    error: "Trop de webhooks.",
-    code: "CHARIOW_WEBHOOK_LIMIT",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 heure
   max: 5, // 5 inscriptions par heure par IP

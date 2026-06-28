@@ -10,7 +10,7 @@ if (!token) {
 return res.status(401).json({ message: "Token manquant." });
 }
 
-const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
+const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
 // ✅ token créé par authController = { storeId }
 const storeIdFromToken = decoded?.storeId ? String(decoded.storeId) : null;

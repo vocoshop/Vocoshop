@@ -83,7 +83,7 @@ export async function computeScore(storeId: string): Promise<VocoScoreData> {
     const weeklyRevenues = [0, 0, 0, 0];
     const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
     recentSales.forEach((sale) => {
-      const saleDate = new Date(sale.createdAt);
+      const saleDate = new Date(sale.createdAt!);
       const weekIndex = Math.min(
         Math.floor(
           (saleDate.getTime() - fourWeeksAgo.getTime()) / (7 * 24 * 60 * 60 * 1000)
@@ -138,7 +138,7 @@ export async function computeScore(storeId: string): Promise<VocoScoreData> {
     recentSales.length > 0
       ? new Set(
           recentSales.map((s) =>
-            new Date(s.createdAt).toISOString().slice(0, 10)
+            new Date(s.createdAt!).toISOString().slice(0, 10)
           )
         ).size * 5
       : 0,
