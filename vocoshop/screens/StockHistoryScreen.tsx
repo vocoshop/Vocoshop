@@ -1,5 +1,5 @@
 // screens/StockHistoryScreen.tsx
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import {
 View,
 Text,
@@ -20,7 +20,7 @@ const { token, storeId } = useContext(AuthContext);
 const [list, setList] = useState<any[]>([]);
 const [loading, setLoading] = useState(true);
 
-const load = async () => {
+const load = useCallback(async () => {
 try {
 const res = await API.get(
 "/inventory/applied-sessions",
@@ -40,11 +40,11 @@ console.log("❌ loadAppliedSessions error:", err);
 }
 
 setLoading(false);
-};
+}, [token, storeId]);
 
 useEffect(() => {
 load();
-}, []);
+}, [load]);
 
 return (
 <View style={styles.container}>

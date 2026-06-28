@@ -10,6 +10,7 @@ ScrollView,
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import API from "../src/api/api";
 
 export default function HistoryScreen({ route }: any) {
 const navigation = useNavigation<any>();
@@ -32,12 +33,10 @@ console.log("❌ loadHistory error:", err);
 // 📌 Charger l'historique du backend
 const loadServerHistory = async () => {
   try {
-    const res = await fetch("/api/inventory/history", {
-      headers: {
-        "x-store-id": storeId,
-      },
+    const res = await API.get("/inventory/history", {
+      headers: { "x-store-id": storeId },
     });
-    const data = await res.json();
+    const data = res.data;
     if (Array.isArray(data)) {
       setServerHistory(data);
     }

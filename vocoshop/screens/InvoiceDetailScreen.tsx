@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
 View,
 Text,
 StyleSheet,
 TouchableOpacity,
 ScrollView,
+ActivityIndicator,
 Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,10 +40,14 @@ const date = invoice?.createdAt
 ? new Date(invoice.createdAt).toLocaleDateString()
 : "—";
 
+const [downloadLoading, setDownloadLoading] = useState(false);
+
 /* =====================================================
 🔥 DOWNLOAD PDF SECURISÉ (VERSION ULTRA STABLE)
 ===================================================== */
 async function openPDF(){
+if (downloadLoading) return;
+setDownloadLoading(true);
 
 try{
 
@@ -64,6 +69,9 @@ await Sharing.shareAsync(fileUri);
 
 }catch(e){
 console.log("open pdf error",e);
+Alert.alert("Erreur", "Impossible de télécharger la facture.");
+} finally {
+setDownloadLoading(false);
 }
 
 }
@@ -134,19 +142,23 @@ Merci d’utiliser Vocoshop 🚀
 ===================================================== */}
 
 <TouchableOpacity
-style={styles.pdfBtn}
+style={[styles.pdfBtn, downloadLoading && { opacity: 0.7 }]}
 activeOpacity={0.85}
 onPress={openPDF}
+disabled={downloadLoading}
 >
-
+{downloadLoading ? (
+<ActivityIndicator color="#fff" size="small" />
+) : (
 <Ionicons
 name="download-outline"
 size={18}
 color="#fff"
 />
+)}
 
 <Text style={styles.pdfText}>
-Télécharger la facture PDF
+{downloadLoading ? "Téléchargement..." : "Télécharger la facture PDF"}
 </Text>
 
 </TouchableOpacity>

@@ -68,7 +68,7 @@ style={styles.card}
 activeOpacity={0.85}
 onPress={() =>
 navigation.navigate(
-isDraft ? "EditOrder" : "OrderDetails",
+isDraft ? "EditOrder" : "OrderDetail",
 { orderId: item._id }
 )
 }

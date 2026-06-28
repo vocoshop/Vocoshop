@@ -29,7 +29,7 @@ markAsRead,
 useFocusEffect(
 useCallback(() => {
 refreshNotifications();
-}, [])
+}, [refreshNotifications])
 );
 
 /* =====================================================
