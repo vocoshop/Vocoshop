@@ -350,7 +350,7 @@ autoCorrect={false}
 />
 
 <Text style={styles.label}>Code secret 6 chiffres *</Text>
-<View style={styles.pwdRow}>
+<View style={styles.inputWrap}>
 <TextInput
 value={password}
 onChangeText={(t) => setPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
@@ -358,7 +358,7 @@ keyboardType="numeric"
 maxLength={6}
 placeholder="Entrez 6 chiffres"
 placeholderTextColor="rgba(255,255,255,0.35)"
-style={[styles.input, { flex: 1 }]}
+style={styles.input}
 secureTextEntry={!showPassword}
 />
 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
@@ -367,6 +367,7 @@ secureTextEntry={!showPassword}
 </View>
 
 <Text style={styles.label}>Confirmer le code secret *</Text>
+<View style={styles.inputWrap}>
 <TextInput
 value={confirmPassword}
 onChangeText={(t) => setConfirmPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
@@ -377,6 +378,10 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.input}
 secureTextEntry={!showPassword}
 />
+<TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+<Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="rgba(255,255,255,0.5)" />
+</TouchableOpacity>
+</View>
 
 <View style={styles.tipBox}>
 <Ionicons name="information-circle-outline" size={18} color="#9AF5C7" />
@@ -473,6 +478,7 @@ borderColor: "rgba(255,255,255,0.10)",
 borderRadius: 14,
 paddingHorizontal: 14,
 paddingVertical: 12,
+paddingRight: 40,
 color: "#fff",
 fontSize: 14,
 },
@@ -490,8 +496,8 @@ borderColor: "rgba(154,245,199,0.12)",
 },
 tipText: { flex: 1, color: "#C6C0DD", fontSize: 12, lineHeight: 18 },
 
-pwdRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-eyeBtn: { padding: 10 },
+inputWrap: { position: "relative" },
+eyeBtn: { position: "absolute", right: 12, top: 0, bottom: 0, justifyContent: "center" },
 
 footer: {
 position: "absolute",
