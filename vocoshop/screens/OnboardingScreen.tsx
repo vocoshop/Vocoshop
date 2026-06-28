@@ -97,8 +97,7 @@ setReferralCode(formatReferralCode(value));
 ANTI LOOP LOGIN
 ===================================================== */
 useEffect(() => {
-if (authLoading) return;
-if (!token && !incomingPhone) {
+if (!authLoading && !token && !incomingPhone) {
 navigation.reset({ index: 0, routes: [{ name: "Login" }] });
 }
 }, [authLoading, token, navigation, incomingPhone]);
@@ -253,7 +252,7 @@ Alert.alert("Erreur", "Impossible d'enregistrer. Réessaie.");
 setLoading(false);
 }
 
-}, [agentCode, referralCode, city, ownerName, ownerPhone, headers.Authorization, loading, navigation, storeName]);
+}, [agentCode, referralCode, city, ownerName, ownerPhone, password, confirmPassword, incomingPhone, headers, loading, navigation, storeName, registerWithPassword]);
 
 /* =====================================================
 UI
@@ -350,9 +349,6 @@ autoCapitalize="characters"
 autoCorrect={false}
 />
 
-{incomingPhone && (
-<>
-
 <Text style={styles.label}>Code secret 6 chiffres *</Text>
 <View style={styles.pwdRow}>
 <TextInput
@@ -381,9 +377,6 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.input}
 secureTextEntry={!showPassword}
 />
-
-</>
-)}
 
 <View style={styles.tipBox}>
 <Ionicons name="information-circle-outline" size={18} color="#9AF5C7" />
