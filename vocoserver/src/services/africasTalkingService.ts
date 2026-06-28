@@ -5,39 +5,13 @@ dotenv.config();
 const AT_API_KEY = process.env.AT_API_KEY || "";
 const AT_USERNAME = process.env.AT_USERNAME || "sandbox";
 const AT_SENDER_ID = process.env.AT_SENDER_ID || "VocoShop";
+const AT_BASE = "https://api.africastalking.com/version1";
 
-// Pays supportés par Africa's Talking pour l'envoi de SMS
-// Source: https://africastalking.com/sms/bulksms — International Markets
 const AT_SMS_COUNTRIES = [
-  "254", // Kenya
-  "256", // Ouganda
-  "255", // Tanzanie
-  "250", // Rwanda
-  "234", // Nigéria
-  "233", // Ghana
-  "27",  // Afrique du Sud
-  "243", // RDC (Kinshasa)
-  "251", // Éthiopie
-  "265", // Malawi
-  "260", // Zambie
-  "263", // Zimbabwe
-  "225", // Côte d'Ivoire
-  "237", // Cameroun
-  "221", // Sénégal
-  "258", // Mozambique
-  "229", // Bénin
-  "267", // Botswana
-  "226", // Burkina Faso
-  "257", // Burundi
-  "268", // Eswatini
-  "220", // Gambie
-  "224", // Guinée
-  "266", // Lesotho
-  "223", // Mali
-  "264", // Namibie
-  "227", // Niger
-  "232", // Sierra Leone
-  "228", // Togo
+  "254", "256", "255", "250", "234", "233", "27", "243",
+  "251", "265", "260", "263", "225", "237", "221", "258",
+  "229", "267", "226", "257", "268", "220", "224", "266",
+  "223", "264", "227", "232", "228",
 ];
 
 export function isAtSupportedCountry(phone: string): boolean {
@@ -48,9 +22,6 @@ export function isAtSupportedCountry(phone: string): boolean {
   }
   return false;
 }
-
-// Note: Pour les pays africains non supportés par AT (ex: +242 Congo-Brazzaville),
-// le fallback Vonage est utilisé.
 
 export async function sendSMSAfrica(
   phone: string,
@@ -66,25 +37,31 @@ export async function sendSMSAfrica(
   if (!formatted.startsWith("+")) formatted = "+" + formatted;
 
   try {
-    const africastalking = require("africastalking");
-    const sdk = africastalking({
-      apiKey: AT_API_KEY,
-      username: AT_USERNAME,
-    });
-
-    const result = await sdk.SMS.send({
-      to: [formatted],
+    const body = new URLSearchParams({
+      to: formatted,
       message,
       from: AT_SENDER_ID,
     });
 
-    const entry = result?.SMSMessageData?.Recipients?.[0];
+    const res = await fetch(`${AT_BASE}/messaging`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        apiKey: AT_API_KEY,
+        Accept: "application/json",
+        username: AT_USERNAME,
+      },
+      body: body.toString(),
+    });
+
+    const data: any = await res.json();
+    const entry = data?.SMSMessageData?.Recipients?.[0];
     if (entry?.status === "Success" || entry?.status === "Submitted") {
       console.log("✅ AT SMS envoyé à:", formatted, "| status:", entry.status);
       return true;
     }
 
-    console.error("❌ AT SMS error:", result?.SMSMessageData || result);
+    console.error("❌ AT SMS error:", data?.SMSMessageData || data);
     return false;
   } catch (err: any) {
     console.error("❌ AT SMS exception:", err?.message || err);
