@@ -240,6 +240,7 @@ FINALIZE SALE (ONLINE + OFFLINE PRO)
 = "success" | "error" | "offline"
 ===================================================== */
 const [selling, setSelling] = useState(false);
+const [completedSales, setCompletedSales] = useState(0);
 
 const finalizeSale = async (): Promise<"success" | "error" | "offline"> => {
 if (!cart.length) return "error";
@@ -264,11 +265,13 @@ try {
   if (result.mode === "offline") {
     applyOptimisticStock();
     setCart([]);
+    setCompletedSales((c) => c + 1);
     setSelling(false);
     return "offline";
   }
 
   setCart([]);
+  setCompletedSales((c) => c + 1);
   loadProducts();
   setSelling(false);
   return "success";
@@ -326,6 +329,7 @@ return {
   cart,
   cartTotal,
   selling,
+  completedSales,
 
   applySearch,
   addToCart,

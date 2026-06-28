@@ -30,7 +30,8 @@ filtered,
 search,
 cart,
 cartTotal,
-selling,
+  selling,
+  completedSales,
 applySearch,
 addToCart,
   increaseQty,
@@ -129,6 +130,7 @@ style={styles.search}
 )}
 
 {/* ================= CLOSE DAY ================= */}
+{completedSales > 0 && (
 <TouchableOpacity
 style={styles.endDayBtn}
 onPress={closeDay}
@@ -138,6 +140,7 @@ disabled={dayLoading}
 {dayLoading ? "Clôture..." : "Terminer ma journée"}
 </Text>
 </TouchableOpacity>
+)}
 
   {/* ================= PRODUCTS (FlatList virtualisé) ================= */}
   <FlatList
