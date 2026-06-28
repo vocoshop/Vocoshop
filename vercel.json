@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd voco-web && npm run build",
+  "installCommand": "cd voco-web && npm install",
+  "outputDirectory": "voco-web/.next",
+  "framework": "nextjs"
+}
