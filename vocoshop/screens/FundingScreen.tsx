@@ -217,7 +217,7 @@ export default function FundingScreen() {
               </View>
 
               <View style={styles.scoreDetails}>
-                <ScoreRow icon="calendar-outline" label="Ancienneté" value={scoreMeta ? `${scoreMeta.monthsActive} mois` : "—"} />
+                <ScoreRow icon="calendar-outline" label="Ancienneté" value={scoreMeta ? (scoreMeta.monthsActive >= 1 ? `${scoreMeta.monthsActive} mois` : "Moins d'1 mois") : "—"} />
                 <ScoreRow icon="checkmark-circle-outline" label="Fiabilité données" value={scoreMeta ? `${100 - scoreMeta.reviewRate}%` : "—"} />
                 <ScoreRow icon="time-outline" label="Dernière activité" value={scoreMeta?.lastActivity ? new Date(scoreMeta.lastActivity).toLocaleDateString("fr-FR") : "Jamais"} />
               </View>

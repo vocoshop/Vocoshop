@@ -20,7 +20,7 @@ paidUntil?: string;
 
 type SubscriptionContextType = {
 subscription: SubscriptionType | null;
-refreshSubscription: () => Promise<void>;
+refreshSubscription: () => Promise<SubscriptionType | null>;
 };
 
 /* =====================================================
@@ -29,7 +29,7 @@ refreshSubscription: () => Promise<void>;
 
 export const SubscriptionContext = createContext<SubscriptionContextType>({
 subscription: null,
-refreshSubscription: async () => {},
+refreshSubscription: async (): Promise<SubscriptionType | null> => null,
 });
 
 /* =====================================================
@@ -46,34 +46,32 @@ useState<SubscriptionType | null>(null);
 🔄 FETCH ABONNEMENT — V15 ULTRA SAFE
 ===================================================== */
 
-const refreshSubscription = async () => {
-try {
+  const refreshSubscription = async (): Promise<SubscriptionType | null> => {
+    try {
 
-if (!token) {
-setSubscription(null);
-return;
-}
+      if (!token) {
+        setSubscription(null);
+        return null;
+      }
 
-const res: any = await API.get("/subscription/me");
+      const res: any = await API.get("/subscription/me");
 
-if (!res?.data) {
-setSubscription(null);
-return;
-}
+      if (!res?.data) {
+        setSubscription(null);
+        return null;
+      }
 
-/**
-* ⭐⭐⭐ FIX ULTRA IMPORTANT
-* On clone toujours l'objet pour forcer React à re-render
-* sinon l'écran abonnement peut rester bloqué
-*/
-setSubscription({
-...res.data,
-});
+      const data: SubscriptionType = {
+        ...res.data,
+      };
+      setSubscription(data);
+      return data;
 
-} catch (e) {
-console.log("❌ subscription fetch error", e);
-}
-};
+    } catch (e) {
+      console.log("❌ subscription fetch error", e);
+      return null;
+    }
+  };
 
 /* =====================================================
 ⚡ AUTO REFRESH AU LOGIN

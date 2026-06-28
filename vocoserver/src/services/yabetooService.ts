@@ -41,7 +41,9 @@ export function isConfigured(): boolean {
 export async function createCheckoutSession(
   customerEmail: string,
   storeId: string,
-  metadata?: Record<string, string>
+  metadata?: Record<string, string>,
+  customerName?: string,
+  customerPhone?: string,
 ): Promise<YabetooSessionResult> {
   if (!isConfigured()) {
     logSystem("error", "Yabetoo non configuré — checkout impossible", { source: "yabetoo_service" });
@@ -68,6 +70,8 @@ export async function createCheckoutSession(
     };
 
     if (customerEmail) body.customer_email = customerEmail;
+    if (customerName) body.customer_name = customerName;
+    if (customerPhone) body.customer_phone = customerPhone;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);

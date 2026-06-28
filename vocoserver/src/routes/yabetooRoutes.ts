@@ -47,10 +47,13 @@ router.post("/checkout", yabetooCheckoutLimiter, authMiddleware, async (req: any
       source: "yabetoo_checkout", path: "/api/yabetoo/checkout", ip: ip || "unknown",
     });
 
-    const result = await createCheckoutSession(email, storeId.toString(), {
-      plan: "PRO",
-      source: "vocoshop_app",
-    });
+    const result = await createCheckoutSession(
+      email,
+      storeId.toString(),
+      { plan: "PRO", source: "vocoshop_app" },
+      store.ownerName || store.storeName || undefined,
+      store.phone,
+    );
 
     if (!result.success) {
       logSystem("warning", `Yabetoo checkout échoué: ${result.error}`, {

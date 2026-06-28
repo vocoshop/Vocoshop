@@ -1,6 +1,6 @@
 // screens/SubscriptionCheckoutScreen.tsx
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
 View,
 Text,
@@ -19,12 +19,17 @@ import { handleSubscriptionPayment } from "../src/api/payments/paymentHandler";
 
 // ✅ CONTEXT ABONNEMENT
 import { useSubscription } from "../src/api/context/SubscriptionContext";
+
+// ✅ STORE PROFILE
+import { AuthContext } from "../src/api/context/AuthContext";
+import { getMyStoreProfile } from "../src/api/services/storeService";
 import { Alert } from "react-native";
 
 export default function SubscriptionCheckoutScreen() {
 
 const navigation = useNavigation<any>();
 const { refreshSubscription } = useSubscription();
+const { token } = useContext(AuthContext);
 
 const [method, setMethod] = useState<string | null>(null);
 
@@ -32,12 +37,26 @@ const [phone,setPhone] = useState("");
 const [card,setCard] = useState("");
 const [expiry,setExpiry] = useState("");
 const [cvc,setCvc] = useState("");
-const [email,setEmail] = useState("");
 
 const [loading,setLoading] = useState(false);
 
 /* 🔥 V7 FINTECH UX */
 const [waitingValidation,setWaitingValidation] = useState(false);
+
+/* 🔥 STORE PROFILE CACHED */
+const [customerName, setCustomerName] = useState("");
+
+useEffect(() => {
+(async () => {
+if (!token) return;
+try {
+const profile = await getMyStoreProfile({
+Authorization: `Bearer ${token}`,
+});
+setCustomerName(profile.ownerName || profile.shopName || "");
+} catch {}
+})();
+}, [token]);
 
 /* =====================================================
 🔥 VALIDATION SMART FRONT (AJOUT PRO)
@@ -49,10 +68,7 @@ method === "mobile_money" && phone && phone.length >= 6;
 const isCardValid =
 method === "card" && card && expiry && cvc;
 
-const isYabetooValid =
-method === "yabetoo" && email && email.includes("@");
-
-const canPay = isMobileValid || isCardValid || isYabetooValid;
+const canPay = isMobileValid || isCardValid;
 
 /* =====================================================
 🔥 DETECTION OPERATEUR UX (FRONT ONLY)
@@ -135,18 +151,6 @@ Carte Visa / MasterCard
 </Text>
 </TouchableOpacity>
 
-{/* 🟢 YABETOO — Mobile Money Congo */}
-<TouchableOpacity
-style={styles.option}
-onPress={()=>setMethod("yabetoo")}
->
-<Ionicons name="globe-outline" size={22} color="#22c55e" />
-<Text style={styles.optionText}>
-Yabetoo (Mobile Money MTN / Airtel)
-</Text>
-          <Text style={styles.optionSubtext}>Paiement Mobile Money intégré</Text>
-</TouchableOpacity>
-
 {/* =====================================================
 🔥 OVERLAY CENTER PAYMENT
 ===================================================== */}
@@ -162,9 +166,7 @@ styles.overlayCard,
 >
 
 <Text style={styles.formTitle}>
-{method === "yabetoo"
-? "Paiement via Yabetoo"
-: method === "card"
+{method === "card"
 ? "Paiement Carte Bancaire"
 : "Paiement Mobile Money"}
 </Text>
@@ -256,24 +258,6 @@ keyboardType="numeric"
 </>
 )}
 
-{/* 🟢 YABETOO INPUT */}
-{method === "yabetoo" && !waitingValidation && (
-<>
-          <Text style={{ color:"#22c55e", fontSize:12, marginBottom:8, textAlign:"center" }}>
-            Paiement sécurisé intégré à Vocoshop
-          </Text>
-<TextInput
-placeholder="Email (pour la confirmation)"
-placeholderTextColor="#888"
-style={styles.input}
-value={email}
-onChangeText={setEmail}
-keyboardType="email-address"
-autoCapitalize="none"
-/>
-</>
-)}
-
 {/* 🔥 PAY BTN — VERSION ULTRA PRO */}
 <Animated.View style={{ transform:[{ scale:pulseAnim }] }}>
 <TouchableOpacity
@@ -301,34 +285,31 @@ Alert.alert("Carte incomplète","Vérifiez vos informations.");
 return;
 }
 
-if(method === "yabetoo" && !email){
-Alert.alert("Email requis","Entrez votre email pour la confirmation.");
-return;
-}
-
 setLoading(true);
 setWaitingValidation(true);
 
 const result = await handleSubscriptionPayment({
-method: method === "yabetoo" ? "yabetoo" : method === "card" ? "card" : "mobile_money",
+method: method as "mobile_money" | "card",
 phone,
 card,
 expiry,
 cvc,
-email: email || `client_${Date.now()}@vocoshop.com`,
+email: `client_${Date.now()}@vocoshop.com`,
 countryCode: "CG",
 });
 
-// 🟢 YABETOO → WebView intégrée
-if (method === "yabetoo" && result && typeof result === "object" && "checkoutUrl" in result) {
+// 📱 Mobile Money → WebView Yabetoo intégrée
+if (result && typeof result === "object" && "checkoutUrl" in result) {
 setMethod(null);
 navigation.navigate("YabetooWebView", {
 checkoutUrl: result.checkoutUrl,
+customerName,
+customerPhone: phone,
 });
 return;
 }
 
-// 📱 Mobile Money / Carte → validation sur téléphone
+// 💳 Carte → validation sur téléphone
 Alert.alert(
 "Paiement en cours",
 "📲 Validez la demande sur votre téléphone."
@@ -408,13 +389,6 @@ optionText:{
 color:"#fff",
 marginLeft:12,
 fontWeight:"700"
-},
-optionSubtext:{
-color:"#aaa",
-marginLeft:12,
-fontSize:11,
-marginTop:-4,
-marginBottom:4
 },
 
 overlayBg:{

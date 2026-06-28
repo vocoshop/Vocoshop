@@ -782,7 +782,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     const createdAtDate = (store as any)?.createdAt ? new Date((store as any).createdAt) : now;
-    const monthsActive = Math.max(1, Math.floor((now.getTime() - createdAtDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+    const monthsActive = Math.max(0, Math.floor((now.getTime() - createdAtDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
 
     const [totalSalesCount, recentSalesCount, totalScansCount, recentScansCount, totalProductsCount, recentStockMovesCount] = await Promise.all([
       Sale.countDocuments({ storeId }),

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView,
 } from "react-native";
@@ -17,12 +17,21 @@ export default function YabetooWebViewScreen() {
   const route = useRoute<any>();
   const { refreshSubscription } = useSubscription();
   const checkoutUrl: string = route.params?.checkoutUrl || "";
+  const customerName: string = route.params?.customerName || "";
+  const customerPhone: string = route.params?.customerPhone || "";
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSuccess() {
     setStatus("success");
-    await refreshSubscription();
+    // Poll l'abonnement jusqu'à 30s le temps que le webhook s'exécute
+    for (let i = 0; i < 15; i++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      const sub = await refreshSubscription();
+      if (sub?.subscriptionStatus === "active" || sub?.status === "active") {
+        break;
+      }
+    }
     setTimeout(() => {
       navigation.reset({ index: 0, routes: [{ name: "Home" }] });
     }, 2000);
@@ -49,6 +58,40 @@ export default function YabetooWebViewScreen() {
   function close() {
     navigation.goBack();
   }
+
+  const fillScript = useMemo(() => {
+    if (!customerName && !customerPhone) return undefined;
+    const name = JSON.stringify(customerName);
+    const phone = JSON.stringify(customerPhone);
+    return `
+(function(){
+  var n=${name}, p=${phone};
+  function f(s,v){
+    var e=document.querySelector(s);
+    if(e){
+      var setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+      setter.call(e,v);
+      e.dispatchEvent(new Event('input',{bubbles:true}));
+      e.dispatchEvent(new Event('change',{bubbles:true}));
+      return true;
+    }
+    return false;
+  }
+  var ns=${customerName ? `["input[name='name']","input[name='full_name']","input[name='customer_name']","input[id*='name']","input[placeholder*='nom' i]","input[placeholder*='name' i]","#name","#fullName","#customerName"]` : "[]"};
+  var ps=${customerPhone ? `["input[type='tel']","input[name='phone']","input[name='telephone']","input[name='mobile']","input[id*='phone']","input[id*='mobile']","input[placeholder*='téléphone' i]","input[placeholder*='phone' i]","#phone","#mobile"]` : "[]"};
+  function fillAll(){
+    if(n){for(var i=0;i<ns.length;i++){if(f(ns[i],n))break;}}
+    if(p){for(var i=0;i<ps.length;i++){if(f(ps[i],p))break;}}
+  }
+  fillAll();
+  setTimeout(fillAll,500);
+  setTimeout(fillAll,1500);
+  setTimeout(fillAll,3000);
+  var obs=new MutationObserver(fillAll);
+  if(document.body) obs.observe(document.body,{childList:true,subtree:true});
+})();
+`;
+  }, [customerName, customerPhone]);
 
   if (!checkoutUrl) {
     return (
@@ -112,7 +155,7 @@ export default function YabetooWebViewScreen() {
         <TouchableOpacity onPress={close} style={styles.closeBtn}>
           <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Paiement Yabetoo</Text>
+        <Text style={styles.headerTitle}>Paiement sécurisé</Text>
         <View style={{ width: 32 }} />
       </View>
       {status === "loading" && (
@@ -130,6 +173,7 @@ export default function YabetooWebViewScreen() {
         javaScriptEnabled={true}
         domStorageEnabled={true}
         startInLoadingState={true}
+        injectedJavaScript={fillScript}
         renderLoading={() => (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#7B4DFF" />

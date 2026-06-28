@@ -30,7 +30,7 @@ async function calculateScore(storeId: string) {
 
   const store = await Store.findOne({ shopId: storeId }).lean();
   const createdAt = store?.createdAt ? new Date(store.createdAt) : now;
-  const monthsActive = Math.max(1, Math.floor((now.getTime() - createdAt.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+  const monthsActive = Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / (30 * 24 * 60 * 60 * 1000)));
 
   const [totalSales, recentSales, totalScans, recentScans, totalProducts, recentStockMoves] = await Promise.all([
     Sale.countDocuments({ storeId }),

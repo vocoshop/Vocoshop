@@ -11,7 +11,7 @@ import inventoryRoutes from "./routes/inventoryRoutes";
 import authRoutes from "./routes/authRoutes";
 import otpRoutes from "./routes/otpRoutes";
 import aiRoutes from "./routes/aiRoutes";
-import { authLimiter, otpLimiter, generalLimiter, registerLimiter, yabetooCheckoutLimiter } from "./middleware/rateLimiter";
+import { authLimiter, otpLimiter, generalLimiter, registerLimiter } from "./middleware/rateLimiter";
 
 import stockRoutes from "./routes/stockRoutes";
 import stockHistoryRoutes from "./routes/stockHistoryRoutes";
@@ -205,7 +205,7 @@ app.use("/api/call-proxy", generalLimiter, callProxyRoutes);
 app.use("/api/manager/support", generalLimiter, managerSupportRoutes);
 app.use("/api/webhook", generalLimiter, paymentWebhookRoutes);
 
-app.use("/api/yabetoo", yabetooCheckoutLimiter, yabetooRoutes);
+app.use("/api/yabetoo", yabetooRoutes);
 
 
 // ERROR HANDLER

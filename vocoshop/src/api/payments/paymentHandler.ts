@@ -1,7 +1,7 @@
 import API from "../api";
 
 type PaymentPayload = {
-method: "mobile_money" | "card" | "yabetoo";
+method: "mobile_money" | "card";
 phone?: string;
 card?: string;
 expiry?: string;
@@ -12,33 +12,13 @@ countryCode?: string;
 
 /**
  * 🔥 PAYMENT HANDLER GLOBAL
- * - Yabetoo (Mobile Money — recommandé)
+ * - Mobile Money → Yabetoo (intégré)
  */
 export async function handleSubscriptionPayment(payload: PaymentPayload): Promise<true | { checkoutUrl: string }> {
 try {
 
 /* =====================================================
-📱 YABETOO (Mobile Money Congo)
-===================================================== */
-if (payload.method === "yabetoo") {
-
-if (!payload.email) {
-throw new Error("Email requis");
-}
-
-const res: any = await API.post("/yabetoo/checkout", {
-email: payload.email,
-});
-
-if (res.data?.checkoutUrl) {
-return { checkoutUrl: res.data.checkoutUrl };
-}
-
-throw new Error(res.data?.error || "Échec Yabetoo");
-}
-
-/* =====================================================
-📱 MOBILE MONEY
+📱 MOBILE MONEY → YABETOO
 ===================================================== */
 if (payload.method === "mobile_money") {
 
@@ -46,12 +26,15 @@ if (!payload.phone) {
 throw new Error("Numéro manquant");
 }
 
-await API.post("/subscription/activate", {
-method: "mobile_money",
-phone: payload.phone,
-});
+const email = payload.email || `client_${Date.now()}@vocoshop.com`;
 
-return true;
+const res: any = await API.post("/yabetoo/checkout", { email });
+
+if (res.data?.checkoutUrl) {
+return { checkoutUrl: res.data.checkoutUrl };
+}
+
+throw new Error(res.data?.error || "Échec du paiement");
 }
 
 /* =====================================================
