@@ -72,10 +72,6 @@ if (part3) result += "-" + part3;
 return result;
 };
 
-const masked = (s: string) => s.replace(/./g, "•");
-const dotted = (s: string) => (showPassword ? s : masked(s));
-const display = (s: string) => (s + "______").slice(0, 6).split("").join(" ");
-
 const handleAgentCodeChange = (value: string) => {
 setAgentCode(formatAgentCode(value));
 };
@@ -343,7 +339,7 @@ autoCorrect={false}
 <Text style={styles.label}>Code secret 6 chiffres *</Text>
 <View style={styles.inputWrap}>
 <TextInput
-value={display(dotted(password))}
+value={showPassword ? password : password.replace(/./g, "•")}
 onChangeText={(t) => {
 const digits = t.replace(/[^0-9]/g, "").slice(0, 6);
 setPassword(digits);
@@ -351,7 +347,8 @@ setConfirmPassword("");
 }}
 style={styles.input}
 keyboardType="numeric"
-autoCorrect={false}
+placeholder="_ _ _ _ _ _"
+placeholderTextColor="rgba(255,255,255,0.35)"
 />
 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="rgba(255,255,255,0.5)" />
@@ -361,14 +358,15 @@ autoCorrect={false}
 <Text style={styles.label}>Confirmer le code secret *</Text>
 <View style={styles.inputWrap}>
 <TextInput
-value={display(dotted(confirmPassword))}
+value={showPassword ? confirmPassword : confirmPassword.replace(/./g, "•")}
 onChangeText={(t) => {
 const digits = t.replace(/[^0-9]/g, "").slice(0, 6);
 setConfirmPassword(digits);
 }}
 style={styles.input}
 keyboardType="numeric"
-autoCorrect={false}
+placeholder="_ _ _ _ _ _"
+placeholderTextColor="rgba(255,255,255,0.35)"
 />
 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="rgba(255,255,255,0.5)" />
