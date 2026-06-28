@@ -24,10 +24,12 @@ function safeTrim(v: any) {
 return typeof v === "string" ? v.trim() : "";
 }
 
-export default function OnboardingScreen() {
+export default function OnboardingScreen({ route, navigation }: any) {
 
-const navigation = useNavigation<any>();
-const { token, logout, loading: authLoading } = useContext(AuthContext);
+// If navigated from LoginScreen (new account), phone is passed as param
+const incomingPhone: string | undefined = route?.params?.phone;
+
+const { token, logout, loading: authLoading, registerWithPassword } = useContext(AuthContext);
 
 const [storeName, setStoreName] = useState("");
 const [city, setCity] = useState("");
@@ -37,6 +39,10 @@ const [ownerPhone, setOwnerPhone] = useState("");
 
 const [agentCode, setAgentCode] = useState("");
 const [referralCode, setReferralCode] = useState("");
+
+const [password, setPassword] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
+const [showPassword, setShowPassword] = useState(false);
 
 const [loading, setLoading] = useState(false);
 
@@ -92,10 +98,10 @@ ANTI LOOP LOGIN
 ===================================================== */
 useEffect(() => {
 if (authLoading) return;
-if (!token) {
+if (!token && !incomingPhone) {
 navigation.reset({ index: 0, routes: [{ name: "Login" }] });
 }
-}, [authLoading, token, navigation]);
+}, [authLoading, token, navigation, incomingPhone]);
 
 /* =====================================================
 🔥 AUTO DETECTION REFERRAL LINK
@@ -164,14 +170,53 @@ const cleanStoreName = safeTrim(storeName);
 const cleanCity = safeTrim(city);
 const cleanAgentCode = safeTrim(agentCode).toUpperCase();
 const cleanReferralCode = safeTrim(referralCode).toUpperCase();
+const cleanOwnerName = safeTrim(ownerName);
+const cleanOwnerPhone = safeTrim(ownerPhone);
+const cleanPassword = password;
+const cleanConfirm = confirmPassword;
 
 if (!cleanStoreName) {
 Alert.alert("Champ obligatoire", "Entre le nom commercial de la boutique.");
 return;
 }
 
+if (incomingPhone) {
+// Nouveau compte : password obligatoire
+if (!cleanPassword || cleanPassword.length !== 6) {
+Alert.alert("Champ obligatoire", "Le code secret doit contenir 6 chiffres.");
+return;
+}
+if (cleanPassword !== cleanConfirm) {
+Alert.alert("Erreur", "Les codes secrets ne correspondent pas.");
+return;
+}
+}
+
 setLoading(true);
 
+if (incomingPhone) {
+// 1) Créer le compte
+await registerWithPassword(
+incomingPhone,
+cleanPassword,
+cleanStoreName,
+cleanOwnerName || undefined,
+cleanOwnerPhone || undefined,
+cleanReferralCode || undefined,
+);
+// 2) Mettre à jour les infos restantes (city, agentCode)
+let authHeader = headers.Authorization;
+if (!authHeader) {
+const tk = await AsyncStorage.getItem("token");
+if (tk) authHeader = `Bearer ${tk}`;
+}
+if (authHeader) {
+const payload: any = {};
+if (cleanCity) payload.city = cleanCity;
+if (cleanAgentCode) payload.agentCode = cleanAgentCode;
+await updateStoreOnboarding(payload, { Authorization: authHeader });
+}
+} else {
 let authHeader = headers.Authorization;
 if (!authHeader) {
 const tk = await AsyncStorage.getItem("token");
@@ -184,25 +229,18 @@ navigation.reset({ index: 0, routes: [{ name: "Login" }] });
 return;
 }
 
-const cleanOwnerName = safeTrim(ownerName);
-const cleanOwnerPhone = safeTrim(ownerPhone);
-
 const payload: any = {
 storeName: cleanStoreName,
 city: cleanCity,
 };
 
-// ✅ agentCode terrain
 if (cleanAgentCode) payload.agentCode = cleanAgentCode;
-
-// ⭐⭐⭐⭐⭐ FIX CRITIQUE PARRAINAGE
 if (cleanReferralCode) payload.referralCode = cleanReferralCode;
-
-// ✅ propriétaire
 if (cleanOwnerName) payload.ownerName = cleanOwnerName;
 if (cleanOwnerPhone) payload.ownerPhone = cleanOwnerPhone;
 
 await updateStoreOnboarding(payload, { Authorization: authHeader });
+}
 
 await AsyncStorage.setItem("isOnboarded", "true");
 
@@ -311,6 +349,41 @@ style={styles.input}
 autoCapitalize="characters"
 autoCorrect={false}
 />
+
+{incomingPhone && (
+<>
+
+<Text style={styles.label}>Code secret 6 chiffres *</Text>
+<View style={styles.pwdRow}>
+<TextInput
+value={password}
+onChangeText={(t) => setPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
+keyboardType="numeric"
+maxLength={6}
+placeholder="Entrez 6 chiffres"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={[styles.input, { flex: 1 }]}
+secureTextEntry={!showPassword}
+/>
+<TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+<Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="rgba(255,255,255,0.5)" />
+</TouchableOpacity>
+</View>
+
+<Text style={styles.label}>Confirmer le code secret *</Text>
+<TextInput
+value={confirmPassword}
+onChangeText={(t) => setConfirmPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
+keyboardType="numeric"
+maxLength={6}
+placeholder="Retaper les 6 chiffres"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={styles.input}
+secureTextEntry={!showPassword}
+/>
+
+</>
+)}
 
 <View style={styles.tipBox}>
 <Ionicons name="information-circle-outline" size={18} color="#9AF5C7" />
@@ -423,6 +496,9 @@ borderWidth: 1,
 borderColor: "rgba(154,245,199,0.12)",
 },
 tipText: { flex: 1, color: "#C6C0DD", fontSize: 12, lineHeight: 18 },
+
+pwdRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+eyeBtn: { padding: 10 },
 
 footer: {
 position: "absolute",

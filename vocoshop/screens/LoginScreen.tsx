@@ -24,16 +24,9 @@ function safeTrim(v: any) {
 return typeof v === "string" ? v.trim() : "";
 }
 
-function formatAgentCode(text: string): string {
-const clean = text.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-if (clean.length <= 2) return clean;
-if (clean.length <= 6) return `${clean.slice(0, 2)}-${clean.slice(2)}`;
-return `${clean.slice(0, 2)}-${clean.slice(2, 6)}-${clean.slice(6, 7)}`;
-}
-
 export default function LoginScreen({ navigation }: any) {
 
-const { checkPhone, loginWithPassword, registerWithPassword } = useContext(AuthContext);
+const { checkPhone, loginWithPassword } = useContext(AuthContext);
 const { t } = useLanguage();
 
 const [phone, setPhone] = useState("");
@@ -43,12 +36,6 @@ const [loading, setLoading] = useState(false);
 const [countryCode, setCountryCode] = useState<any>("FR");
 const [callingCode, setCallingCode] = useState("33");
 
-const [isNewAccount, setIsNewAccount] = useState(false);
-const [confirmPassword, setConfirmPassword] = useState("");
-const [storeName, setStoreName] = useState("");
-const [ownerName, setOwnerName] = useState("");
-const [ownerPhone, setOwnerPhone] = useState("");
-const [agentCode, setAgentCode] = useState("");
 const [errorMsg, setErrorMsg] = useState("");
 
 const glowAnim = useRef(new Animated.Value(0)).current;
@@ -81,13 +68,7 @@ return `+${prefix}${cleaned}`;
 const resetForm = () => {
 setStep("phone");
 setPassword("");
-setConfirmPassword("");
-setStoreName("");
-setOwnerName("");
-setOwnerPhone("");
-setAgentCode("");
 setErrorMsg("");
-setIsNewAccount(false);
 };
 
 const continueWithPhone = async () => {
@@ -101,7 +82,10 @@ try {
 setLoading(true);
 setErrorMsg("");
 const result = await checkPhone(cleanPhone);
-setIsNewAccount(!result.exists);
+if (!result.exists) {
+navigation.navigate("Onboarding", { phone: cleanPhone, callingCode, countryCode });
+return;
+}
 setStep("password");
 } catch (e: any) {
 setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
@@ -124,18 +108,10 @@ if (!pwd || pwd.length !== 6) {
 setErrorMsg("Le mot de passe doit contenir 6 chiffres");
 return;
 }
-if (isNewAccount && pwd !== confirmPassword) {
-setErrorMsg("Les mots de passe ne correspondent pas");
-return;
-}
 setLoading(true);
 setErrorMsg("");
 try {
-if (isNewAccount) {
-await registerWithPassword(cleanPhone, pwd, safeTrim(storeName) || undefined, safeTrim(ownerName) || undefined, safeTrim(ownerPhone) || undefined, safeTrim(agentCode) || undefined);
-} else {
 await loginWithPassword(cleanPhone, pwd);
-}
 navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
 } catch (e: any) {
 setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
@@ -156,11 +132,11 @@ return (
 )}
 
 <Text style={styles.title}>
-{step === "phone" ? t("login.title.phone") : isNewAccount ? "Nouveau compte" : "Bienvenue"}
+{step === "phone" ? t("login.title.phone") : "Bienvenue"}
 </Text>
 
 <Text style={styles.subtitle}>
-{step === "phone" ? t("login.subtitle.phone") : isNewAccount ? "Créez votre compte Vocoshop" : "Entrez votre code secret 6 chiffres"}
+{step === "phone" ? t("login.subtitle.phone") : "Entrez votre code secret 6 chiffres"}
 </Text>
 
 {step === "phone" ? (
@@ -201,39 +177,6 @@ style={styles.phoneCustomInput}
 
 <View style={styles.formCard}>
 
-{isNewAccount ? (
-<>
-
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83D\uDD10"}</Text>
-<TextInput
-style={styles.fieldInput}
-value={password}
-onChangeText={handlePasswordChange}
-keyboardType="numeric"
-placeholder="Code secret 6 chiffres"
-placeholderTextColor="rgba(255,255,255,0.35)"
-maxLength={6}
-/>
-</View>
-
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83D\uDD10"}</Text>
-<TextInput
-style={styles.fieldInput}
-value={confirmPassword}
-onChangeText={(t) => setConfirmPassword(t.replace(/[^0-9]/g, "").slice(0, 6))}
-keyboardType="numeric"
-placeholder="Confirmer le code 6 chiffres"
-placeholderTextColor="rgba(255,255,255,0.35)"
-maxLength={6}
-/>
-</View>
-
-</>
-) : (
-<>
-
 <TouchableOpacity activeOpacity={1} onPress={() => hiddenRef.current?.focus()}>
 <TextInput
 ref={hiddenRef}
@@ -255,69 +198,6 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 </View>
 </TouchableOpacity>
 
-</>
-)}
-
-{isNewAccount && (
-<>
-
-<View style={styles.sectionLabel}>
-<Text style={styles.sectionLabelText}>INFORMATIONS BOUTIQUE</Text>
-</View>
-
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83C\uDFEA"}</Text>
-<TextInput
-style={styles.fieldInput}
-value={storeName}
-onChangeText={setStoreName}
-placeholder="Nom de la boutique"
-placeholderTextColor="rgba(255,255,255,0.35)"
-/>
-</View>
-
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83D\uDC64"}</Text>
-<TextInput
-style={styles.fieldInput}
-value={ownerName}
-onChangeText={setOwnerName}
-placeholder="Nom du propriétaire"
-placeholderTextColor="rgba(255,255,255,0.35)"
-/>
-</View>
-
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83D\uDCF1"}</Text>
-<TextInput
-style={styles.fieldInput}
-value={ownerPhone}
-onChangeText={setOwnerPhone}
-keyboardType="phone-pad"
-placeholder="Téléphone du propriétaire"
-placeholderTextColor="rgba(255,255,255,0.35)"
-/>
-</View>
-
-<View style={styles.sectionLabel}>
-<Text style={styles.sectionLabelText}>PARRAINAGE</Text>
-</View>
-
-<View style={styles.fieldGroup}>
-<Text style={styles.fieldIcon}>{"\uD83C\uDFC6"}</Text>
-<TextInput
-style={styles.fieldInput}
-value={agentCode}
-onChangeText={(t) => setAgentCode(t.toUpperCase())}
-placeholder="Code parrain (agent ou boutique)"
-placeholderTextColor="rgba(255,255,255,0.35)"
-autoCapitalize="characters"
-/>
-</View>
-
-</>
-)}
-
 {!!errorMsg && (
 <View style={styles.lockBox}>
 <Text style={styles.lockTitle}>Erreur</Text>
@@ -326,7 +206,7 @@ autoCapitalize="characters"
 )}
 
 <TouchableOpacity style={[styles.btn, (loading || !password) && { opacity: 0.5 }]} onPress={handleSubmit} disabled={loading || !password}>
-{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{isNewAccount ? "Créer mon compte" : "Se connecter"}</Text>}
+{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Se connecter</Text>}
 </TouchableOpacity>
 
 <TouchableOpacity style={styles.backBtn} onPress={resetForm}>
@@ -375,16 +255,6 @@ otpRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 1
 otpBox: { width: 48, height: 58, borderRadius: 12, backgroundColor: "#1C1C26", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
 
 otpText: { color: "#fff", fontSize: 24, fontWeight: "900" },
-
-fieldGroup: { flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 14, height: 54, paddingHorizontal: 14, marginBottom: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
-
-fieldIcon: { fontSize: 18, marginRight: 12, opacity: 0.7 },
-
-fieldInput: { flex: 1, color: "#fff", fontSize: 15, height: 54 },
-
-sectionLabel: { marginTop: 6, marginBottom: 10, paddingLeft: 2 },
-
-sectionLabelText: { color: "#6C63FF", fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
 
 btn: { backgroundColor: "#6C63FF", paddingVertical: 16, borderRadius: 14, alignItems: "center", marginTop: 6 },
 
