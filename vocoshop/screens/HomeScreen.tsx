@@ -9,6 +9,7 @@ import { AuthContext } from "../src/api/context/AuthContext";
 import { onSyncState, getLastSyncFinished } from "../src/api/offline/syncEngine";
 import { useSubscription } from "../src/api/context/SubscriptionContext";
 import { useLanguage } from "../src/api/context/LanguageContext";
+import { EXPIRING_DAYS } from "../src/api/constants/stock";
 
 import HomeHeader from "./components/HomeHeader";
 import SubBanner from "./components/SubBanner";
@@ -63,7 +64,7 @@ export default function HomeScreen() {
         setTodaySales(0); setTodayRevenue(0); setStockValueSell(0); setTotalStockQty(0);
         setShowDailyOverlay(false); return;
       }
-      const res = await API.get("/store/kpis", { headers: headersLocal });
+      const res = await API.get("/store/kpis", { headers: headersLocal, params: { days: EXPIRING_DAYS } });
       const k: any = res.data ?? {};
       setProductsCount(k.totalProducts ?? 0);
       setLowStockCount(k.lowStockCount ?? 0);
