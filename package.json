@@ -2,13 +2,11 @@
   "name": "voco-app",
   "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server --workspace=vocoserver\" \"npm run dev:shop --workspace=vocoshop\"",
+    "dev": "concurrently \"cd vocoserver && npm run dev\" \"cd vocoshop && npx expo start\"",
     "dev:server": "cd vocoserver && npm run dev",
-    "dev:shop": "cd vocoshop && npx expo start",
-    "install:all": "npm install && cd vocoserver && npm install && cd ../vocoshop && npm install"
+    "dev:shop": "cd vocoshop && npx expo start"
   },
   "workspaces": [
-    "vocoserver",
     "vocoshop",
     "voco-web"
   ],
