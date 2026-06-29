@@ -205,10 +205,6 @@ return (
 
 <View style={{ flex: 1 }}>
 <Text style={styles.title}>Inventaire #{String(session._id).slice(-5)}</Text>
-<View style={[styles.badge, { borderColor: ui.color }]}>
-<Ionicons name={ui.icon} size={14} color={ui.color} />
-<Text style={[styles.badgeText, { color: ui.color }]}>{ui.label}</Text>
-</View>
 </View>
 
 <TouchableOpacity style={styles.iconBtn} onPress={() => loadAll({ silent: false })} activeOpacity={0.85}>
@@ -218,9 +214,16 @@ return (
 
 {/* INFO BOX */}
 <View style={styles.infoBox}>
+<View style={styles.infoRowBoutique}>
 <View style={styles.infoRow}>
 <Ionicons name="storefront-outline" size={20} color="#A78BFA" />
 <Text style={styles.infoText}>Boutique : {session.storeId?.storeName || shortId(session.storeId)}</Text>
+</View>
+
+<View style={[styles.badge, { borderColor: ui.color }]}>
+<Ionicons name={ui.icon} size={14} color={ui.color} />
+<Text style={[styles.badgeText, { color: ui.color }]}>{ui.label}</Text>
+</View>
 </View>
 
 <View style={styles.infoRow}>
@@ -396,7 +399,8 @@ backgroundColor: "rgba(255,255,255,0.04)",
 badgeText: { fontSize: 12, fontWeight: "900" },
 
 infoBox: { backgroundColor: "#161228", padding: 16, borderRadius: 14, marginBottom: 12 },
-infoRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+infoRowBoutique: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 infoText: { color: "#fff", fontSize: 13 },
 
 summaryBox: {
