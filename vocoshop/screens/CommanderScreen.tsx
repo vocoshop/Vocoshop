@@ -1,5 +1,5 @@
 // screens/CommanderScreen.tsx
-import React, { useContext, useMemo, useState, useCallback, useEffect } from "react";
+import React, { useContext, useMemo, useState, useCallback } from "react";
 import {
 View,
 Text,
@@ -248,13 +248,8 @@ const [loadingProducts, setLoadingProducts] = useState(false);
 // Suppliers
 const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 const [loadingSuppliers, setLoadingSuppliers] = useState(false);
-const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
+const [selectedSupplierId, setSelectedSupplierId] = useState<string>(preselectedSupplierId || "");
 
-useEffect(() => {
-  if (preselectedSupplierId) {
-    setSelectedSupplierId(preselectedSupplierId);
-  }
-}, [preselectedSupplierId]);
 const [showSupplierModal, setShowSupplierModal] = useState(false);
 
 // Cart + modals
