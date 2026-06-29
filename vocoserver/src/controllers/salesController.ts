@@ -225,9 +225,13 @@ try {
 const storeId = getStoreId(req);
 if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
-const date = getBusinessDate();
+  const date = getBusinessDate();
 
-// 1) ventes en attente (du jour)
+  // 0) store owner phone pour notification automatique
+  const storeInfo = await Store.findOne({ shopId: storeId }).select("ownerPhone").lean();
+  const ownerPhone = storeInfo?.ownerPhone || "";
+
+  // 1) ventes en attente (du jour)
 const newSales: any[] = await Sale.find({ storeId, businessDate: date }).lean();
 if (!newSales.length) {
 return res.status(400).json({ error: "Aucune nouvelle vente à clôturer" });
@@ -344,7 +348,7 @@ await Sale.deleteMany({ storeId, businessDate: date });
 
 await touchStoreActivity(storeId);
 
-return res.json({ message: "Journée clôturée (profit réel calculé)", report });
+  return res.json({ message: "Journée clôturée (profit réel calculé)", report, ownerPhone });
 } catch (err) {
 console.error("❌ closeDaySales:", err);
 return res.status(500).json({ error: "Erreur serveur" });
