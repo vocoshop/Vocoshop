@@ -1,5 +1,8 @@
 import { useState, useMemo, useContext, useCallback } from "react";
-import { Alert, Linking } from "react-native";
+import { Alert } from "react-native";
+
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 
 import API from "../../src/api/api";
 import { AuthContext } from "../../src/api/context/AuthContext";
@@ -46,28 +49,89 @@ const [dayModal, setDayModal] = useState(false);
 const [dayLoading, setDayLoading] = useState(false);
 const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 
-  const cleanPhone = (v?: string) => (v || "").replace(/\D+/g, "");
+  const shareBilanPdf = useCallback(async (report: TodaySummary) => {
+    try {
+      const itemsHtml = (report.sales || []).map((s) =>
+        `<tr>
+          <td style="padding:8px;border-bottom:1px solid #e0e0e0;color:#333;">${s.productName}</td>
+          <td style="padding:8px;border-bottom:1px solid #e0e0e0;text-align:center;color:#333;">${s.quantity}</td>
+          <td style="padding:8px;border-bottom:1px solid #e0e0e0;text-align:right;color:#333;">${Math.round(s.unitPrice).toLocaleString("fr-FR")} FCFA</td>
+          <td style="padding:8px;border-bottom:1px solid #e0e0e0;text-align:right;color:#333;">${Math.round(s.totalAmount).toLocaleString("fr-FR")} FCFA</td>
+        </tr>`
+      ).join("");
 
-  const sendBilanToOwner = useCallback((report: TodaySummary, phone: string) => {
-    const waPhone = cleanPhone(phone);
-    if (!waPhone) return;
+      const grossProfit = (report as any).grossProfit;
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 24px; color: #222; }
+    h1 { color: #1a1a2e; font-size: 22px; margin-bottom: 4px; }
+    .date { color: #666; font-size: 13px; margin-bottom: 20px; }
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+    .card { flex: 1; background: #f4f4f9; padding: 14px; border-radius: 10px; text-align: center; }
+    .card-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .card-value { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-top: 4px; }
+    .card-value.green { color: #22c55e; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { padding: 8px; background: #1a1a2e; color: #fff; font-size: 12px; text-align: left; }
+    th.right { text-align: right; }
+    th.center { text-align: center; }
+    .total-row td { font-weight: 700; padding: 10px 8px; border-top: 2px solid #1a1a2e; font-size: 14px; }
+    .footer { margin-top: 32px; text-align: center; color: #aaa; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h1>Bilan Journalier</h1>
+  <div class="date">${report.date || new Date().toISOString().split("T")[0]}</div>
 
-    const lines = (report.sales || []).map((s) =>
-      `• ${s.productName} — ${s.quantity} × ${Math.round(s.unitPrice).toLocaleString("fr-FR")} = ${Math.round(s.totalAmount).toLocaleString("fr-FR")} FCFA`
-    );
+  <div class="summary">
+    <div class="card">
+      <div class="card-label">Chiffre d'affaires</div>
+      <div class="card-value">${Math.round(report.totalRevenue).toLocaleString("fr-FR")} FCFA</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Ventes</div>
+      <div class="card-value">${report.totalSales}</div>
+    </div>
+    ${grossProfit != null ? `
+    <div class="card">
+      <div class="card-label">Bénéfice</div>
+      <div class="card-value green">${Math.round(grossProfit).toLocaleString("fr-FR")} FCFA</div>
+    </div>` : ""}
+  </div>
 
-    const text = [
-      `📊 Bilan du ${report.date || "aujourd'hui"}`,
-      ``,
-      `CA : ${Math.round(report.totalRevenue).toLocaleString("fr-FR")} FCFA`,
-      `Ventes : ${report.totalSales}`,
-      (report as any).grossProfit != null ? `Bénéfice : ${Math.round((report as any).grossProfit).toLocaleString("fr-FR")} FCFA` : "",
-      ``,
-      ...lines,
-    ].filter(Boolean).join("\n");
+  <table>
+    <tr>
+      <th>Produit</th>
+      <th class="center">Qté</th>
+      <th class="right">Prix unit.</th>
+      <th class="right">Total</th>
+    </tr>
+    ${itemsHtml || "<tr><td colspan='4' style='text-align:center;padding:20px;color:#999;'>Aucun produit</td></tr>"}
+    <tr class="total-row">
+      <td colspan="3" style="text-align:right;">Total</td>
+      <td style="text-align:right;">${Math.round(report.totalRevenue).toLocaleString("fr-FR")} FCFA</td>
+    </tr>
+  </table>
 
-    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
-    Linking.openURL(url).catch(() => {});
+  <div class="footer">Généré par Vocoshop</div>
+</body>
+</html>`;
+
+      const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Partager le bilan journalier",
+          UTI: "com.adobe.pdf",
+        });
+      }
+    } catch (e) {
+      console.log("❌ shareBilanPdf error:", e);
+    }
   }, []);
 
   /* =====================================================
@@ -136,11 +200,8 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
         sales: Array.isArray(report.sales) ? report.sales : [],
       });
 
-      // ✅ Auto-envoi WhatsApp au propriétaire
-      const ownerPhone = data?.ownerPhone || "";
-      if (ownerPhone) {
-        sendBilanToOwner(report, ownerPhone);
-      }
+      // ✅ Partage du bilan en PDF
+      shareBilanPdf(report);
 
     } catch (err: any) {
       console.log("❌ closeDay error:", err?.response?.data || err);
@@ -149,7 +210,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     } finally {
       setDayLoading(false);
     }
-  }, [headers, sendBilanToOwner]);
+  }, [headers, shareBilanPdf]);
 
 /* =====================================================
 RETURN
