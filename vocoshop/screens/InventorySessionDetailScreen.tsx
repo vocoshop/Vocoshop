@@ -298,6 +298,10 @@ return (
 <Text style={styles.productName}>{name}</Text>
 <Text style={styles.productCategory}>{category}</Text>
 
+{!isApplied && item.countedByName && (
+<Text style={styles.countedByText}>Compté par : {item.countedByName}</Text>
+)}
+
 {isApplied ? (
 <>
 <Text style={styles.smallText}>Avant : <Text style={styles.valueText}>{item?.previousQuantity ?? 0}</Text></Text>
@@ -448,6 +452,7 @@ smallText: { color: "#C6C0DD", marginTop: 2, fontSize: 12 },
 valueText: { color: "#fff", fontWeight: "900" },
 
 diffText: { marginTop: 8, fontSize: 14, fontWeight: "900" },
+countedByText: { color: "#A78BFA", marginTop: 4, fontSize: 11, fontWeight: "600" },
 dateText: { marginTop: 6, color: "#7A7393", fontSize: 11 },
 
 bottomBar: {

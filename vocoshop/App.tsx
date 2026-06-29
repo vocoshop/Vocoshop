@@ -69,6 +69,7 @@ import MyAgentScreen from "./screens/MyAgentScreen";
 // INVENTAIRES EMPLOYÉS
 import InventorySessionsScreen from "./screens/InventorySessionsScreen";
 import InventorySessionDetailScreen from "./screens/InventorySessionDetailScreen";
+import ConsolidatedInventoryScreen from "./screens/ConsolidatedInventoryScreen";
 import InventoryAnalysisScreen from "./screens/InventoryAnalysisScreen";
 import StockHistoryScreen from "./screens/StockHistoryScreen";
 import FinishInventoryScreen from "./screens/FinishInventoryScreen";
@@ -411,6 +412,7 @@ component={SubscriptionBlockedScreen}
 
 {/* 📋 INVENTAIRES EMPLOYÉS */}
 <Stack.Screen name="InventorySessions" component={InventorySessionsScreen} />
+<Stack.Screen name="ConsolidatedInventory" component={ConsolidatedInventoryScreen} />
 <Stack.Screen name="InventoryAnalysis" component={InventoryAnalysisScreen} />
 <Stack.Screen name="InventorySessionDetail" component={InventorySessionDetailScreen} />
 <Stack.Screen name="FinishInventory" component={FinishInventoryScreen} />

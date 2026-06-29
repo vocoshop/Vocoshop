@@ -5,6 +5,8 @@ productId: mongoose.Types.ObjectId;
 countedQuantity: number;
 productName?: string;
 category?: string;
+countedBy?: mongoose.Types.ObjectId;
+countedByName?: string;
 }
 
 export interface IInventorySession extends Document {
@@ -22,6 +24,8 @@ productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
 countedQuantity: { type: Number, required: true },
 productName: { type: String },
 category: { type: String },
+countedBy: { type: Schema.Types.ObjectId, ref: "User" },
+countedByName: { type: String },
 });
 
 const InventorySessionSchema = new Schema<IInventorySession>(

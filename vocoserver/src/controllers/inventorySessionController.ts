@@ -4,6 +4,7 @@ import InventorySession from "../models/InventorySession";
 import Product from "../models/Product";
 import StockHistory from "../models/StockHistory";
 import Order from "../models/Order";
+import User from "../models/User";
 import mongoose from "mongoose";
 import { getStoreId } from "../utils/storeId";
 
@@ -123,10 +124,13 @@ export const addInventoryLine = async (req: Request, res: Response) => {
 try {
 const { sessionId } = req.params;
 const { productId, countedQuantity } = req.body;
+const employeeId = getEmployeeId(req);
 
 if (!productId || !mongoose.Types.ObjectId.isValid(productId) || countedQuantity == null) {
 return res.status(400).json({ error: "productId et countedQuantity nécessaires" });
 }
+
+if (!employeeId) return res.status(400).json({ error: "employeeId manquant" });
 
 if (!mongoose.Types.ObjectId.isValid(sessionId)) {
 return res.status(400).json({ error: "Session invalide" });
@@ -143,18 +147,26 @@ return res.status(400).json({ error: "Session non modifiable (déjà validée/ap
 const product = await Product.findById(productId).select("name category");
 if (!product) return res.status(404).json({ error: "Produit introuvable" });
 
+// Récupérer le nom de l'employé
+const employeeUser = await User.findById(employeeId).select("name").lean();
+const countedByName = employeeUser && (employeeUser as any).name ? (employeeUser as any).name : "Employé";
+
 const existingLine = session.lines.find(
 (line: any) => String(line.productId) === String(productId)
 );
 
 if (existingLine) {
 existingLine.countedQuantity = Number(countedQuantity);
+existingLine.countedBy = new mongoose.Types.ObjectId(employeeId);
+existingLine.countedByName = countedByName;
 } else {
 session.lines.push({
 productId,
 countedQuantity: Number(countedQuantity),
 productName: product.name,
 category: product.category,
+countedBy: new mongoose.Types.ObjectId(employeeId),
+countedByName,
 } as any);
 }
 
@@ -327,6 +339,8 @@ category: product.category ?? line.category,
 stockQuantity,
 countedQuantity,
 diff: countedQuantity - stockQuantity,
+countedBy: line.countedBy,
+countedByName: line.countedByName,
 };
 })
 .filter(Boolean);
@@ -497,6 +511,69 @@ modifiedProducts: count,
 return res.json(list);
 } catch (err) {
 console.error("❌ listAppliedInventorySessions error:", err);
+return res.status(500).json({ error: "Erreur serveur" });
+}
+};
+
+/* ---------------------------------------------------------
+🔄 CONSOLIDATED — toutes les lignes de toutes les sessions
+GET /api/inventory/consolidated
+→ retourne toutes les lignes de toutes les sessions (draft+validated)
+  avec countedByName pour savoir qui a compté quoi
+---------------------------------------------------------- */
+export const getConsolidatedInventory = async (req: Request, res: Response) => {
+try {
+const storeId = getStoreId(req);
+if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+
+const sessions = await InventorySession.find({
+storeId,
+status: { $in: ["draft", "validated"] },
+})
+.populate("employeeId", "name")
+.lean();
+
+const allProductIds: any[] = [];
+for (const s of sessions) {
+for (const line of (s as any).lines || []) {
+if (line.productId) allProductIds.push(line.productId);
+}
+}
+
+const products = await Product.find({ _id: { $in: allProductIds } })
+.select("name category quantity")
+.lean();
+const productMap = new Map<string, any>();
+for (const p of products) productMap.set(String(p._id), p);
+
+const lines: any[] = [];
+
+for (const s of sessions) {
+const employeeName = (s as any).employeeId?.name || "Employé";
+
+for (const line of (s as any).lines || []) {
+const product = productMap.get(String(line.productId));
+const stockQuantity = Number(product?.quantity ?? 0);
+const countedQuantity = Number(line.countedQuantity ?? 0);
+
+lines.push({
+sessionId: s._id,
+sessionStatus: s.status,
+productId: line.productId,
+productName: line.productName || product?.name || "Produit",
+category: line.category || product?.category,
+stockQuantity,
+countedQuantity,
+diff: countedQuantity - stockQuantity,
+countedBy: line.countedBy,
+countedByName: line.countedByName || employeeName,
+});
+}
+}
+
+return res.json({ lines, sessionCount: sessions.length });
+} catch (err) {
+console.error("❌ getConsolidatedInventory error:", err);
 return res.status(500).json({ error: "Erreur serveur" });
 }
 };

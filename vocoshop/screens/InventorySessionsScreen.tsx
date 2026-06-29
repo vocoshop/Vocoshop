@@ -139,6 +139,10 @@ navigation.navigate("InventorySessionDetail", { sessionId });
 [navigation]
 );
 
+const goConsolidated = useCallback(() => {
+navigation.navigate("ConsolidatedInventory");
+}, [navigation]);
+
 return (
 <View style={styles.container}>
 {/* HEADER */}
@@ -159,6 +163,10 @@ activeOpacity={0.85}
 disabled={!isReady}
 >
 <Ionicons name="refresh-outline" size={20} color="#C6C0DD" />
+</TouchableOpacity>
+
+<TouchableOpacity style={styles.consolidatedBtn} onPress={goConsolidated} activeOpacity={0.85}>
+<Ionicons name="git-merge-outline" size={20} color="#A78BFA" />
 </TouchableOpacity>
 </View>
 
@@ -272,6 +280,14 @@ width: 42,
 height: 42,
 borderRadius: 21,
 backgroundColor: "rgba(255,255,255,0.06)",
+alignItems: "center",
+justifyContent: "center",
+},
+consolidatedBtn: {
+width: 42,
+height: 42,
+borderRadius: 21,
+backgroundColor: "rgba(167,139,250,0.12)",
 alignItems: "center",
 justifyContent: "center",
 },

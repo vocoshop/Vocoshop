@@ -21,7 +21,8 @@ listEmployeeInventorySessions,
 applyInventorySession,
 getInventoryAppliedHistory,
 listAppliedInventorySessions,
-discardInventorySession, // ✅ AJOUT
+discardInventorySession,
+getConsolidatedInventory,
 } from "../controllers/inventorySessionController";
 
 const router = Router();
@@ -43,6 +44,7 @@ router.get("/my-sessions", listEmployeeInventorySessions);
 📊 INVENTAIRE — PATRON (ANALYSE / APPLICATION)
 ===================================================== */
 router.get("/sessions", listInventorySessions);
+router.get("/consolidated", getConsolidatedInventory);
 router.get("/session/:sessionId/analyze", analyzeInventorySession);
 router.post("/session/:sessionId/apply", applyInventorySession);
 router.get("/session/:sessionId/history", getInventoryAppliedHistory);
