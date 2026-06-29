@@ -25,10 +25,10 @@ const SCORE_LEVELS = [
 
 // Fallback si l'API ne répond pas (au cas où)
 const PARTENAIRES_FALLBACK = [
-  { id: "1", name: "Microfinance Soleil", type: "Microfinance", min: 100000, max: 5000000, responseTime: "72 heures", rate: "3.5%/mois" },
-  { id: "2", name: "Banque Populaire Congo", type: "Banque", min: 500000, max: 20000000, responseTime: "5 jours", rate: "2.8%/mois" },
-  { id: "3", name: "Financement Express", type: "Microfinance", min: 50000, max: 3000000, responseTime: "48 heures", rate: "4%/mois" },
-  { id: "4", name: "TrustMicro CG", type: "Microfinance", min: 200000, max: 8000000, responseTime: "96 heures", rate: "3%/mois" },
+  { _id: "000000000000000000000001", name: "Microfinance Soleil", type: "Microfinance", min: 100000, max: 5000000, responseTime: "72 heures", rate: "3.5%/mois" },
+  { _id: "000000000000000000000002", name: "Banque Populaire Congo", type: "Banque", min: 500000, max: 20000000, responseTime: "5 jours", rate: "2.8%/mois" },
+  { _id: "000000000000000000000003", name: "Financement Express", type: "Microfinance", min: 50000, max: 3000000, responseTime: "48 heures", rate: "4%/mois" },
+  { _id: "000000000000000000000004", name: "TrustMicro CG", type: "Microfinance", min: 200000, max: 8000000, responseTime: "96 heures", rate: "3%/mois" },
 ];
 
 const OBJECTIFS = [
@@ -67,7 +67,6 @@ export default function FundingScreen() {
   const [demandes, setDemandes] = useState<any[]>([]);
   const [showDemandeModal, setShowDemandeModal] = useState(false);
   const [opportunities, setOpportunities] = useState<string[]>([]);
-  const [oppScore, setOppScore] = useState(0);
 
   const loadScore = useCallback(async () => {
     try {
@@ -107,7 +106,6 @@ export default function FundingScreen() {
       const res: any = await API.get("/funding/opportunities");
       if (res.data?.opportunities) {
         setOpportunities(res.data.opportunities);
-        if (res.data.score != null) setOppScore(res.data.score);
       }
     } catch {
       // silencieux
@@ -271,13 +269,6 @@ export default function FundingScreen() {
                 text={text}
               />
             ))
-          )}
-          {oppScore >= 70 && (
-            <OpportunityCard
-              icon="ribbon-outline"
-              color="#8A4DFF"
-              text="Vous êtes proche du niveau Excellent Profil."
-            />
           )}
         </View>
 

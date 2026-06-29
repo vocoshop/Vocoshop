@@ -68,7 +68,7 @@ async function calculateScore(storeId: string) {
   const stabilityScore = Math.min(15, activeDays >= 20 ? 15 : activeDays >= 10 ? 10 : activeDays >= 5 ? 6 : activeDays >= 1 ? 3 : 0);
 
   /* --- Gestion stock (10 pts) --- */
-  const stockScore = Math.min(10, recentStockMoves > 0 ? 5 : 0 + (totalProducts >= 5 ? 5 : totalProducts >= 1 ? 3 : 0));
+  const stockScore = Math.min(10, (recentStockMoves > 0 ? 5 : 0) + (totalProducts >= 5 ? 5 : totalProducts >= 1 ? 3 : 0));
 
   /* --- Historique financier (10 pts) - réservé futur --- */
   const financeScore = 0;
