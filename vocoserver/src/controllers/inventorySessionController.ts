@@ -268,8 +268,7 @@ return res.status(400).json({ error: "Session invalide" });
 
 const session = await InventorySession.findById(sessionId)
 .populate("lines.productId", "name category quantity")
-.populate("employeeId", "name")
-.populate("storeId", "storeName");
+.populate("employeeId", "name");
 
 if (!session) return res.status(404).json({ error: "Session introuvable" });
 return res.json(session);
@@ -291,7 +290,6 @@ if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 const sessions = await InventorySession.find({ storeId })
 .sort({ createdAt: -1 })
 .populate("employeeId", "name")
-.populate("storeId", "storeName")
 .lean();
 
 return res.json(sessions);

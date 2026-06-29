@@ -217,7 +217,7 @@ return (
 <View style={styles.infoRowBoutique}>
 <View style={styles.infoRow}>
 <Ionicons name="storefront-outline" size={20} color="#A78BFA" />
-<Text style={styles.infoText}>Boutique : {session.storeId?.storeName || shortId(session.storeId)}</Text>
+<Text style={styles.infoText}>Boutique : {shortId(session.storeId)}</Text>
 </View>
 
 <View style={[styles.badge, { borderColor: ui.color }]}>

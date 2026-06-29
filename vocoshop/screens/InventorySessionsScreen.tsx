@@ -24,7 +24,6 @@ createdAt?: string;
 completedAt?: string;
 appliedAt?: string;
 employeeId?: { _id: string; name: string };
-storeId?: { _id: string; storeName: string };
 };
 
 function prettyDate(d?: string) {
@@ -230,7 +229,7 @@ activeOpacity={0.9}
 
 <View style={styles.cardEmployeeRow}>
 <Ionicons name="person-outline" size={12} color="#7A7393" />
-<Text style={styles.cardEmployee}>{item.employeeId?.name || "Employé"}{item.storeId?.storeName ? ` · ${item.storeId.storeName}` : ""}</Text>
+<Text style={styles.cardEmployee}>{item.employeeId?.name || "Employé"}</Text>
 </View>
 
 {!!dateLabel && (
