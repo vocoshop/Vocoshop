@@ -49,8 +49,9 @@ const [dayModal, setDayModal] = useState(false);
 const [dayLoading, setDayLoading] = useState(false);
 const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 
-  const shareBilanPdf = useCallback(async (report: TodaySummary) => {
+  const shareBilanPdf = useCallback(async (report: TodaySummary, userName: string) => {
     try {
+      const employeeName = userName || "Employé";
       const itemsHtml = (report.sales || []).map((s) =>
         `<tr>
           <td style="padding:8px;border-bottom:1px solid #e0e0e0;color:#333;">${s.productName}</td>
@@ -85,6 +86,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 <body>
   <h1>Bilan Journalier</h1>
   <div class="date">${report.date || new Date().toISOString().split("T")[0]}</div>
+  <div class="date" style="margin-top:-12px;color:#888;">Clôturé par : ${employeeName}</div>
 
   <div class="summary">
     <div class="card">
@@ -200,8 +202,12 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
         sales: Array.isArray(report.sales) ? report.sales : [],
       });
 
-      // ✅ Partage du bilan en PDF
-      shareBilanPdf(report);
+      // ✅ Partage du bilan en PDF (sauf si c'est le propriétaire)
+      const userName = data?.userName || "";
+      const userRole = data?.userRole || "";
+      if (userRole !== "owner") {
+        shareBilanPdf(report, userName);
+      }
 
     } catch (err: any) {
       console.log("❌ closeDay error:", err?.response?.data || err);

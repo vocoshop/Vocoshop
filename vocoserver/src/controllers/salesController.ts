@@ -348,7 +348,7 @@ await Sale.deleteMany({ storeId, businessDate: date });
 
 await touchStoreActivity(storeId);
 
-  return res.json({ message: "Journée clôturée (profit réel calculé)", report, ownerPhone });
+  return res.json({ message: "Journée clôturée (profit réel calculé)", report, userName: req.user?.name || "", userRole: req.user?.role || "" });
 } catch (err) {
 console.error("❌ closeDaySales:", err);
 return res.status(500).json({ error: "Erreur serveur" });

@@ -220,11 +220,12 @@ id: String(user._id),
 userId: String(user._id),
 storeId,
 role: safeTrim((user as any).role) || "employee",
+name: safeTrim((user as any)?.name) || undefined,
 permissions:
-(user as any).permissions &&
-typeof (user as any).permissions === "object"
-? (user as any).permissions
-: {},
+  (user as any).permissions &&
+  typeof (user as any).permissions === "object"
+  ? (user as any).permissions
+  : {},
 agentCode: safeTrim((store as any)?.agentCode),
 storeName: safeTrim((store as any)?.storeName),
 };
