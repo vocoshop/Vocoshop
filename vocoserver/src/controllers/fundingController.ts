@@ -329,6 +329,9 @@ export const getOpportunities = async (req: Request, res: Response) => {
     if (meta.totalScans > 10) opportunities.push("Vos données OCR améliorent votre fiabilité.");
     if (score >= 70 && score < 81) opportunities.push("Vous êtes proche du niveau Excellent Profil.");
     if (meta.monthsActive >= 6) opportunities.push(`${meta.monthsActive} mois d'ancienneté — un atout pour le financement.`);
+    if (meta.monthsActive >= 3 && meta.monthsActive < 6) opportunities.push("Votre activité est stable depuis 90 jours.");
+    if (meta.monthsActive >= 1 && meta.monthsActive < 3) opportunities.push("Votre boutique gagne en maturité.");
+    if (meta.monthsActive < 1 && meta.activeDays >= 1) opportunities.push(`${meta.activeDays} jours d'activité — continuez comme ça !`);
 
     if (opportunities.length === 0) {
       opportunities.push("Continuez à enregistrer vos ventes pour améliorer votre score.");

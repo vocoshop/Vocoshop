@@ -66,6 +66,8 @@ export default function FundingScreen() {
   const [demandeSending, setDemandeSending] = useState(false);
   const [demandes, setDemandes] = useState<any[]>([]);
   const [showDemandeModal, setShowDemandeModal] = useState(false);
+  const [opportunities, setOpportunities] = useState<string[]>([]);
+  const [oppScore, setOppScore] = useState(0);
 
   const loadScore = useCallback(async () => {
     try {
@@ -100,10 +102,23 @@ export default function FundingScreen() {
     }
   }, []);
 
+  const loadOpportunities = useCallback(async () => {
+    try {
+      const res: any = await API.get("/funding/opportunities");
+      if (res.data?.opportunities) {
+        setOpportunities(res.data.opportunities);
+        if (res.data.score != null) setOppScore(res.data.score);
+      }
+    } catch {
+      // silencieux
+    }
+  }, []);
+
   useEffect(() => {
     loadScore();
     loadDemandes();
     loadPartners();
+    loadOpportunities();
   }, []);
 
   const level = useMemo(
@@ -241,22 +256,23 @@ export default function FundingScreen() {
             <Text style={styles.sectionTitle}>Mes Opportunités</Text>
           </View>
 
-          <OpportunityCard
-            icon="trending-up-outline"
-            color="#4ADE80"
-            text="Votre score a progressé de 8 points ce mois-ci."
-          />
-          <OpportunityCard
-            icon="shield-checkmark-outline"
-            color="#22D3EE"
-            text="Votre activité est stable depuis 90 jours."
-          />
-          <OpportunityCard
-            icon="flash-outline"
-            color="#FACC15"
-            text="Continuez à enregistrer vos ventes pour améliorer votre éligibilité."
-          />
-          {score >= 70 && (
+          {opportunities.length === 0 ? (
+            <OpportunityCard
+              icon="flash-outline"
+              color="#FACC15"
+              text="Continuez à enregistrer vos ventes pour améliorer votre éligibilité."
+            />
+          ) : (
+            opportunities.map((text, i) => (
+              <OpportunityCard
+                key={i}
+                icon={i === 0 ? "trending-up-outline" : i === 1 ? "shield-checkmark-outline" : "flash-outline"}
+                color={i === 0 ? "#4ADE80" : i === 1 ? "#22D3EE" : "#FACC15"}
+                text={text}
+              />
+            ))
+          )}
+          {oppScore >= 70 && (
             <OpportunityCard
               icon="ribbon-outline"
               color="#8A4DFF"
