@@ -23,6 +23,8 @@ lines?: any[];
 createdAt?: string;
 completedAt?: string;
 appliedAt?: string;
+employeeId?: { _id: string; name: string };
+storeId?: { _id: string; storeName: string };
 };
 
 function prettyDate(d?: string) {
@@ -218,6 +220,11 @@ activeOpacity={0.9}
 
 <Text style={styles.cardSub}>Produits comptés : {counted}</Text>
 
+<View style={styles.cardEmployeeRow}>
+<Ionicons name="person-outline" size={12} color="#7A7393" />
+<Text style={styles.cardEmployee}>{item.employeeId?.name || "Employé"}{item.storeId?.storeName ? ` · ${item.storeId.storeName}` : ""}</Text>
+</View>
+
 {!!dateLabel && (
 <Text style={styles.cardDate}>
 {item.status === "applied"
@@ -299,6 +306,8 @@ backgroundColor: "rgba(255,255,255,0.04)",
 badgeText: { fontSize: 12, fontWeight: "900" },
 
 cardSub: { color: "#C6C0DD", marginTop: 10, fontSize: 12 },
+cardEmployeeRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+cardEmployee: { color: "#7A7393", fontSize: 11 },
 cardDate: { color: "#7A7393", marginTop: 6, fontSize: 11 },
 
 cardFooter: { marginTop: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
