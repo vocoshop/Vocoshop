@@ -148,8 +148,11 @@ const product = await Product.findById(productId).select("name category");
 if (!product) return res.status(404).json({ error: "Produit introuvable" });
 
 // Récupérer le nom de l'employé
+let countedByName = "Employé";
+if (mongoose.Types.ObjectId.isValid(employeeId)) {
 const employeeUser = await User.findById(employeeId).select("name").lean();
-const countedByName = employeeUser && (employeeUser as any).name ? (employeeUser as any).name : "Employé";
+if (employeeUser && (employeeUser as any).name) countedByName = (employeeUser as any).name;
+}
 
 const existingLine = session.lines.find(
 (line: any) => String(line.productId) === String(productId)
@@ -267,8 +270,7 @@ return res.status(400).json({ error: "Session invalide" });
 }
 
 const session = await InventorySession.findById(sessionId)
-.populate("lines.productId", "name category quantity")
-.populate("employeeId", "name");
+.populate("lines.productId", "name category quantity");
 
 if (!session) return res.status(404).json({ error: "Session introuvable" });
 return res.json(session);
@@ -289,7 +291,6 @@ if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
 const sessions = await InventorySession.find({ storeId })
 .sort({ createdAt: -1 })
-.populate("employeeId", "name")
 .lean();
 
 return res.json(sessions);
@@ -528,8 +529,16 @@ const sessions = await InventorySession.find({
 storeId,
 status: { $in: ["draft", "validated"] },
 })
-.populate("employeeId", "name")
 .lean();
+
+// Lookup employee names
+const allEmployeeIds = [...new Set(sessions.map(s => String((s as any).employeeId || "")))]
+  .filter(Boolean);
+const employeeUsers = await User.find({ _id: { $in: allEmployeeIds } })
+  .select("name")
+  .lean();
+const employeeNameMap = new Map<string, string>();
+for (const u of employeeUsers) employeeNameMap.set(String(u._id), (u as any).name || "Employé");
 
 const allProductIds: any[] = [];
 for (const s of sessions) {
@@ -547,7 +556,7 @@ for (const p of products) productMap.set(String(p._id), p);
 const lines: any[] = [];
 
 for (const s of sessions) {
-const employeeName = (s as any).employeeId?.name || "Employé";
+const employeeName = employeeNameMap.get(String((s as any).employeeId)) || "Employé";
 
 for (const line of (s as any).lines || []) {
 const product = productMap.get(String(line.productId));

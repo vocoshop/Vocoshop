@@ -23,7 +23,7 @@ lines?: any[];
 createdAt?: string;
 completedAt?: string;
 appliedAt?: string;
-employeeId?: { _id: string; name: string };
+employeeId?: string;
 };
 
 function prettyDate(d?: string) {
@@ -229,7 +229,7 @@ activeOpacity={0.9}
 
 <View style={styles.cardEmployeeRow}>
 <Ionicons name="person-outline" size={12} color="#7A7393" />
-<Text style={styles.cardEmployee}>{item.employeeId?.name || "Employé"}</Text>
+<Text style={styles.cardEmployee}>Employé</Text>
 </View>
 
 {!!dateLabel && (

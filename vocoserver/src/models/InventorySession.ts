@@ -11,7 +11,7 @@ countedByName?: string;
 
 export interface IInventorySession extends Document {
 storeId: string;
-employeeId: mongoose.Types.ObjectId;
+employeeId: string;
 status: "draft" | "validated" | "applied";
 lines: IInventoryLine[];
 createdAt: Date;
@@ -31,7 +31,7 @@ countedByName: { type: String },
 const InventorySessionSchema = new Schema<IInventorySession>(
 {
 storeId: { type: String, required: true },
-employeeId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+employeeId: { type: String, required: true },
 
 // ✅ AJOUT DE "applied"
 status: {

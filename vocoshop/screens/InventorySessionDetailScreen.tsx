@@ -228,7 +228,7 @@ return (
 
 <View style={styles.infoRow}>
 <Ionicons name="person-circle-outline" size={20} color="#A78BFA" />
-<Text style={styles.infoText}>Employé : {session.employeeId?.name || shortId(session.employeeId)}</Text>
+<Text style={styles.infoText}>Employé : {shortId(session.employeeId)}</Text>
 </View>
 
 {!!prettyDate(session.completedAt) && (
