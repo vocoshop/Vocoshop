@@ -26,7 +26,7 @@ if (!Array.isArray(items)) return [];
 return items
   .filter((it: any) => it && it.productName && it.quantity > 0)
   .map((it: any) => ({
-    productName: String(it.productName).trim(),
+    name: String(it.productName).trim(),
     quantity: Math.max(1, Number(it.quantity) || 1),
     unitPrice: Math.max(0, Number(it.unitPrice) || 0),
     productId: it.productId || null,
