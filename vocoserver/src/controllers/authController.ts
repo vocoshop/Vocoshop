@@ -1,7 +1,6 @@
 ﻿import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import Store from "../models/Store";
-import User from "../models/User";
 import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
