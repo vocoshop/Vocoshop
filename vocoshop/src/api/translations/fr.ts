@@ -30,7 +30,7 @@ const fr: Record<string, string> = {
   "home.card.report": "Bilan",
   "home.card.stock": "Stock",
   "home.card.sales": "Vente",
-  "home.card.inventory_desc": "{n} produits · {qty} unités",
+  "home.card.inventory_desc": "{n} produits",
   "home.card.report_desc": "{n} ventes · {revenue} FCFA",
   "home.card.stock_desc": "{value} FCFA en stock",
   "home.card.sales_desc": "{revenue} FCFA aujourd'hui",

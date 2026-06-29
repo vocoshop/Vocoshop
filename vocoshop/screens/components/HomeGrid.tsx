@@ -12,7 +12,6 @@ interface Props {
   todaySales: number;
   todayRevenue: number;
   stockValueSell: number;
-  totalStockQty: number;
   isSubscriptionBlocked: boolean;
   navigation: any;
   deny: () => void;
@@ -24,7 +23,7 @@ function fmt(n: number): string {
 
 export default function HomeGrid({
   canInventory, canReports, canStock, canSales,
-  productsCount, todaySales, todayRevenue, stockValueSell, totalStockQty,
+  productsCount, todaySales, todayRevenue, stockValueSell,
   isSubscriptionBlocked, navigation, deny,
 }: Props) {
   const { t } = useLanguage();
@@ -35,7 +34,7 @@ export default function HomeGrid({
       color: "#7DA6FF",
       title: t("home.card.inventory"),
       desc: canInventory
-        ? t("home.card.inventory_desc", { n: fmt(productsCount), qty: fmt(totalStockQty) })
+        ? t("home.card.inventory_desc", { n: fmt(productsCount) })
         : t("home.card.limited"),
       onPress: () => {
         if (isSubscriptionBlocked) { navigation.navigate("SubscriptionBlocked"); return; }

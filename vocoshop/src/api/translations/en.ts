@@ -30,7 +30,7 @@ const en: Record<string, string> = {
   "home.card.report": "Reports",
   "home.card.stock": "Stock",
   "home.card.sales": "Sales",
-  "home.card.inventory_desc": "{n} products · {qty} units",
+  "home.card.inventory_desc": "{n} products",
   "home.card.report_desc": "{n} sales · {revenue} FCFA",
   "home.card.stock_desc": "{value} FCFA in stock",
   "home.card.sales_desc": "{revenue} FCFA today",
