@@ -68,6 +68,7 @@ const { token, storeId } = useContext(AuthContext);
 const [today, setToday] = useState<TodaySummary | null>(null);
 const [reports, setReports] = useState<ReportItem[]>([]);
 const [shopValue, setShopValue] = useState<number>(0);
+const [potentialProfit, setPotentialProfit] = useState<number>(0);
 
 const [loading, setLoading] = useState(true);
 
@@ -217,6 +218,7 @@ if (!canLoad) {
 setToday(null);
 setReports([]);
 setShopValue(0);
+setPotentialProfit(0);
 setPage(1);
 setHasMore(false);
 setLoading(false);
@@ -255,6 +257,7 @@ setPage(raw?.page ?? 1);
 setHasMore(!!raw?.hasMore);
 
 setShopValue(kpis?.estimatedResellValue ?? 0);
+setPotentialProfit(kpis?.totalPotentialProfit ?? 0);
 } catch (err: any) {
 console.log(
 "❌ ReportScreen load error:",
@@ -264,6 +267,7 @@ err?.response?.data || err
 setToday(null);
 setReports([]);
 setShopValue(0);
+setPotentialProfit(0);
 setPage(1);
 setHasMore(false);
 } finally {
@@ -422,6 +426,9 @@ tintColor="#A8A3C2"
 <View style={styles.shopValueCard}>
 <Text style={styles.shopValueLabel}>Valeur estimée de votre boutique</Text>
 <Text style={styles.shopValue}>{money(shopValue)}</Text>
+{potentialProfit > 0 && (
+<Text style={styles.shopProfit}>Bénéfice estimé : {money(potentialProfit)}</Text>
+)}
 </View>
 
 {/* BILAN DU JOUR */}
@@ -549,6 +556,11 @@ shopValue: {
 color: "#FACC15",
 fontSize: 24,
 fontWeight: "900",
+},
+shopProfit: {
+color: "#7A7393",
+fontSize: 11,
+marginTop: 6,
 },
 block: {
 backgroundColor: "#161228",

@@ -53,7 +53,6 @@ export default function HomeScreen() {
   const [todaySales, setTodaySales] = useState(0);
   const [todayRevenue, setTodayRevenue] = useState(0);
   const [stockValueSell, setStockValueSell] = useState(0);
-  const [stockValueBuy, setStockValueBuy] = useState(0);
 
   async function loadData() {
     const headersLocal = { Authorization: token ? `Bearer ${token}` : "", "x-store-id": storeId || "" };
@@ -61,7 +60,7 @@ export default function HomeScreen() {
       setOverlayReady(false);
       if (!token || !storeId || !canInventory) {
         setProductsCount(0); setLowStockCount(0); setExpiringCount(0);
-        setTodaySales(0); setTodayRevenue(0); setStockValueSell(0); setStockValueBuy(0);
+        setTodaySales(0); setTodayRevenue(0); setStockValueSell(0);
         setShowDailyOverlay(false); return;
       }
       const res = await API.get("/store/kpis", { headers: headersLocal, params: { days: EXPIRING_DAYS } });
@@ -70,7 +69,6 @@ export default function HomeScreen() {
       setLowStockCount(k.lowStockCount ?? 0);
       setExpiringCount(k.expiringCount ?? 0);
       setStockValueSell(k.stockValueSell ?? 0);
-      setStockValueBuy(k.stockValueBuy ?? 0);
       setTodaySales(k.todaySales ?? 0);
       setTodayRevenue(k.todayRevenue ?? 0);
       if ((k.totalProducts ?? 0) > 0 && storeId) {
@@ -116,7 +114,7 @@ export default function HomeScreen() {
       <HomeGrid
         canInventory={canInventory} canReports={canReports} canStock={canStock} canSales={canSales}
         productsCount={productsCount} todaySales={todaySales} todayRevenue={todayRevenue}
-        stockValueSell={stockValueSell} stockValueBuy={stockValueBuy}
+        stockValueSell={stockValueSell}
         isSubscriptionBlocked={isSubscriptionBlocked}
         navigation={navigation} deny={deny}
       />
