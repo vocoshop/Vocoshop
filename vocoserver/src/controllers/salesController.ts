@@ -227,10 +227,6 @@ if (!storeId) return res.status(400).json({ error: "storeId manquant" });
 
   const date = getBusinessDate();
 
-  // 0) store owner phone pour notification automatique
-  const storeInfo = await Store.findOne({ shopId: storeId }).select("ownerPhone").lean();
-  const ownerPhone = storeInfo?.ownerPhone || "";
-
   // 1) ventes en attente (du jour)
 const newSales: any[] = await Sale.find({ storeId, businessDate: date }).lean();
 if (!newSales.length) {
