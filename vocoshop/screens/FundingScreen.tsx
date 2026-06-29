@@ -484,14 +484,36 @@ export default function FundingScreen() {
 
             <ScrollView>
               <Text style={styles.formLabel}>Partenaire</Text>
-              <TouchableOpacity style={styles.partnerDropdown} onPress={() => setShowPartnerPicker(true)}>
+              <TouchableOpacity style={styles.partnerDropdown} onPress={() => setShowPartnerPicker(!showPartnerPicker)}>
                 <Text style={[styles.partnerDropdownText, !demandePartenaire && styles.partnerDropdownPlaceholder]}>
                   {demandePartenaire
                     ? partenaires.find((p) => (p._id || p.id) === demandePartenaire)?.name
                     : "Sélectionner un partenaire"}
                 </Text>
-                <Ionicons name="chevron-down" size={18} color="#A8A3C2" />
+                <Ionicons name={showPartnerPicker ? "chevron-up" : "chevron-down"} size={18} color="#A8A3C2" />
               </TouchableOpacity>
+              {showPartnerPicker && (
+                <View style={styles.partnerListContainer}>
+                  <ScrollView style={styles.partnerListScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    {partenaires.map((p) => {
+                      const selected = demandePartenaire === (p._id || p.id);
+                      return (
+                        <TouchableOpacity
+                          key={p._id || p.id}
+                          style={[styles.partnerListItem, selected && styles.partnerListItemActive]}
+                          onPress={() => { setDemandePartenaire(p._id || p.id); setShowPartnerPicker(false); }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.partnerListItemName}>{p.name}</Text>
+                            <Text style={styles.partnerListItemType}>{p.type}</Text>
+                          </View>
+                          {selected && <Ionicons name="checkmark-circle" size={20} color="#8A4DFF" />}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
 
               <Text style={styles.formLabel}>Montant (FCFA)</Text>
               <TextInput
@@ -579,33 +601,6 @@ export default function FundingScreen() {
                   </>
                 )}
               </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={showPartnerPicker} transparent animationType="fade" onRequestClose={() => setShowPartnerPicker(false)}>
-        <View style={styles.pickerOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowPartnerPicker(false)} />
-          <View style={styles.pickerModal}>
-            <Text style={styles.pickerModalTitle}>Choisir un partenaire</Text>
-            <ScrollView style={styles.pickerList}>
-              {partenaires.map((p) => {
-                const selected = demandePartenaire === (p._id || p.id);
-                return (
-                  <TouchableOpacity
-                    key={p._id || p.id}
-                    style={[styles.pickerItem, selected && styles.pickerItemActive]}
-                    onPress={() => { setDemandePartenaire(p._id || p.id); setShowPartnerPicker(false); }}
-                  >
-                    <View style={styles.pickerItemLeft}>
-                      <Text style={styles.pickerItemName}>{p.name}</Text>
-                      <Text style={styles.pickerItemType}>{p.type}</Text>
-                    </View>
-                    {selected && <Ionicons name="checkmark-circle" size={22} color="#8A4DFF" />}
-                  </TouchableOpacity>
-                );
-              })}
             </ScrollView>
           </View>
         </View>
@@ -905,41 +900,26 @@ const styles = StyleSheet.create({
   },
   partnerDropdownText: { color: "#fff", fontSize: 15, flex: 1 },
   partnerDropdownPlaceholder: { color: "#555" },
-  pickerOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.65)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
+  partnerListContainer: {
+    backgroundColor: "#1A1333",
+    borderRadius: 12,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: "#2A2040",
+    maxHeight: 220,
   },
-  pickerModal: {
-    backgroundColor: "#221B3D",
-    borderRadius: 16,
-    width: "100%",
-    maxHeight: "65%",
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  pickerModalTitle: { color: "#fff", fontSize: 17, fontWeight: "700", marginBottom: 16, textAlign: "center" },
-  pickerList: { maxHeight: 300 },
-  pickerItem: {
+  partnerListScroll: { maxHeight: 220 },
+  partnerListItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginBottom: 4,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2A2040",
   },
-  pickerItemActive: { backgroundColor: "#2A2040" },
-  pickerItemLeft: { flex: 1 },
-  pickerItemName: { color: "#fff", fontSize: 15, fontWeight: "600" },
-  pickerItemType: { color: "#A8A3C2", fontSize: 12, marginTop: 2 },
+  partnerListItemActive: { backgroundColor: "#2A2040" },
+  partnerListItemName: { color: "#fff", fontSize: 15, fontWeight: "600" },
+  partnerListItemType: { color: "#A8A3C2", fontSize: 12, marginTop: 2 },
   objChip: {
     backgroundColor: "#2A2040",
     paddingHorizontal: 12,
