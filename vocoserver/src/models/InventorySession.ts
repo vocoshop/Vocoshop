@@ -11,12 +11,12 @@ countedByName?: string;
 
 export interface IInventorySession extends Document {
 storeId: string;
-employeeId: string;
-status: "draft" | "validated" | "applied"; // ✅ AJOUT
+employeeId: mongoose.Types.ObjectId;
+status: "draft" | "validated" | "applied";
 lines: IInventoryLine[];
 createdAt: Date;
-completedAt?: Date; // quand l’employé valide
-appliedAt?: Date; // ✅ quand le patron applique au stock
+completedAt?: Date;
+appliedAt?: Date;
 }
 
 const InventoryLineSchema = new Schema<IInventoryLine>({
@@ -31,7 +31,7 @@ countedByName: { type: String },
 const InventorySessionSchema = new Schema<IInventorySession>(
 {
 storeId: { type: String, required: true },
-employeeId: { type: String, required: true },
+employeeId: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
 // ✅ AJOUT DE "applied"
 status: {

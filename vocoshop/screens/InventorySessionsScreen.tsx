@@ -166,7 +166,7 @@ disabled={!isReady}
 </TouchableOpacity>
 
 <TouchableOpacity style={styles.consolidatedBtn} onPress={goConsolidated} activeOpacity={0.85}>
-<Ionicons name="git-merge-outline" size={20} color="#A78BFA" />
+<Ionicons name="layers-outline" size={20} color="#A78BFA" />
 </TouchableOpacity>
 </View>
 
