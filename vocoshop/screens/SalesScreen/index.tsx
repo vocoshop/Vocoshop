@@ -47,6 +47,7 @@ const [qty, setQty] = useState("1");
 const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 const [cartModal, setCartModal] = useState(false);
 const [editingQty, setEditingQty] = useState<string | null>(null);
+const [editingQtyValue, setEditingQtyValue] = useState("");
 const [saleMsg, setSaleMsg] = useState<{ type: "success" | "offline" | "error"; text: string } | null>(null);
 
 const handleFinalize = async () => {
@@ -272,18 +273,22 @@ hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
 <View style={styles.cartLineBottom}>
 {editingQty === item.product._id ? (
 <TextInput
-value={String(item.qty)}
-onChangeText={(v) => {
-const n = parseInt(v, 10);
-if (!isNaN(n)) setItemQty(item.product._id, n);
+value={editingQtyValue}
+onChangeText={setEditingQtyValue}
+onBlur={() => {
+  const n = parseInt(editingQtyValue, 10);
+  if (!isNaN(n) && n > 0) setItemQty(item.product._id, n);
+  setEditingQty(null);
 }}
-onBlur={() => setEditingQty(null)}
 keyboardType="numeric"
 style={styles.cartQtyInput}
 autoFocus
 />
 ) : (
-<TouchableOpacity onPress={() => setEditingQty(item.product._id)}>
+<TouchableOpacity onPress={() => {
+  setEditingQty(item.product._id);
+  setEditingQtyValue(String(item.qty));
+}}>
 <Text style={styles.cartQtyEdit}>{item.qty}</Text>
 </TouchableOpacity>
 )}
