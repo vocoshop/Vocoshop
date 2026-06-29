@@ -46,6 +46,9 @@ _id: string;
 date: string;
 totalSales: number;
 totalRevenue: number;
+grossProfit: number;
+cogs: number;
+marginPercent: number;
 sales: ReportSale[];
 };
 
@@ -237,6 +240,13 @@ return (
 {report.totalSales}
 </Text>
 </View>
+
+<View style={[styles.summaryRow, styles.profitRow]}>
+<Text style={styles.profitLabel}>Bénéfice</Text>
+<Text style={styles.profitValue}>
+{money(report.grossProfit ?? 0)}
+</Text>
+</View>
 </View>
 
 {/* ITEMS */}
@@ -336,5 +346,19 @@ fontWeight: "900",
 empty: {
 color: "#9CA3AF",
 marginTop: 20,
+},
+profitRow: {
+borderTopWidth: 1,
+borderTopColor: "#2A2040",
+paddingTop: 10,
+marginTop: 10,
+},
+profitLabel: {
+color: "#4ADE80",
+fontWeight: "700",
+},
+profitValue: {
+color: "#4ADE80",
+fontWeight: "900",
 },
 });
