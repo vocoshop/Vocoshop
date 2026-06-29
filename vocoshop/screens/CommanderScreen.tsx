@@ -542,14 +542,28 @@ await API.post(`/orders/${orderId}/confirm`, {}, { headers });
 
 Alert.alert(
 "Succès",
-`Commande envoyée.\nTotal : ${formatAmount(cartTotal)}${
+`Commande créée.\nTotal : ${formatAmount(cartTotal)}${
 selectedSupplier ? `\nFournisseur : ${selectedSupplier.name}` : ""
 }`,
-[
-{ text: "OK" },
-...(selectedSupplierId ? [{ text: "Envoyer au fournisseur", onPress: chooseShareMethod }] : []),
-]
+[{ text: "OK" }]
 );
+
+// Auto-envoi via WhatsApp ou SMS
+const text = buildOrderShareText({
+supplierName: selectedSupplier?.name,
+items: cart.map((c) => ({ name: c.product.name, quantity: c.quantity, unitPrice: c.unitPrice })),
+total: cartTotal,
+});
+const waPhone = cleanPhone(selectedSupplier?.whatsapp || "");
+const smsPhone = cleanPhone(selectedSupplier?.phone || selectedSupplier?.whatsapp || "");
+
+if (waPhone) {
+const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
+Linking.openURL(url).catch(() => {});
+} else if (smsPhone) {
+const url = `sms:${smsPhone}?body=${encodeURIComponent(text)}`;
+Linking.openURL(url).catch(() => {});
+}
 
 // reset
 setCart([]);
