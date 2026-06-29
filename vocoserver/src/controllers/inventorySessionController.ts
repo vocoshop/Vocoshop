@@ -160,17 +160,22 @@ const existingLine = session.lines.find(
 
 if (existingLine) {
 existingLine.countedQuantity = Number(countedQuantity);
+if (mongoose.Types.ObjectId.isValid(employeeId)) {
 existingLine.countedBy = new mongoose.Types.ObjectId(employeeId);
 existingLine.countedByName = countedByName;
+}
 } else {
-session.lines.push({
+const line: any = {
 productId,
 countedQuantity: Number(countedQuantity),
 productName: product.name,
 category: product.category,
-countedBy: new mongoose.Types.ObjectId(employeeId),
 countedByName,
-} as any);
+};
+if (mongoose.Types.ObjectId.isValid(employeeId)) {
+line.countedBy = new mongoose.Types.ObjectId(employeeId);
+}
+session.lines.push(line);
 }
 
 await session.save();
