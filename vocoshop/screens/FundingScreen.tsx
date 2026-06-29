@@ -56,6 +56,7 @@ export default function FundingScreen() {
   const [simResult, setSimResult] = useState<any>(null);
 
   const [demandePartenaire, setDemandePartenaire] = useState("");
+  const [showPartnerPicker, setShowPartnerPicker] = useState(false);
   const [demandeMontant, setDemandeMontant] = useState("");
   const [demandeObjectif, setDemandeObjectif] = useState(OBJECTIFS[0]);
   const [demandePhone, setDemandePhone] = useState("");
@@ -483,19 +484,14 @@ export default function FundingScreen() {
 
             <ScrollView>
               <Text style={styles.formLabel}>Partenaire</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.partnerSelect}>
-                {partenaires.map((p) => (
-                  <TouchableOpacity
-                    key={p._id || p.id}
-                    style={[styles.partnerChip, demandePartenaire === (p._id || p.id) && styles.partnerChipActive]}
-                    onPress={() => setDemandePartenaire(p._id || p.id)}
-                  >
-                    <Text style={[styles.partnerChipText, demandePartenaire === (p._id || p.id) && styles.partnerChipTextActive]}>
-                      {p.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <TouchableOpacity style={styles.partnerDropdown} onPress={() => setShowPartnerPicker(true)}>
+                <Text style={[styles.partnerDropdownText, !demandePartenaire && styles.partnerDropdownPlaceholder]}>
+                  {demandePartenaire
+                    ? partenaires.find((p) => (p._id || p.id) === demandePartenaire)?.name
+                    : "Sélectionner un partenaire"}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color="#A8A3C2" />
+              </TouchableOpacity>
 
               <Text style={styles.formLabel}>Montant (FCFA)</Text>
               <TextInput
@@ -583,6 +579,33 @@ export default function FundingScreen() {
                   </>
                 )}
               </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showPartnerPicker} transparent animationType="fade" onRequestClose={() => setShowPartnerPicker(false)}>
+        <View style={styles.pickerOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowPartnerPicker(false)} />
+          <View style={styles.pickerModal}>
+            <Text style={styles.pickerModalTitle}>Choisir un partenaire</Text>
+            <ScrollView style={styles.pickerList}>
+              {partenaires.map((p) => {
+                const selected = demandePartenaire === (p._id || p.id);
+                return (
+                  <TouchableOpacity
+                    key={p._id || p.id}
+                    style={[styles.pickerItem, selected && styles.pickerItemActive]}
+                    onPress={() => { setDemandePartenaire(p._id || p.id); setShowPartnerPicker(false); }}
+                  >
+                    <View style={styles.pickerItemLeft}>
+                      <Text style={styles.pickerItemName}>{p.name}</Text>
+                      <Text style={styles.pickerItemType}>{p.type}</Text>
+                    </View>
+                    {selected && <Ionicons name="checkmark-circle" size={22} color="#8A4DFF" />}
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         </View>
@@ -870,17 +893,53 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2A2040",
   },
-  partnerSelect: { marginBottom: 4 },
-  partnerChip: {
-    backgroundColor: "#2A2040",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  partnerDropdown: {
+    backgroundColor: "#120D24",
     borderRadius: 10,
-    marginRight: 8,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#2A2040",
   },
-  partnerChipActive: { backgroundColor: "#8A4DFF" },
-  partnerChipText: { color: "#A8A3C2", fontSize: 13, fontWeight: "600" },
-  partnerChipTextActive: { color: "#fff" },
+  partnerDropdownText: { color: "#fff", fontSize: 15, flex: 1 },
+  partnerDropdownPlaceholder: { color: "#555" },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  pickerModal: {
+    backgroundColor: "#221B3D",
+    borderRadius: 16,
+    width: "100%",
+    maxHeight: "65%",
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  pickerModalTitle: { color: "#fff", fontSize: 17, fontWeight: "700", marginBottom: 16, textAlign: "center" },
+  pickerList: { maxHeight: 300 },
+  pickerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  pickerItemActive: { backgroundColor: "#2A2040" },
+  pickerItemLeft: { flex: 1 },
+  pickerItemName: { color: "#fff", fontSize: 15, fontWeight: "600" },
+  pickerItemType: { color: "#A8A3C2", fontSize: 12, marginTop: 2 },
   objChip: {
     backgroundColor: "#2A2040",
     paddingHorizontal: 12,
