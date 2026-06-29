@@ -125,16 +125,18 @@ total: number;
 }) {
 const lines = params.items.map((it) => {
 const lineTotal = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
-return `• ${it.name} — ${it.quantity} × ${Math.round(it.unitPrice)} = ${Math.round(
+return `• ${it.name} — ${it.quantity} × ${Math.round(it.unitPrice).toLocaleString("fr-FR")} = ${Math.round(
 lineTotal
-)} FCFA`;
+).toLocaleString("fr-FR")} FCFA`;
 });
 
 return [
-`Bonjour ${params.supplierName || ""}`.trim(),
-`Voici ma commande :`,
+`Bonjour ${params.supplierName || ""},`.trim(),
+`je voudrais me réapprovisionner. Voici ma commande :`,
+``,
 ...lines,
-`Total estimé : ${Math.round(params.total).toLocaleString("fr-FR")} FCFA`,
+``,
+`Total : ${Math.round(params.total).toLocaleString("fr-FR")} FCFA`,
 `Merci.`,
 ].join("\n");
 }
