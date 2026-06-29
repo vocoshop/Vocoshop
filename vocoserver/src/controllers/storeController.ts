@@ -195,21 +195,12 @@ $multiply: [
 ],
 },
 },
-stockValueBuy: {
-$sum: {
-$multiply: [
-{ $ifNull: ["$buyPrice", 0] },
-{ $ifNull: ["$quantity", 0] },
-],
-},
-},
 },
 },
 ]);
 
 const totalStockQty = agg?.[0]?.totalStockQty ?? 0;
 const stockValueSell = agg?.[0]?.stockValueSell ?? 0;
-const stockValueBuy = agg?.[0]?.stockValueBuy ?? 0;
 
 const lowStockCount = await Product.countDocuments({
 storeId,
@@ -256,7 +247,6 @@ return res.status(200).json({
 totalProducts,
 totalStockQty,
 stockValueSell,
-stockValueBuy,
 lowStockCount,
 expiringCount,
 todaySales,
