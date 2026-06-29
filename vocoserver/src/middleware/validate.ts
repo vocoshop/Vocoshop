@@ -65,6 +65,7 @@ export const createOrderSchema = z.object({
     quantity: z.number().positive(),
     unitPrice: z.number().min(0),
   })).min(1, "Au moins un produit requis"),
+  totalEstimated: z.number().min(0).optional(),
   notes: z.string().max(500).optional(),
 });
 

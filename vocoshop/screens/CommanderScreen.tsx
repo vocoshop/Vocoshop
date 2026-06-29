@@ -530,7 +530,7 @@ setSendingOrder(true);
 const payload: any = {
 items: cart.map((c) => ({
 productId: c.product._id,
-name: c.product.name,
+productName: c.product.name,
 quantity: c.quantity,
 unitPrice: c.unitPrice,
 })),
