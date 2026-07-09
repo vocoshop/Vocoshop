@@ -1,4 +1,6 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import crypto from "crypto";
 import Store from "../models/Store";
 import Subscription from "../models/Subscription";
@@ -38,8 +40,7 @@ function verifyFlutterwaveSignature(req: Request): boolean {
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedHash));
 }
 
-export const paymentWebhook = async (req: Request, res: Response) => {
-try {
+export const paymentWebhook = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
 if (!FLUTTERWAVE_SECRET_HASH) {
   logSystem("error", "Webhook REJETÉ — FLUTTERWAVE_SECRET_HASH non configuré", { source: "webhook", path: "/api/webhook" });
@@ -48,7 +49,7 @@ if (!FLUTTERWAVE_SECRET_HASH) {
 
 if (!verifyFlutterwaveSignature(req)) {
   logSystem("warning", "Webhook REJETÉ — signature invalide", { source: "webhook", path: "/api/webhook" });
-  return res.status(401).json({ error: "Signature invalide" });
+  return next(new UnauthorizedError("Signature invalide"));
 }
 
 const ip = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || undefined;
@@ -82,7 +83,7 @@ logSystem("webhook", `Webhook: storeId=${storeId} status=${status} txId=${transa
 });
 
 if (!storeId || !isValidObjectId(storeId)) {
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 }
 
 if (status !== "SUCCESS") {
@@ -94,7 +95,7 @@ const store: any = await Store.findById(storeId);
 
 if (!store) {
 console.log("❌ Store introuvable");
-return res.status(404).json({ error: "Store not found" });
+return next(new NotFoundError("Store not found"));
 }
 
 const now = new Date();
@@ -296,14 +297,4 @@ console.log("======== FIN WEBHOOK ========\n");
 
 return res.json({ ok: true });
 
-} catch (e) {
-  const err = e as Error;
-  logSystem("error", `Webhook échoué: ${err.message}`, {
-    source: "webhook",
-    path: "/api/webhook",
-    stack: err.stack,
-    details: JSON.stringify(req.body)?.slice(0, 200),
-  });
-  return res.status(500).json({ error: "webhook failed" });
-}
-};
+});

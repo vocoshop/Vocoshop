@@ -14,6 +14,8 @@ TouchableOpacity,
 ScrollView,
 Share,
 Alert,
+Modal,
+TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -21,8 +23,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLanguage } from "../src/api/context/LanguageContext";
 
 import { AuthContext } from "../src/api/context/AuthContext";
-import { getMyStoreProfile } from "../src/api/services/storeService";
+import { getMyStoreProfile, updateStoreOnboarding } from "../src/api/services/storeService";
 import { useSubscription } from "../src/api/context/SubscriptionContext";
+import API from "../src/api/api";
 import { useNotifications } from "../src/api/context/NotificationContext";
 
 const NOTIF_KEY = "vocos_notif_enabled";
@@ -46,7 +49,10 @@ const [referredCount, setReferredCount] = useState(0);
 const [paidReferrals, setPaidReferrals] = useState(0);
 const [city, setCity] = useState("—");
 const [agentCode, setAgentCode] = useState("—");
+const [storeOwnerPhone, setStoreOwnerPhone] = useState("");
 const [isOnboarded, setIsOnboarded] = useState<boolean>(true);
+const [ownerPhoneModal, setOwnerPhoneModal] = useState(false);
+const [ownerPhoneInput, setOwnerPhoneInput] = useState("");
 
 // ✅ Owner/admin only
 const isOwner = useMemo(() => {
@@ -91,6 +97,7 @@ setReferralCode(data?.referralCode ?? data?.shopId ?? "—");
 setReferredCount(Number(data?.referredCount ?? 0));
 setCity(data?.city?.trim() ? data.city : "—");
 setAgentCode(data?.agentCode?.trim() ? data.agentCode : "—");
+setStoreOwnerPhone(data?.ownerPhone || "");
 setPaidReferrals(Number(data?.paidReferrals ?? 0));
 setIsOnboarded(Boolean(data?.isOnboarded));
 } catch (err: any) {
@@ -137,24 +144,69 @@ message: `Rejoins Vocoshop avec mon code de parrainage : ${referralCode}`,
 };
 
 const onLogout = useCallback(() => {
-Alert.alert("Se déconnecter", "Es-tu sûr de vouloir te déconnecter ?", [
-{ text: "Annuler", style: "cancel" },
-{
-text: "Se déconnecter",
-style: "destructive",
-onPress: async () => {
-try {
-await logout();
-} finally {
-navigation.reset({
-index: 0,
-routes: [{ name: "Login" }],
-});
-}
-},
-},
-]);
-}, [logout, navigation]);
+  (async () => {
+    try {
+      const { data } = await API.get<{ multipleStores: boolean }>("/auth/owner-stores");
+      if (data.multipleStores) {
+        Alert.alert(
+          "Se déconnecter",
+          "Tu possèdes plusieurs boutiques. Que veux-tu faire ?",
+          [
+            { text: "Annuler", style: "cancel" },
+            {
+              text: "Changer de profil",
+              onPress: async () => {
+                await logout();
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: "Login",
+                      params: {
+                        preselectedPhone: user?.phone,
+                        selectedStoreName: "Sélectionne une boutique",
+                      },
+                    },
+                  ],
+                });
+              },
+            },
+            {
+              text: "Se déconnecter",
+              style: "destructive",
+              onPress: async () => {
+                await logout();
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "Login" }],
+                });
+              },
+            },
+          ]
+        );
+        return;
+      }
+    } catch (_) {}
+    // Fallback simple
+    Alert.alert("Se déconnecter", "Es-tu sûr de vouloir te déconnecter ?", [
+      { text: "Annuler", style: "cancel" },
+      {
+        text: "Se déconnecter",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logout();
+          } finally {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            });
+          }
+        },
+      },
+    ]);
+  })();
+}, [logout, navigation, user?.phone]);
 
 const initials = useMemo(() => {
 
@@ -163,6 +215,20 @@ const parts = v.split(" ").filter(Boolean).slice(0, 2);
 const ini = parts.map((w) => w[0]?.toUpperCase()).join("");
 return ini || "MB";
 }, [shopName]);
+
+const saveOwnerPhone = useCallback(async () => {
+const v = ownerPhoneInput.trim();
+if (!v) return;
+try {
+const h = { Authorization: token ? `Bearer ${token}` : "" };
+await updateStoreOnboarding({ storeName: shopName, ownerPhone: v }, h);
+setStoreOwnerPhone(v);
+setOwnerPhoneModal(false);
+Alert.alert("Enregistré", "Numéro du propriétaire mis à jour.");
+} catch (e: any) {
+Alert.alert("Erreur", e?.response?.data?.error || "Impossible d'enregistrer.");
+}
+}, [ownerPhoneInput, token, shopName]);
 
 return (
 <View style={styles.container}>
@@ -250,6 +316,30 @@ fontWeight:"900"
 <Text style={styles.shopMeta}>Code agent : {agentCode}</Text>
 </View>
 </View>
+
+<TouchableOpacity
+style={styles.addStoreBtn}
+onPress={() =>
+Alert.alert(
+"Créer une boutique",
+"Souhaites-tu créer un nouveau compte ?",
+[
+{ text: "Non", style: "cancel" },
+{
+text: "Oui",
+onPress: () =>
+navigation.navigate("Onboarding", {
+phone,
+ownerPhone: storeOwnerPhone,
+}),
+},
+]
+)
+}
+activeOpacity={0.7}
+>
+<Ionicons name="add" size={20} color="#fff" />
+</TouchableOpacity>
 </View>
 
 {/* petite séparation propre */}
@@ -389,6 +479,18 @@ onPress={() => navigation.navigate("PersonalInfo")}
 />
 
 {isOwner && (
+<ProfileItem
+icon="phone-portrait-outline"
+title="Téléphone du propriétaire"
+subtitle={storeOwnerPhone || "Non défini — appuie pour définir"}
+onPress={() => {
+setOwnerPhoneInput(storeOwnerPhone || "");
+setOwnerPhoneModal(true);
+}}
+/>
+)}
+
+{isOwner && (
 <>
 <ProfileItem
 icon="bar-chart-outline"
@@ -437,6 +539,40 @@ activeOpacity={0.85}
 <Text style={styles.logoutText}>Se déconnecter</Text>
 </TouchableOpacity>
 </ScrollView>
+
+<Modal visible={ownerPhoneModal} transparent animationType="fade">
+<View style={styles.modalOverlay}>
+<View style={styles.modalContent}>
+<Text style={styles.modalTitle}>Propriétaire</Text>
+<Text style={styles.modalSubtitle}>
+Numéro du boss (celui qui lie les boutiques)
+</Text>
+<TextInput
+style={styles.modalInput}
+value={ownerPhoneInput}
+onChangeText={setOwnerPhoneInput}
+placeholder="+242 06 123 45 67"
+placeholderTextColor="rgba(255,255,255,0.35)"
+keyboardType="phone-pad"
+autoFocus
+/>
+<View style={styles.modalButtons}>
+<TouchableOpacity
+style={styles.modalBtnCancel}
+onPress={() => setOwnerPhoneModal(false)}
+>
+<Text style={styles.modalBtnCancelText}>Annuler</Text>
+</TouchableOpacity>
+<TouchableOpacity
+style={styles.modalBtnSave}
+onPress={saveOwnerPhone}
+>
+<Text style={styles.modalBtnSaveText}>Enregistrer</Text>
+</TouchableOpacity>
+</View>
+</View>
+</View>
+</Modal>
 </View>
 );
 }
@@ -500,8 +636,8 @@ marginBottom: 8,
 padding: 16,
 borderRadius: 18,
 flexDirection: "row",
-justifyContent: "space-between",
 alignItems: "center",
+position: "relative",
 },
 
 shopLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
@@ -644,4 +780,50 @@ gap: 8,
 },
 
 logoutText: { color: "#FF6B6B", fontWeight: "700" },
+
+addStoreBtn: {
+width: 36,
+height: 36,
+borderRadius: 18,
+backgroundColor: "#5B3DF5",
+alignItems: "center",
+justifyContent: "center",
+position: "absolute",
+top: 12,
+right: 12,
+},
+
+modalOverlay: {
+flex: 1,
+backgroundColor: "rgba(0,0,0,0.7)",
+justifyContent: "center",
+alignItems: "center",
+},
+modalContent: {
+backgroundColor: "#18122B",
+marginHorizontal: 40,
+padding: 24,
+borderRadius: 18,
+width: "85%",
+},
+modalTitle: { color: "#fff", fontWeight: "900", fontSize: 18, marginBottom: 4 },
+modalSubtitle: { color: "#A8A3C2", fontSize: 13, marginBottom: 16 },
+modalInput: {
+backgroundColor: "#241C39",
+color: "#fff",
+fontSize: 16,
+padding: 14,
+borderRadius: 12,
+marginBottom: 20,
+},
+modalButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 12 },
+modalBtnCancel: { paddingVertical: 10, paddingHorizontal: 16 },
+modalBtnCancelText: { color: "#A8A3C2", fontWeight: "600" },
+modalBtnSave: {
+backgroundColor: "#5B3DF5",
+paddingVertical: 10,
+paddingHorizontal: 20,
+borderRadius: 10,
+},
+modalBtnSaveText: { color: "#fff", fontWeight: "700" },
 });

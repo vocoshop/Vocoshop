@@ -24,19 +24,35 @@ function safeTrim(v: any) {
 return typeof v === "string" ? v.trim() : "";
 }
 
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen({ navigation, route }: any) {
 
 const { checkPhone, loginWithPassword } = useContext(AuthContext);
 const { t } = useLanguage();
 
-const [phone, setPhone] = useState("");
+const [phone, setPhone] = useState(route?.params?.preselectedPhone
+  ? route.params.preselectedPhone.replace(/^\+\d{1,3}/, "")
+  : ""
+);
 const [password, setPassword] = useState("");
 const [step, setStep] = useState<"phone" | "password">("phone");
 const [loading, setLoading] = useState(false);
 const [countryCode, setCountryCode] = useState<any>("FR");
-const [callingCode, setCallingCode] = useState("33");
+const [callingCode, setCallingCode] = useState(route?.params?.preselectedPhone
+  ? route.params.preselectedPhone.replace(/^\+(\d{1,3}).*$/, "$1")
+  : "33"
+);
+const [selectedStoreName, setSelectedStoreName] = useState(route?.params?.selectedStoreName || "");
 
 const [errorMsg, setErrorMsg] = useState("");
+
+useEffect(() => {
+  if (route?.params?.preselectedPhone) {
+    // If returning from store picker, go directly to password step
+    checkPhone(buildFullPhone()).then((result) => {
+      if (result.exists) setStep("password");
+    });
+  }
+}, [route?.params?.preselectedPhone]);
 
 const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -72,26 +88,30 @@ setErrorMsg("");
 };
 
 const continueWithPhone = async () => {
-if (loading) return;
-const cleanPhone = buildFullPhone();
-if (!cleanPhone || cleanPhone.length < 8) {
-Alert.alert("", t("login.error.invalid_phone"));
-return;
-}
-try {
-setLoading(true);
-setErrorMsg("");
-const result = await checkPhone(cleanPhone);
-if (!result.exists) {
-navigation.navigate("Onboarding", { phone: cleanPhone, callingCode, countryCode });
-return;
-}
-setStep("password");
-} catch (e: any) {
-setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
-} finally {
-setLoading(false);
-}
+  if (loading) return;
+  const cleanPhone = buildFullPhone();
+  if (!cleanPhone || cleanPhone.length < 8) {
+    Alert.alert("", t("login.error.invalid_phone"));
+    return;
+  }
+  try {
+    setLoading(true);
+    setErrorMsg("");
+    const result = await checkPhone(cleanPhone);
+    if (!result.exists) {
+      navigation.navigate("Onboarding", { phone: cleanPhone, callingCode, countryCode });
+      return;
+    }
+    if (result.multipleStores && result.stores && result.stores.length > 1) {
+      navigation.navigate("StorePicker", { stores: result.stores, ownerPhone: cleanPhone });
+      return;
+    }
+    setStep("password");
+  } catch (e: any) {
+    setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
+  } finally {
+    setLoading(false);
+  }
 };
 
 const handlePasswordChange = (t: string) => {

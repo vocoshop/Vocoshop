@@ -10,10 +10,12 @@ Alert,
 ScrollView,
 ActivityIndicator,
 Modal,
+Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
@@ -53,6 +55,32 @@ const [barcode, setBarcode] = useState("");
 const [expirationDate, setExpirationDate] = useState("");
 
 const [loading, setLoading] = useState(false);
+
+// Photo
+const [imageUri, setImageUri] = useState<string | null>(null);
+
+const pickImage = async () => {
+const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+if (!perm.granted) return Alert.alert("Permission refusée", "Accès à la galerie requis.");
+const result = await ImagePicker.launchImageLibraryAsync({
+mediaTypes: ["images"],
+quality: 0.7,
+allowsEditing: true,
+aspect: [1, 1],
+});
+if (!result.canceled) setImageUri(result.assets[0].uri);
+};
+
+const takePhoto = async () => {
+const perm = await ImagePicker.requestCameraPermissionsAsync();
+if (!perm.granted) return Alert.alert("Permission refusée", "Accès à la caméra requis.");
+const result = await ImagePicker.launchCameraAsync({
+quality: 0.7,
+allowsEditing: true,
+aspect: [1, 1],
+});
+if (!result.canceled) setImageUri(result.assets[0].uri);
+};
 
 // Scanner
 const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -127,30 +155,32 @@ return Alert.alert(
 try {
 setLoading(true);
 
-await API.post(
-"/products",
-{
-name: name.trim(),
-category: category.trim(),
+const formData = new FormData();
+formData.append("name", name.trim());
+formData.append("category", category.trim());
+formData.append("sellPrice", String(sp));
+formData.append("purchasePrice", String(pp));
+formData.append("quantity", String(q));
+formData.append("alertLevel", String(a));
+if (barcode.trim()) formData.append("barcode", barcode.trim());
+if (exp !== "") formData.append("expirationDate", exp);
 
-// ✅ nouveaux champs (alignés Product.ts)
-sellPrice: sp,
-purchasePrice: pp,
+if (imageUri) {
+const filename = imageUri.split("/").pop() || "photo.jpg";
+const ext = filename.split(".").pop() || "jpg";
+formData.append("image", {
+uri: imageUri,
+name: filename,
+type: `image/${ext}`,
+} as any);
+}
 
-quantity: q,
-alertLevel: a,
-
-barcode: barcode.trim() || undefined,
-
-// ✅ Product.ts = expirationDates: Date[]
-expirationDates: exp !== "" ? [exp] : [],
-},
-{
+await API.post("/products", formData, {
 headers: {
 Authorization: `Bearer ${token}`,
+"Content-Type": "multipart/form-data",
 },
-}
-);
+});
 
 Alert.alert("Succès", "Produit ajouté au stock.");
 navigation.goBack();
@@ -261,6 +291,23 @@ onChangeText={setAlertLevel}
   value={barcode}
   onChangeText={setBarcode}
 />
+{/* PHOTO */}
+<Text style={styles.label}>Photo (optionnel)</Text>
+<TouchableOpacity style={styles.photoPicker} onPress={pickImage}>
+{imageUri ? (
+<Image source={{ uri: imageUri }} style={styles.photoPreview} />
+) : (
+<View style={styles.photoPlaceholder}>
+<Ionicons name="camera-outline" size={32} color="#777" />
+<Text style={{ color: "#777", marginTop: 6 }}>Ajouter une photo</Text>
+</View>
+)}
+</TouchableOpacity>
+{imageUri && (
+<TouchableOpacity onPress={takePhoto} style={{ marginBottom: 18 }}>
+<Text style={{ color: "#8A4DFF", fontWeight: "600" }}>Prendre une photo</Text>
+</TouchableOpacity>
+)}
 </ScrollView>
 
 {/* SAVE */}
@@ -348,5 +395,21 @@ bottom: 40,
 left: 0,
 right: 0,
 alignItems: "center",
+},
+photoPicker: {
+backgroundColor: "#1A152A",
+borderRadius: 14,
+marginBottom: 18,
+overflow: "hidden",
+},
+photoPreview: {
+width: "100%",
+height: 180,
+resizeMode: "cover",
+},
+photoPlaceholder: {
+height: 120,
+alignItems: "center",
+justifyContent: "center",
 },
 });

@@ -31,6 +31,9 @@ aliases: string[];
 // 🏭 Fournisseur associé
 supplierId?: Types.ObjectId;
 
+// 📸 Photo du produit
+imageUrl?: string;
+
 createdAt?: Date;
 updatedAt?: Date;
 }
@@ -87,6 +90,8 @@ default: [],
 },
 
     supplierId: { type: Schema.Types.ObjectId, ref: "Supplier", default: null, index: true },
+
+    imageUrl: { type: String, default: "" },
 },
 { timestamps: true }
 );

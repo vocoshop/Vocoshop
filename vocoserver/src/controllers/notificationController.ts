@@ -1,4 +1,6 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import Notification from "../models/Notification";
 
 /**
@@ -7,12 +9,12 @@ import Notification from "../models/Notification";
 👉 Liste des notifications pour la boutique
 =====================================================
 */
-export const getMyNotifications = async (req: Request, res: Response) => {
-try {
+export const getMyNotifications = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const { storeId } = req.user || {};
 
 if (!storeId) {
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 }
 
 const notifications = await Notification.find({ storeId })
@@ -24,25 +26,20 @@ return res.json({
 notifications,
 });
 
-} catch (e) {
-console.error("❌ getMyNotifications error", e);
-return res.status(500).json({ error: "failed" });
-}
-};
-
+});
 
 /**
 =====================================================
 🔥 MARK AS READ — V1
 =====================================================
 */
-export const markNotificationRead = async (req: Request, res: Response) => {
-try {
+export const markNotificationRead = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const { storeId } = req.user || {};
 const { notificationId } = req.params;
 
 if (!storeId || !notificationId) {
-return res.status(400).json({ error: "params manquants" });
+return next(new ValidationError("params manquants"));
 }
 
 await Notification.updateOne(
@@ -52,24 +49,19 @@ await Notification.updateOne(
 
 return res.json({ success: true });
 
-} catch (e) {
-console.error("❌ markNotificationRead error", e);
-return res.status(500).json({ error: "failed" });
-}
-};
-
+});
 
 /**
 =====================================================
 🔥 GET UNREAD COUNT — POUR LA CLOCHE
 =====================================================
 */
-export const getUnreadCount = async (req: Request, res: Response) => {
-try {
+export const getUnreadCount = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const { storeId } = req.user || {};
 
 if (!storeId) {
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 }
 
 const count = await Notification.countDocuments({
@@ -81,8 +73,4 @@ return res.json({
 unread: count,
 });
 
-} catch (e) {
-console.error("❌ getUnreadCount error", e);
-return res.status(500).json({ error: "failed" });
-}
-};
+});

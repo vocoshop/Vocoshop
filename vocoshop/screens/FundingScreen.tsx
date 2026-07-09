@@ -15,6 +15,42 @@ import { useNavigation } from "@react-navigation/native";
 import { AuthContext } from "../src/api/context/AuthContext";
 import API from "../src/api/api";
 
+interface Partner {
+  _id: string;
+  id?: string;
+  name: string;
+  type: string;
+  min: number;
+  max: number;
+  responseTime: string;
+  rate: string;
+}
+
+interface ScoreBreakdownItem {
+  label: string;
+  points: number;
+  max: number;
+}
+
+interface ScoreMeta {
+  monthsActive: number;
+  reviewRate: number;
+  lastActivity: string;
+}
+
+interface SimResult {
+  monthlyPayment: number;
+  eligible: string;
+  partners: string[];
+}
+
+interface Demande {
+  amount: number;
+  status: string;
+  objective: string;
+  createdAt: string;
+}
+
 const SCORE_LEVELS = [
   { min: 0, max: 20, label: "Débutant", color: "#FF6B6B" },
   { min: 21, max: 40, label: "En construction", color: "#FF9F43" },
@@ -44,16 +80,16 @@ export default function FundingScreen() {
   const { token } = useContext(AuthContext);
 
   const [score, setScore] = useState(0);
-  const [scoreBreakdown, setScoreBreakdown] = useState<any>(null);
-  const [scoreMeta, setScoreMeta] = useState<any>(null);
+  const [scoreBreakdown, setScoreBreakdown] = useState<ScoreBreakdownItem[] | null>(null);
+  const [scoreMeta, setScoreMeta] = useState<ScoreMeta | null>(null);
   const [scoreLoading, setScoreLoading] = useState(true);
   const [detailsVisible, setDetailsVisible] = useState(false);
 
-  const [partenaires, setPartenaires] = useState<any[]>(PARTENAIRES_FALLBACK);
+  const [partenaires, setPartenaires] = useState<Partner[]>(PARTENAIRES_FALLBACK);
 
   const [simAmount, setSimAmount] = useState("500000");
   const [simDuration, setSimDuration] = useState("12");
-  const [simResult, setSimResult] = useState<any>(null);
+  const [simResult, setSimResult] = useState<SimResult | null>(null);
 
   const [demandePartenaire, setDemandePartenaire] = useState("");
   const [showPartnerPicker, setShowPartnerPicker] = useState(false);
@@ -64,13 +100,13 @@ export default function FundingScreen() {
   const [demandeComment, setDemandeComment] = useState("");
   const [demandeConsent, setDemandeConsent] = useState(false);
   const [demandeSending, setDemandeSending] = useState(false);
-  const [demandes, setDemandes] = useState<any[]>([]);
+  const [demandes, setDemandes] = useState<Demande[]>([]);
   const [showDemandeModal, setShowDemandeModal] = useState(false);
   const [opportunities, setOpportunities] = useState<string[]>([]);
 
   const loadScore = useCallback(async () => {
     try {
-      const res: any = await API.get("/funding/score");
+      const res = await API.get<{ score: number; breakdown: ScoreBreakdownItem[]; meta: ScoreMeta }>("/funding/score");
       setScore(res.data?.score || 0);
       setScoreBreakdown(res.data?.breakdown || null);
       setScoreMeta(res.data?.meta || null);
@@ -83,7 +119,7 @@ export default function FundingScreen() {
 
   const loadDemandes = useCallback(async () => {
     try {
-      const res: any = await API.get("/funding/demandes");
+      const res = await API.get<{ data: Demande[] }>("/funding/demandes");
       setDemandes(res.data?.data || []);
     } catch {
       setDemandes([]);
@@ -92,7 +128,7 @@ export default function FundingScreen() {
 
   const loadPartners = useCallback(async () => {
     try {
-      const res: any = await API.get("/funding/partners");
+      const res = await API.get<{ partners: Partner[] }>("/funding/partners");
       if (res.data?.partners?.length > 0) {
         setPartenaires(res.data.partners);
       }
@@ -103,7 +139,7 @@ export default function FundingScreen() {
 
   const loadOpportunities = useCallback(async () => {
     try {
-      const res: any = await API.get("/funding/opportunities");
+      const res = await API.get<{ opportunities: string[] }>("/funding/opportunities");
       if (res.data?.opportunities) {
         setOpportunities(res.data.opportunities);
       }
@@ -343,7 +379,7 @@ export default function FundingScreen() {
           </View>
 
           {partenaires.map((p) => (
-            <View key={p._id || p.id} style={styles.partnerCard}>
+            <View key={p._id} style={styles.partnerCard}>
               <View style={styles.partnerHeader}>
                 <View style={styles.partnerIcon}>
                   <Ionicons name="business-outline" size={20} color="#8A4DFF" />
@@ -443,7 +479,7 @@ export default function FundingScreen() {
 
             <ScrollView>
               {scoreBreakdown ? (
-                Object.values(scoreBreakdown).map((item: any, i: number) => (
+                scoreBreakdown.map((item: ScoreBreakdownItem, i: number) => (
                   <ScoreDetailRow
                     key={i}
                     label={item.label}
@@ -494,7 +530,7 @@ export default function FundingScreen() {
               <TouchableOpacity style={styles.partnerDropdown} onPress={() => setShowPartnerPicker(!showPartnerPicker)}>
                 <Text style={[styles.partnerDropdownText, !demandePartenaire && styles.partnerDropdownPlaceholder]}>
                   {demandePartenaire
-                    ? partenaires.find((p) => (p._id || p.id) === demandePartenaire)?.name
+                    ? partenaires.find((p) => (p._id) === demandePartenaire)?.name
                     : "Sélectionner un partenaire"}
                 </Text>
                 <Ionicons name={showPartnerPicker ? "chevron-up" : "chevron-down"} size={18} color="#A8A3C2" />
@@ -503,12 +539,12 @@ export default function FundingScreen() {
                 <View style={styles.partnerListContainer}>
                   <ScrollView style={styles.partnerListScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
                     {partenaires.map((p) => {
-                      const selected = demandePartenaire === (p._id || p.id);
+                      const selected = demandePartenaire === (p._id);
                       return (
                         <TouchableOpacity
-                          key={p._id || p.id}
+                          key={p._id}
                           style={[styles.partnerListItem, selected && styles.partnerListItemActive]}
-                          onPress={() => { setDemandePartenaire(p._id || p.id); setShowPartnerPicker(false); }}
+                          onPress={() => { setDemandePartenaire(p._id); setShowPartnerPicker(false); }}
                         >
                           <View style={{ flex: 1 }}>
                             <Text style={styles.partnerListItemName}>{p.name}</Text>

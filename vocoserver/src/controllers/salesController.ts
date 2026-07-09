@@ -1,11 +1,13 @@
 // controllers/salesController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import Product from "../models/Product";
 import Sale from "../models/Sales";
 import DailyReport from "../models/DailyReport";
 import Store from "../models/Store";
 import { getStoreId } from "../utils/storeId";
 import { getBusinessDate, safeNum as n, isValidObjectId } from "../utils/helpers";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 
 /* =====================================================
 HELPERS
@@ -28,29 +30,28 @@ console.log("⚠️ touchStoreActivity failed:", (e as any)?.message || e);
 /* =====================================================
 AJOUT VENTE SIMPLE (prix achat figé)
 ===================================================== */
-export const addSale = async (req: Request, res: Response) => {
-try {
+export const addSale = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = getStoreId(req);
 const { productId, quantity, isVoiced } = req.body;
 
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const qty = n(quantity);
 if (!productId || !isValidObjectId(productId) || qty <= 0) {
-return res.status(400).json({ error: "Données invalides" });
+return next(new ValidationError("Données invalides"));
 }
 
 const product: any = await Product.findOne({ _id: productId, storeId });
-if (!product) return res.status(404).json({ error: "Produit introuvable" });
+if (!product) return next(new NotFoundError("Produit"));
 
 if (n(product.quantity) < qty) {
-return res.status(400).json({ error: "Stock insuffisant" });
+return next(new ValidationError("Stock insuffisant"));
 }
 
 const businessDate = getBusinessDate();
 
 const sellPrice = n(product.sellPrice);
-const purchasePriceAtSale = n(product.purchasePrice); // ✅ figé à la vente
+const purchasePriceAtSale = n(product.purchasePrice);
 
 const sale = await Sale.create({
 storeId,
@@ -59,11 +60,11 @@ productName: product.name,
 quantity: qty,
 unitPrice: sellPrice,
 totalAmount: qty * sellPrice,
-purchasePriceAtSale, // ✅ AJOUT (clé microfinance)
+purchasePriceAtSale,
 businessDate,
 
-isVoiced: !!isVoiced, // pour différencier vente classique vs vente vocale (UNDO plus tard)
-isReverted: false, // pour marquer une vente comme annulée (historique stable)
+isVoiced: !!isVoiced,
+isReverted: false,
 });
 
 product.quantity = n(product.quantity) - qty;
@@ -71,22 +72,17 @@ await product.save();
 await touchStoreActivity(storeId);
 
 return res.json({ message: "Vente enregistrée", sale });
-} catch (err) {
-console.error("❌ addSale:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 VENTES PANIER (prix achat figé)
 ===================================================== */
-export const addCartSales = async (req: Request, res: Response) => {
-try {
+export const addCartSales = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = getStoreId(req);
 const { items } = req.body;
 
 if (!storeId || !Array.isArray(items) || items.length === 0) {
-return res.status(400).json({ error: "Panier invalide" });
+return next(new ValidationError("Panier invalide"));
 }
 
 let totalAmount = 0;
@@ -97,16 +93,16 @@ const qty = n(item?.quantity);
 const productId = item?.productId;
 
 if (!productId || !isValidObjectId(productId) || qty <= 0) {
-return res.status(400).json({ error: "Panier invalide" });
+return next(new ValidationError("Panier invalide"));
 }
 
 const product: any = await Product.findOne({ _id: productId, storeId });
 if (!product || n(product.quantity) < qty) {
-return res.status(400).json({ error: "Stock insuffisant" });
+return next(new ValidationError("Stock insuffisant"));
 }
 
 const sellPrice = n(product.sellPrice);
-const purchasePriceAtSale = n(product.purchasePrice); // ✅ figé
+const purchasePriceAtSale = n(product.purchasePrice);
 
 await Sale.create({
 storeId,
@@ -115,7 +111,7 @@ productName: product.name,
 quantity: qty,
 unitPrice: sellPrice,
 totalAmount: qty * sellPrice,
-purchasePriceAtSale, // ✅ AJOUT
+purchasePriceAtSale,
 businessDate,
 });
 
@@ -128,25 +124,19 @@ totalAmount += qty * sellPrice;
 await touchStoreActivity(storeId);
 
 return res.json({ message: "Ventes enregistrées", totalAmount });
-} catch (err) {
-console.error("❌ addCartSales:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 REVERT SALE (Voice UNDO)
 ===================================================== */
 
-export const revertSale = async (req: Request, res: Response) => {
-try {
+export const revertSale = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = (req as any).user?.storeId;
 
 if (!storeId) {
-return res.status(400).json({ error: "Store invalide" });
+return next(new ValidationError("Store invalide"));
 }
 
-// 🔎 Cherche la dernière vente vocale non annulée
 const sale: any = await Sale.findOne({
 storeId,
 isVoiced: true,
@@ -154,23 +144,18 @@ isReverted: false,
 }).sort({ createdAt: -1 });
 
 if (!sale) {
-return res.status(404).json({ error: "Aucune vente vocale récente" });
+return next(new NotFoundError("Aucune vente vocale récente"));
 }
 
-// ⏳ Sécurité temporelle (2 minutes max)
 const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
 
 if (sale.createdAt.getTime() < twoMinutesAgo) {
-return res.status(400).json({
-error: "Délai dépassé pour annulation",
-});
+return next(new ValidationError("Délai dépassé pour annulation"));
 }
 
-// 🔁 Marque annulée (audit propre)
 sale.isReverted = true;
 await sale.save();
 
-// 🔄 Recréditer le stock
 const product: any = await Product.findOne({
 _id: sale.productId,
 storeId,
@@ -185,19 +170,14 @@ return res.json({
 message: "Vente vocale annulée avec succès",
 });
 
-} catch (err) {
-console.error("❌ revertSale error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 VENTES DU JOUR (AVANT CLÔTURE)
 ===================================================== */
-export const getTodaySales = async (req: Request, res: Response) => {
-try {
+export const getTodaySales = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const date = getBusinessDate();
 
@@ -210,27 +190,22 @@ totalSales: sales.length,
 totalRevenue,
 sales,
 });
-} catch (err) {
-console.error("❌ getTodaySales:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 CLÔTURE JOURNÉE (PROFIT RÉEL - FIABLE)
 - utilise purchasePriceAtSale (figé) -> historique stable
 ===================================================== */
-export const closeDaySales = async (req: Request, res: Response) => {
-try {
+export const closeDaySales = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
   const date = getBusinessDate();
 
   // 1) ventes en attente (du jour)
 const newSales: any[] = await Sale.find({ storeId, businessDate: date }).lean();
 if (!newSales.length) {
-return res.status(400).json({ error: "Aucune nouvelle vente à clôturer" });
+return next(new ValidationError("Aucune nouvelle vente à clôturer"));
 }
 
 // 2) bilan existant (si déjà clôturé)
@@ -345,19 +320,14 @@ await Sale.deleteMany({ storeId, businessDate: date });
 await touchStoreActivity(storeId);
 
   return res.json({ message: "Journée clôturée (profit réel calculé)", report, userName: req.user?.name || "", userRole: req.user?.role || "" });
-} catch (err) {
-console.error("❌ closeDaySales:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 HISTORIQUE
 ===================================================== */
-export const getDailyReports = async (req: Request, res: Response) => {
-try {
+export const getDailyReports = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const page = Math.max(parseInt(String(req.query.page ?? "1"), 10) || 1, 1);
 const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? "7"), 10) || 7, 1), 50);
@@ -375,47 +345,33 @@ total,
 hasMore: skip + reports.length < total,
 reports,
 });
-} catch (err) {
-console.error("❌ getDailyReports:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 RAPPORT DU JOUR (APRÈS CLÔTURE)
 ===================================================== */
-export const getTodayReport = async (req: Request, res: Response) => {
-try {
+export const getTodayReport = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const date = getBusinessDate();
 const report = await DailyReport.findOne({ storeId, date });
 
 return res.json(report ?? null);
-} catch (err) {
-console.error("❌ getTodayReport:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 DÉTAIL D’UN BILAN
 GET /sales/reports/:id
 ===================================================== */
-export const getReportById = async (req: Request, res: Response) => {
-try {
+export const getReportById = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
 const report = await DailyReport.findOne({ _id: id, storeId });
 
-if (!report) return res.status(404).json({ error: "Bilan introuvable" });
+if (!report) return next(new NotFoundError("Bilan introuvable"));
 
 return res.json(report);
-} catch (err) {
-console.error("❌ getReportById:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

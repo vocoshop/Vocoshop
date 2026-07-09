@@ -25,6 +25,7 @@ export interface TodaySummary {
 date: string;
 totalSales: number;
 totalRevenue: number;
+grossProfit?: number;
 sales: TodaySaleItem[];
 }
 
@@ -61,7 +62,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
         </tr>`
       ).join("");
 
-      const grossProfit = (report as any).grossProfit;
+      const grossProfit = report.grossProfit;
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -199,6 +200,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
         date: report.date ?? "",
         totalSales: Number(report.totalSales ?? 0),
         totalRevenue: Number(report.totalRevenue ?? 0),
+        grossProfit: report.grossProfit,
         sales: Array.isArray(report.sales) ? report.sales : [],
       });
 

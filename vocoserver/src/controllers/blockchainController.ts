@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { DocumentType } from "../blockchain/types";
 import {
   certifyDocument,
@@ -7,136 +7,77 @@ import {
 } from "../blockchain/documentCertifier";
 import { certifyScore, computeScore, getScoreHistory, verifyScore } from "../blockchain/vocoScore";
 import { getProofChain } from "../services/blockchainAnchorService";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError } from "../utils/AppError";
 
-export async function certifyDocumentHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const storeId = String(req.user?.storeId || req.body.storeId || "").trim();
-    if (!storeId) {
-      res.status(400).json({ error: "storeId requis" });
-      return;
-    }
+export const certifyDocumentHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = String(req.user?.storeId || req.body.storeId || "").trim();
+  if (!storeId) return next(new ValidationError("storeId requis"));
 
-    const { documentType, content, metadata } = req.body;
-    if (!documentType || !content) {
-      res.status(400).json({ error: "documentType et content requis" });
-      return;
-    }
+  const { documentType, content, metadata } = req.body;
+  if (!documentType || !content) return next(new ValidationError("documentType et content requis"));
 
-    const result = await certifyDocument({ storeId, documentType, content, metadata });
-    res.status(201).json(result);
-  } catch (err) {
-    console.error("❌ certifyDocument:", err);
-    res.status(500).json({ error: "Erreur lors de la certification" });
-  }
-}
+  const result = await certifyDocument({ storeId, documentType, content, metadata });
+  res.status(201).json(result);
+});
 
-export async function verifyDocumentHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const { id } = req.params;
-    const content = typeof req.body?.content === "string" ? req.body.content.trim() : typeof req.query?.content === "string" ? req.query.content.trim() : undefined;
+export const verifyDocumentHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const content = typeof req.body?.content === "string" ? req.body.content.trim() : typeof req.query?.content === "string" ? req.query.content.trim() : undefined;
 
-    const result = await verifyDocument(id, content);
-    res.json(result);
-  } catch (err) {
-    console.error("❌ verifyDocument:", err);
-    res.status(500).json({ error: "Erreur lors de la vérification" });
-  }
-}
+  const result = await verifyDocument(id, content);
+  res.json(result);
+});
 
-export async function listCertificationsHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
-    if (!storeId) {
-      res.status(400).json({ error: "storeId requis" });
-      return;
-    }
+export const listCertificationsHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
+  if (!storeId) return next(new ValidationError("storeId requis"));
 
-    const documentType = typeof req.query.documentType === "string" ? req.query.documentType as DocumentType : undefined;
-    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
-    const offset = Math.max(Number(req.query.offset) || 0, 0);
+  const documentType = typeof req.query.documentType === "string" ? req.query.documentType as DocumentType : undefined;
+  const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
 
-    const result = await getStoreCertifications(storeId, documentType, limit, offset);
-    res.json(result);
-  } catch (err) {
-    console.error("❌ listCertifications:", err);
-    res.status(500).json({ error: "Erreur lors de la récupération" });
-  }
-}
+  const result = await getStoreCertifications(storeId, documentType, limit, offset);
+  res.json(result);
+});
 
-export async function certifyScoreHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const storeId = String(req.user?.storeId || req.body.storeId || "").trim();
-    if (!storeId) {
-      res.status(400).json({ error: "storeId requis" });
-      return;
-    }
+export const certifyScoreHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = String(req.user?.storeId || req.body.storeId || "").trim();
+  if (!storeId) return next(new ValidationError("storeId requis"));
 
-    const result = await certifyScore(storeId);
-    res.status(201).json(result);
-  } catch (err) {
-    console.error("❌ certifyScore:", err);
-    res.status(500).json({ error: "Erreur lors de la certification du score" });
-  }
-}
+  const result = await certifyScore(storeId);
+  res.status(201).json(result);
+});
 
-export async function getScoreHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
-    if (!storeId) {
-      res.status(400).json({ error: "storeId requis" });
-      return;
-    }
+export const getScoreHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
+  if (!storeId) return next(new ValidationError("storeId requis"));
 
-    const score = await computeScore(storeId);
-    res.json(score);
-  } catch (err) {
-    console.error("❌ getScore:", err);
-    res.status(500).json({ error: "Erreur lors du calcul du score" });
-  }
-}
+  const score = await computeScore(storeId);
+  res.json(score);
+});
 
-export async function verifyScoreHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const storeId = String(req.user?.storeId || req.query.storeId || req.params.storeId || "").trim();
-    if (!storeId) {
-      res.status(400).json({ error: "storeId requis" });
-      return;
-    }
+export const verifyScoreHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = String(req.user?.storeId || req.query.storeId || req.params.storeId || "").trim();
+  if (!storeId) return next(new ValidationError("storeId requis"));
 
-    const result = await verifyScore(storeId);
-    res.json(result);
-  } catch (err) {
-    console.error("❌ verifyScore:", err);
-    res.status(500).json({ error: "Erreur lors de la vérification du score" });
-  }
-}
+  const result = await verifyScore(storeId);
+  res.json(result);
+});
 
-export async function getScoreHistoryHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
-    if (!storeId) {
-      res.status(400).json({ error: "storeId requis" });
-      return;
-    }
+export const getScoreHistoryHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = String(req.user?.storeId || req.query.storeId || "").trim();
+  if (!storeId) return next(new ValidationError("storeId requis"));
 
-    const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 100);
-    const offset = Math.max(Number(req.query.offset) || 0, 0);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 100);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
 
-    const result = await getScoreHistory(storeId, limit, offset);
-    res.json(result);
-  } catch (err) {
-    console.error("❌ getScoreHistory:", err);
-    res.status(500).json({ error: "Erreur lors de la récupération de l'historique" });
-  }
-}
+  const result = await getScoreHistory(storeId, limit, offset);
+  res.json(result);
+});
 
-export async function getPublicProofsHandler(req: Request, res: Response): Promise<void> {
-  try {
-    const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 200);
-    const proofs = await getProofChain(limit);
-    res.json({ proofs, count: proofs.length });
-  } catch (err) {
-    console.error("❌ getPublicProofs:", err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-}
+export const getPublicProofsHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 200);
+  const proofs = await getProofChain(limit);
+  res.json({ proofs, count: proofs.length });
+});

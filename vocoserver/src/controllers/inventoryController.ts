@@ -1,5 +1,7 @@
 // src/controllers/inventoryController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import mongoose from "mongoose";
 import Product from "../models/Product";
 import InventoryHistory from "../models/InventoryHistory";
@@ -71,11 +73,11 @@ for (const order of sentOrders) {
 return { applied, remaining, touchedOrders };
 }
 
-export const addStock = async (req: Request, res: Response) => {
-try {
+export const addStock = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId) {
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 }
 
 const { productId, quantity, expirationDate } = req.body as {
@@ -85,9 +87,7 @@ expirationDate?: string;
 };
 
 if (!productId || !mongoose.Types.ObjectId.isValid(productId) || quantity == null) {
-return res.status(400).json({
-error: "productId et quantity nécessaires",
-});
+return next(new ValidationError("productId et quantity nécessaires"));
 }
 
 const product: any = await Product.findOne({
@@ -96,12 +96,12 @@ storeId,
 });
 
 if (!product) {
-return res.status(404).json({ error: "Produit introuvable" });
+return next(new NotFoundError("Produit introuvable"));
 }
 
 const qty = Number(quantity);
 if (Number.isNaN(qty) || qty <= 0) {
-return res.status(400).json({ error: "quantity invalide" });
+return next(new ValidationError("quantity invalide"));
 }
 
 /* =====================================================
@@ -148,21 +148,16 @@ touchedOrders: result?.touchedOrders ?? 0,
 },
 });
 
-} catch (err) {
-console.error("❌ addStock error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
-
+});
 
 /* -------------------------------------------------------
 🟥 RETRAIT DE STOCK
 POST /api/inventory/remove
 ------------------------------------------------------- */
-export const removeStock = async (req: Request, res: Response) => {
-try {
+export const removeStock = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const { productId, quantity } = req.body as {
 productId?: string;
@@ -170,19 +165,19 @@ quantity?: number;
 };
 
 if (!productId || !mongoose.Types.ObjectId.isValid(productId) || quantity == null) {
-return res.status(400).json({ error: "productId et quantity nécessaires" });
+return next(new ValidationError("productId et quantity nécessaires"));
 }
 
 const product: any = await Product.findOne({ _id: productId, storeId });
-if (!product) return res.status(404).json({ error: "Produit introuvable" });
+if (!product) return next(new NotFoundError("Produit introuvable"));
 
 const qty = Number(quantity);
 if (Number.isNaN(qty) || qty <= 0) {
-return res.status(400).json({ error: "quantity invalide" });
+return next(new ValidationError("quantity invalide"));
 }
 
 if ((product.quantity || 0) < qty) {
-return res.status(400).json({ error: "Stock insuffisant" });
+return next(new ValidationError("Stock insuffisant"));
 }
 
 product.quantity = (product.quantity || 0) - qty;
@@ -196,20 +191,16 @@ quantity: qty,
 });
 
 return res.json({ message: "Stock retiré", product });
-} catch (err) {
-console.error("❌ removeStock error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -------------------------------------------------------
 📉 STOCK FAIBLE
 GET /api/inventory/low-stock
 ------------------------------------------------------- */
-export const getLowStock = async (req: Request, res: Response) => {
-try {
+export const getLowStock = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const products: any[] = await Product.find({
 storeId,
@@ -217,40 +208,32 @@ $expr: { $lte: ["$quantity", "$alertLevel"] },
 }).lean();
 
 return res.json(products);
-} catch (err) {
-console.error("❌ getLowStock error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -------------------------------------------------------
 🕓 HISTORIQUE
 GET /api/inventory/history
 ------------------------------------------------------- */
-export const listHistory = async (req: Request, res: Response) => {
-try {
+export const listHistory = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const history = await InventoryHistory.find({ storeId })
 .populate("productId", "name barcode")
 .sort({ createdAt: -1 });
 
 return res.json(history);
-} catch (err) {
-console.error("❌ listHistory error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -------------------------------------------------------
 📦 DIAGNOSTIC SANTÉ DU STOCK
 GET /api/inventory/diagnostic
 ------------------------------------------------------- */
-export const getStockDiagnostic = async (req: Request, res: Response) => {
-try {
+export const getStockDiagnostic = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const products: any[] = await Product.find({ storeId }).lean();
 
@@ -270,20 +253,16 @@ soonExpired,
 lowStockCount: lowStock.length,
 soonExpiredCount: soonExpired.length,
 });
-} catch (err) {
-console.error("❌ getStockDiagnostic error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -------------------------------------------------------
 🧠 RECOMMANDATIONS STRATÉGIQUES
 GET /api/inventory/recommendations
 ------------------------------------------------------- */
-export const getRecommendations = async (req: Request, res: Response) => {
-try {
+export const getRecommendations = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const products: any[] = await Product.find({ storeId }).lean();
 const recommendations: any[] = [];
@@ -314,8 +293,4 @@ priority: "high",
 }
 
 return res.json({ recommendations });
-} catch (err) {
-console.error("❌ getRecommendations error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

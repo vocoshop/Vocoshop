@@ -1,9 +1,11 @@
 // controllers/adminAuthController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { logSystem } from "../utils/systemLogger";
 import PlatformConfig from "../models/PlatformConfig";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, UnauthorizedError } from "../utils/AppError";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
 const ADMIN_PASSWORD_PLAIN = process.env.ADMIN_PASSWORD || "";
@@ -54,145 +56,135 @@ POST /api/admin/auth/login
 Connexion sécurisée par email + mot de passe
 Body: { email, password }
 ===================================================== */
-export const loginAdmin = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-    const ip = getClientIp(req);
+export const loginAdmin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  const ip = getClientIp(req);
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email et mot de passe requis" });
-    }
+  if (!email || !password) {
+    return next(new ValidationError("Email et mot de passe requis"));
+  }
 
-    // Rate limit check
-    const attempt = failedAttempts.get(ip);
-    if (attempt && attempt.blockedUntil > Date.now()) {
-      logSystem("security", `Tentative bloquée (rate limit) depuis ${ip}`, {
-        source: "auth",
-        ip,
-        details: `email=${email}`,
-      });
-      const remaining = Math.ceil((attempt.blockedUntil - Date.now()) / 1000 / 60);
-      return res.status(429).json({
-        error: `Trop de tentatives. Réessayez dans ${remaining} minute(s).`,
-      });
-    }
-
-    // Get credentials (DB override or env fallback)
-    const config = await getAdminConfig();
-
-    // Verify credentials
-    if (email.toLowerCase() !== config.email.toLowerCase()) {
-      logSystem("security", `Échec login: email inconnu depuis ${ip}`, {
-        source: "auth",
-        ip,
-        details: `email=${email}`,
-      });
-      const current = failedAttempts.get(ip) || { count: 0, blockedUntil: 0 };
-      current.count++;
-      if (current.count >= MAX_ATTEMPTS) {
-        current.blockedUntil = Date.now() + BLOCK_DURATION_MS;
-      }
-      failedAttempts.set(ip, current);
-      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
-    }
-
-    const passwordOk = await bcrypt.compare(password, config.passwordHash);
-    if (!passwordOk) {
-      const current = failedAttempts.get(ip) || { count: 0, blockedUntil: 0 };
-      current.count++;
-      if (current.count >= MAX_ATTEMPTS) {
-        current.blockedUntil = Date.now() + BLOCK_DURATION_MS;
-      }
-      failedAttempts.set(ip, current);
-      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
-    }
-
-    // Success — reset failed attempts
-    failedAttempts.delete(ip);
-
-    logSystem("security", `Super Admin connecté depuis ${ip}`, {
+  // Rate limit check
+  const attempt = failedAttempts.get(ip);
+  if (attempt && attempt.blockedUntil > Date.now()) {
+    logSystem("security", `Tentative bloquée (rate limit) depuis ${ip}`, {
       source: "auth",
       ip,
+      details: `email=${email}`,
     });
-
-    // Generate JWT
-    const adminName = [ADMIN_NAME, ADMIN_SURNAME].filter(Boolean).join(' ');
-
-    const JWT_SECRET = process.env.JWT_SECRET!;
-    const token = jwt.sign(
-      { role: "owner", email: config.email, name: adminName },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    return res.json({
-      message: "Connexion réussie",
-      token,
-      name: adminName,
-      user: {
-        name: adminName,
-        email: config.email,
-        role: "owner",
-      },
+    const remaining = Math.ceil((attempt.blockedUntil - Date.now()) / 1000 / 60);
+    return res.status(429).json({
+      error: `Trop de tentatives. Réessayez dans ${remaining} minute(s).`,
     });
-  } catch (err: any) {
-    console.error("❌ loginAdmin:", err.message);
-    return res.status(500).json({ error: "Erreur serveur" });
   }
-};
+
+  // Get credentials (DB override or env fallback)
+  const config = await getAdminConfig();
+
+  // Verify credentials
+  if (email.toLowerCase() !== config.email.toLowerCase()) {
+    logSystem("security", `Échec login: email inconnu depuis ${ip}`, {
+      source: "auth",
+      ip,
+      details: `email=${email}`,
+    });
+    const current = failedAttempts.get(ip) || { count: 0, blockedUntil: 0 };
+    current.count++;
+    if (current.count >= MAX_ATTEMPTS) {
+      current.blockedUntil = Date.now() + BLOCK_DURATION_MS;
+    }
+    failedAttempts.set(ip, current);
+    return next(new UnauthorizedError("Email ou mot de passe incorrect"));
+  }
+
+  const passwordOk = await bcrypt.compare(password, config.passwordHash);
+  if (!passwordOk) {
+    const current = failedAttempts.get(ip) || { count: 0, blockedUntil: 0 };
+    current.count++;
+    if (current.count >= MAX_ATTEMPTS) {
+      current.blockedUntil = Date.now() + BLOCK_DURATION_MS;
+    }
+    failedAttempts.set(ip, current);
+    return next(new UnauthorizedError("Email ou mot de passe incorrect"));
+  }
+
+  // Success — reset failed attempts
+  failedAttempts.delete(ip);
+
+  logSystem("security", `Super Admin connecté depuis ${ip}`, {
+    source: "auth",
+    ip,
+  });
+
+  // Generate JWT
+  const adminName = [ADMIN_NAME, ADMIN_SURNAME].filter(Boolean).join(' ');
+
+  const JWT_SECRET = process.env.JWT_SECRET!;
+  const token = jwt.sign(
+    { role: "owner", email: config.email, name: adminName },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return res.json({
+    message: "Connexion réussie",
+    token,
+    name: adminName,
+    user: {
+      name: adminName,
+      email: config.email,
+      role: "owner",
+    },
+  });
+});
 
 /* =====================================================
 PUT /api/admin/auth/credentials
 Changer l'email et/ou le mot de passe du Super Admin
 Body: { email?, password? }
 ===================================================== */
-export const changeCredentials = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-    if (!email && !password) {
-      return res.status(400).json({ error: "Fournissez au moins un email ou un nouveau mot de passe" });
-    }
-
-    // Get current config to merge partial updates
-    const existing = await PlatformConfig.findOne({ key: "admin_auth" }).lean();
-    const current = (existing?.value || {}) as any;
-
-    const newEmail = email || current.email || ADMIN_EMAIL;
-    const newPasswordHash = password
-      ? await bcrypt.hash(password, 10)
-      : current.passwordHash || await getAdminHash();
-
-    await PlatformConfig.findOneAndUpdate(
-      { key: "admin_auth" },
-      {
-        $set: {
-          value: { email: newEmail, passwordHash: newPasswordHash },
-          type: "json",
-          category: "security",
-          label: "Identifiants Super Admin",
-          description: "Email et mot de passe de connexion Super Admin (stockés en base)",
-        },
-      },
-      { upsert: true }
-    );
-
-    // Invalidate cache
-    dbConfigLastFetch = 0;
-
-    logSystem("security", `Identifiants Super Admin modifiés depuis ${getClientIp(req)}`, {
-      source: "auth",
-      ip: getClientIp(req),
-      details: email ? `nouvel email: ${email}` : "mot de passe changé",
-    });
-
-    return res.json({
-      success: true,
-      message: "Identifiants mis à jour",
-      email: newEmail,
-      hint: password ? "Mot de passe modifié" : "Email modifié",
-    });
-  } catch (err: any) {
-    console.error("❌ changeCredentials:", err.message);
-    return res.status(500).json({ error: "Erreur serveur" });
+export const changeCredentials = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  if (!email && !password) {
+    return next(new ValidationError("Fournissez au moins un email ou un nouveau mot de passe"));
   }
-};
+
+  // Get current config to merge partial updates
+  const existing = await PlatformConfig.findOne({ key: "admin_auth" }).lean();
+  const current = (existing?.value || {}) as any;
+
+  const newEmail = email || current.email || ADMIN_EMAIL;
+  const newPasswordHash = password
+    ? await bcrypt.hash(password, 10)
+    : current.passwordHash || await getAdminHash();
+
+  await PlatformConfig.findOneAndUpdate(
+    { key: "admin_auth" },
+    {
+      $set: {
+        value: { email: newEmail, passwordHash: newPasswordHash },
+        type: "json",
+        category: "security",
+        label: "Identifiants Super Admin",
+        description: "Email et mot de passe de connexion Super Admin (stockés en base)",
+      },
+    },
+    { upsert: true }
+  );
+
+  // Invalidate cache
+  dbConfigLastFetch = 0;
+
+  logSystem("security", `Identifiants Super Admin modifiés depuis ${getClientIp(req)}`, {
+    source: "auth",
+    ip: getClientIp(req),
+    details: email ? `nouvel email: ${email}` : "mot de passe changé",
+  });
+
+  return res.json({
+    success: true,
+    message: "Identifiants mis à jour",
+    email: newEmail,
+    hint: password ? "Mot de passe modifié" : "Email modifié",
+  });
+});

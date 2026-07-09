@@ -1,8 +1,10 @@
 // controllers/employeeController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import { isValidObjectId } from "../utils/helpers";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, ForbiddenError } from "../utils/AppError";
 
 function safePhone(p: any) {
 return String(p || "").replace(/\s+/g, "").trim();
@@ -22,10 +24,9 @@ process.env.JWT_SECRET!,
 * -> crée un employé INACTIF + génère un inviteToken (7 jours)
 * -> le FRONT fabrique le lien deep-link lui-même (Expo)
 */
-export const createEmployee = async (req: Request, res: Response) => {
-try {
+export const createEmployee = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = String(req.user?.storeId || "");
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const phone = safePhone(req.body?.phone);
 const name = String(req.body?.name || "").trim();
@@ -34,18 +35,16 @@ const role = (req.body?.role || "employee") as
 | "inventorist"
 | "admin";
 
-// permissions = objet {inventory:true,...} (comme ton front)
 const permissions =
 req.body?.permissions && typeof req.body.permissions === "object"
 ? req.body.permissions
 : {};
 
-if (!phone) return res.status(400).json({ error: "Téléphone requis" });
+if (!phone) return next(new ValidationError("Téléphone requis"));
 
 const exists = await User.findOne({ phone }).lean();
-if (exists) return res.status(400).json({ error: "Ce numéro est déjà utilisé" });
+if (exists) return next(new ValidationError("Ce numéro est déjà utilisé"));
 
-// ✅ créé désactivé tant qu'il n'a pas accepté
 const user = await User.create({
 phone,
 name,
@@ -55,7 +54,6 @@ permissions,
 isActive: false,
 });
 
-// ✅ token d’invitation (pas JWT final)
 const inviteToken = jwt.sign(
 { userId: String(user._id), purpose: "employee_invite" },
 process.env.JWT_SECRET!,
@@ -73,42 +71,37 @@ permissions: user.permissions,
 isActive: user.isActive,
 createdAt: user.createdAt,
 },
-inviteToken, // ✅ le front va générer le deep link
+inviteToken,
 });
-} catch (err) {
-console.error("❌ createEmployee:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /**
 * GET /api/employees/accept?token=...
 * (PUBLIC)
-* - valide le token d’invitation
+* - valide le token d'invitation
 * - active le compte
 * - renvoie un vrai JWT APP
 */
-export const acceptEmployeeInvite = async (req: Request, res: Response) => {
-try {
+export const acceptEmployeeInvite = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const token = String(req.query?.token || "").trim();
-if (!token) return res.status(400).json({ error: "Token manquant" });
+if (!token) return next(new ValidationError("Token manquant"));
 
 let decoded: any;
 try {
 decoded = jwt.verify(token, process.env.JWT_SECRET!);
 } catch {
-return res.status(400).json({ error: "Token invalide ou expiré" });
+return next(new ValidationError("Token invalide ou expiré"));
 }
 
 if (!decoded?.userId || decoded?.purpose !== "employee_invite") {
-return res.status(400).json({ error: "Token invalide" });
+return next(new ValidationError("Token invalide"));
 }
 
 const user = await User.findById(decoded.userId);
-if (!user) return res.status(404).json({ error: "Employé introuvable" });
+if (!user) return next(new NotFoundError("Employé introuvable"));
 
 if ((user as any).role === "owner") {
-return res.status(403).json({ error: "Invitation invalide" });
+return next(new ForbiddenError("Invitation invalide"));
 }
 
 user.isActive = true;
@@ -129,38 +122,26 @@ role: (user as any).role,
 permissions: (user as any).permissions,
 isActive: (user as any).isActive,
 },
-// storeType si tu le gères côté backend : ajoute-le ici si tu veux
-// storeType: ...
 });
-} catch (err) {
-console.error("❌ acceptEmployeeInvite:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
-export const listEmployees = async (req: Request, res: Response) => {
-try {
+export const listEmployees = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = String(req.user?.storeId || "");
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const list = await User.find({
 store: storeId,
 role: { $ne: "owner" },
-deletedAt: null, // ✅ ICI : on cache les employés supprimés
+deletedAt: null,
 })
 .select("_id phone name role permissions isActive createdAt lastLoginAt")
 .sort({ createdAt: -1 })
 .lean();
 
 return res.json(list);
-} catch (err) {
-console.error("❌ listEmployees:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
-export const updateEmployee = async (req: Request, res: Response) => {
-try {
+export const updateEmployee = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = String(req.user?.storeId || "");
 const employeeId = String(req.params.id || "");
 
@@ -179,24 +160,18 @@ const user = await User.findOneAndUpdate(
 .select("_id phone name role permissions isActive createdAt lastLoginAt")
 .lean();
 
-if (!user) return res.status(404).json({ error: "Employé introuvable" });
+if (!user) return next(new NotFoundError("Employé introuvable"));
 
 return res.json(user);
-} catch (err) {
-console.error("❌ updateEmployee:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
-// ✅ TOGGLE réel (ON/OFF)
-export const toggleEmployee = async (req: Request, res: Response) => {
-try {
+export const toggleEmployee = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = String(req.user?.storeId || "");
 const employeeId = String(req.params.id || "");
-if (!isValidObjectId(employeeId)) return res.status(400).json({ error: "ID employé invalide" });
+if (!isValidObjectId(employeeId)) return next(new ValidationError("ID employé invalide"));
 
 const user = await User.findOne({ _id: employeeId, store: storeId });
-if (!user) return res.status(404).json({ error: "Employé introuvable" });
+if (!user) return next(new NotFoundError("Employé introuvable"));
 
 user.isActive = !user.isActive;
 await user.save();
@@ -211,25 +186,18 @@ isActive: (user as any).isActive,
 createdAt: user.createdAt,
 lastLoginAt: (user as any).lastLoginAt ?? null,
 });
-} catch (err) {
-console.error("❌ toggleEmployee:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
-// ✅ DELETE (pour corriger ton 404)
-export const deleteEmployee = async (req: Request, res: Response) => {
-try {
+export const deleteEmployee = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const storeId = String(req.user?.storeId || "");
 const employeeId = String(req.params.id || "");
-if (!isValidObjectId(employeeId)) return res.status(400).json({ error: "ID employé invalide" });
+if (!isValidObjectId(employeeId)) return next(new ValidationError("ID employé invalide"));
 
 const user = await User.findOne({ _id: employeeId, store: storeId });
-if (!user) return res.status(404).json({ error: "Employé introuvable" });
+if (!user) return next(new NotFoundError("Employé introuvable"));
 
-if (user.role === "owner") return res.status(403).json({ error: "Action interdite" });
+if (user.role === "owner") return next(new ForbiddenError("Action interdite"));
 
-// ✅ soft delete + libérer l'unicité phone
 const oldPhone = String(user.phone);
 const stamp = Date.now();
 user.phoneOriginal = user.phoneOriginal || oldPhone;
@@ -240,8 +208,4 @@ user.isActive = false;
 await user.save();
 
 return res.json({ message: "Employé supprimé", _id: user._id });
-} catch (err) {
-console.error("❌ deleteEmployee:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

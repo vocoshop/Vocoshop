@@ -1,5 +1,7 @@
 // controllers/agentAdminController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -60,15 +62,15 @@ Body: { name, phone, city?, region? }
 - Génère authCode temporaire auto
 - Envoie SMS
 ===================================================== */
-export const createAgent = async (req: Request, res: Response) => {
-try {
+export const createAgent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const name = String(req.body?.name || "").trim();
 const phone = normalizePhone(req.body?.phone);
 const city = String(req.body?.city || "").trim();
 const region = String(req.body?.region || "").trim();
 
 if (!name || !phone) {
-return res.status(400).json({ error: "name et phone sont requis" });
+return next(new ValidationError("name et phone sont requis"));
 }
 
 // unicité téléphone
@@ -139,21 +141,13 @@ message: smsOk ? "Agent créé + SMS envoyé" : "Agent créé (SMS non envoyé)"
 agent: safeAgent(agent),
 smsSent: smsOk,
 });
-} catch (e: any) {
-console.error("❌ createAgent:", e);
-if (e?.code === 11000) {
-const keys = Object.keys(e?.keyValue || {});
-return res.status(409).json({ error: `Doublon: ${keys.join(", ")}` });
-}
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 GET /api/admin/agents?q=&status=&page=&limit=
 ===================================================== */
-export const listAgents = async (req: Request, res: Response) => {
-try {
+export const listAgents = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 console.log("🔍 listAgents called - role:", (req as any).user?.role);
 const q = String(req.query?.q || "").trim();
 const status = String(req.query?.status || "").trim(); // active | inactive | all
@@ -204,25 +198,21 @@ hasMore: skip + items.length < total,
 },
 filters: { q, status: status || "all" },
 });
-} catch (e) {
-console.error("❌ listAgents:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 PATCH /api/admin/agents/:id/status
 Body: { isActive: boolean }
 ===================================================== */
-export const setAgentStatus = async (req: Request, res: Response) => {
-try {
+export const setAgentStatus = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const id = String(req.params?.id || "").trim();
 const isActive = Boolean(req.body?.isActive);
 
-if (!id) return res.status(400).json({ error: "id manquant" });
+if (!id) return next(new ValidationError("id manquant"));
 
 const agent = await Agent.findById(id).select("_id name phone code isActive").lean();
-if (!agent) return res.status(404).json({ error: "Agent introuvable" });
+if (!agent) return next(new NotFoundError("Agent introuvable"));
 
 if (isActive) {
 // Réactivation : générer un nouveau code + mustChangePassword + SMS
@@ -270,26 +260,22 @@ const updated = await Agent.findById(id)
 
 return res.json({ message: "Agent suspendu", agent: safeAgent(updated || agent) });
 }
-} catch (e) {
-console.error("❌ setAgentStatus:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 PATCH /api/admin/agents/:id/password
 - reset en mode "authCode" (1ère connexion)
 Body optionnel: { sendSms?: boolean }
 ===================================================== */
-export const resetAgentPassword = async (req: Request, res: Response) => {
-try {
+export const resetAgentPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const id = String(req.params?.id || "").trim();
 const sendSms = req.body?.sendSms !== false;
 
-if (!id) return res.status(400).json({ error: "id manquant" });
+if (!id) return next(new ValidationError("id manquant"));
 
 const agent = await Agent.findById(id).select("_id name phone code isActive").lean();
-if (!agent) return res.status(404).json({ error: "Agent introuvable" });
+if (!agent) return next(new NotFoundError("Agent introuvable"));
 
 const authCode = generateAuthCode(6);
 const authCodeHash = await bcrypt.hash(authCode, 10);
@@ -328,29 +314,25 @@ message: sendSms
 : "Accès réinitialisé",
 smsSent: sendSms ? smsOk : false,
 });
-} catch (e) {
-console.error("❌ resetAgentPassword:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 POST /api/admin/agents/:id/approve
 - Approuve + active un candidat
 - Envoie SMS avec code agent et instructions
 ===================================================== */
-export const approveAgent = async (req: Request, res: Response) => {
-try {
+export const approveAgent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const id = String(req.params?.id || "").trim();
 const sendSms = req.body?.sendSms !== false;
 
-if (!id) return res.status(400).json({ error: "id manquant" });
+if (!id) return next(new ValidationError("id manquant"));
 
 const agent = await Agent.findById(id).select("_id name phone code firstName isApproved isActive").lean();
-if (!agent) return res.status(404).json({ error: "Candidat introuvable" });
+if (!agent) return next(new NotFoundError("Candidat introuvable"));
 
 if (agent.isApproved) {
-return res.status(400).json({ error: "Ce candidat est déjà approuvé" });
+return next(new ValidationError("Ce candidat est déjà approuvé"));
 }
 
 const authCode = generateAuthCode(6);
@@ -385,27 +367,23 @@ phone: agent.phone,
 firstName: agent.firstName,
 },
 });
-} catch (e) {
-console.error("❌ approveAgent:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 POST /api/admin/agents/:id/reject
 - Rejette + supprime un candidat
 - Envoie SMS de refus
 ===================================================== */
-export const rejectAgent = async (req: Request, res: Response) => {
-try {
+export const rejectAgent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const id = String(req.params?.id || "").trim();
 const reason = String(req.body?.reason || "").trim();
 const sendSms = req.body?.sendSms !== false;
 
-if (!id) return res.status(400).json({ error: "id manquant" });
+if (!id) return next(new ValidationError("id manquant"));
 
 const agent = await Agent.findById(id).select("_id name phone firstName isApproved").lean();
-if (!agent) return res.status(404).json({ error: "Candidat introuvable" });
+if (!agent) return next(new NotFoundError("Candidat introuvable"));
 
 const firstName = agent.firstName || agent.name.split(" ")[0];
 let smsSent = false;
@@ -431,8 +409,4 @@ message: smsSent
 : "Candidat rejeté (SMS non envoyé)",
 smsSent,
 });
-} catch (e) {
-console.error("❌ rejectAgent:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

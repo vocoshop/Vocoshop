@@ -1,6 +1,8 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError } from "../utils/AppError";
 
-export const redirectInvite = async (req: Request, res: Response) => {
+export const redirectInvite = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const token = String(req.params.token || "").trim();
 if (!token) return res.status(404).send("Invite invalide");
 
@@ -24,4 +26,4 @@ Ouvrir l’app
 
 res.setHeader("Content-Type", "text/html; charset=utf-8");
 return res.status(200).send(html);
-};
+});

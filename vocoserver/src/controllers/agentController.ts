@@ -1,5 +1,5 @@
 // controllers/agentController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
@@ -9,6 +9,8 @@ import DailyReport from "../models/DailyReport";
 import { normalizePhone } from "../utils/phone";
 import { getAgentCommissions } from "../services/commissionService";
 import { notifyAuthCode, notifyPasswordReset } from "../services/notificationService";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 
 /* =====================================================
 Helpers
@@ -54,7 +56,6 @@ secret,
 }
 
 function getAuthCodeExpiryMinutes(): number {
-// tu peux définir AGENT_AUTHCODE_EXP_MINUTES sinon fallback OTP_EXP_MINUTES sinon 10
 const raw =
 process.env.AGENT_AUTHCODE_EXP_MINUTES ||
 process.env.OTP_EXP_MINUTES ||
@@ -74,161 +75,146 @@ function isAuthCodeExpired(issuedAt?: Date | null) {
 POST /api/agent/auth/otp/send (PUBLIC)
 - Envoie un code OTP au téléphone de l'agent
 ===================================================== */
-export const sendAgentOTP = async (req: Request, res: Response) => {
+export const sendAgentOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const phoneRaw = String(req.body?.phone || "").trim();
+  const phone = normalizePhone(phoneRaw);
+  if (!phone) return next(new ValidationError("Téléphone requis"));
+
+  const agent = await Agent.findOne({ phone }).lean();
+  if (!agent) return next(new NotFoundError("Aucun agent trouvé avec ce numéro"));
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashed = await bcrypt.hash(code, 10);
+
+  await Agent.updateOne(
+    { _id: agent._id },
+    { $set: { authCodeHash: hashed, authCodeIssuedAt: new Date() } }
+  );
+
+  let notifResult = { whatsapp: false, sms: false };
   try {
-    const phoneRaw = String(req.body?.phone || "").trim();
-    const phone = normalizePhone(phoneRaw);
-    if (!phone) return res.status(400).json({ error: "Téléphone requis" });
-
-    const agent = await Agent.findOne({ phone }).lean();
-    if (!agent) return res.status(404).json({ error: "Aucun agent trouvé avec ce numéro" });
-
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashed = await bcrypt.hash(code, 10);
-
-    await Agent.updateOne(
-      { _id: agent._id },
-      { $set: { authCodeHash: hashed, authCodeIssuedAt: new Date() } }
-    );
-
-    let notifResult = { whatsapp: false, sms: false };
-    try {
-      notifResult = await notifyAuthCode(phone, code);
-    } catch (e) {
-      console.error("❌ Notification OTP échouée:", e);
-    }
-
-    const sent = notifResult.whatsapp || notifResult.sms;
-    const channel = notifResult.whatsapp ? "WhatsApp" : notifResult.sms ? "SMS" : "aucun";
-    return res.json({ message: sent ? `Code envoyé par ${channel}` : "Code généré (notification non envoyée)", phone, sent, channel });
+    notifResult = await notifyAuthCode(phone, code);
   } catch (e) {
-    console.error("❌ sendAgentOTP:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
+    console.error("❌ Notification OTP échouée:", e);
   }
-};
+
+  const sent = notifResult.whatsapp || notifResult.sms;
+  const channel = notifResult.whatsapp ? "WhatsApp" : notifResult.sms ? "SMS" : "aucun";
+  return res.json({ message: sent ? `Code envoyé par ${channel}` : "Code généré (notification non envoyée)", phone, sent, channel });
+});
 
 /* =====================================================
 POST /api/agent/auth/otp/verify (PUBLIC)
 - Vérifie le code OTP et connecte l'agent
 - Accepte { phone, code } OU { agentId, code }
 ===================================================== */
-export const verifyAgentOTP = async (req: Request, res: Response) => {
-  try {
-    const agentId = String(req.body?.agentId || "").trim();
-    const phoneRaw = String(req.body?.phone || "").trim();
-    const code = String(req.body?.code || "").trim();
-    const phone = normalizePhone(phoneRaw);
+export const verifyAgentOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const agentId = String(req.body?.agentId || "").trim();
+  const phoneRaw = String(req.body?.phone || "").trim();
+  const code = String(req.body?.code || "").trim();
+  const phone = normalizePhone(phoneRaw);
 
-    if (!code) return res.status(400).json({ error: "Code requis" });
+  if (!code) return next(new ValidationError("Code requis"));
 
-    let agent: any;
-    if (agentId) {
-      agent = await Agent.findById(agentId)
-        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive mustChangePassword authCodeHash authCodeIssuedAt createdAt lastLoginAt")
-        .lean();
-    } else if (phone) {
-      agent = await Agent.findOne({ phone })
-        .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive mustChangePassword authCodeHash authCodeIssuedAt createdAt lastLoginAt")
-        .lean();
-    }
-
-    if (!agent) return res.status(404).json({ error: "Agent introuvable" });
-    if (!agent.isActive) return res.status(403).json({ error: "Agent désactivé" });
-    if (!agent.authCodeHash) return res.status(400).json({ error: "Aucun code envoyé" });
-    if (!agent.mustChangePassword && isAuthCodeExpired(agent.authCodeIssuedAt)) {
-      return res.status(401).json({ error: "Code expiré" });
-    }
-
-    const ok = await bcrypt.compare(code, agent.authCodeHash);
-    if (!ok) return res.status(401).json({ error: "Code invalide" });
-
-    const token = signAgentToken(String(agent._id));
-    const agentPayload = {
-      id: String(agent._id),
-      firstName: agent.firstName || "",
-      lastName: agent.lastName || "",
-      name: agent.name,
-      phone: agent.phone,
-      code: agent.code,
-      city: agent.city || "",
-      region: agent.region || "",
-      country: agent.country || "",
-      gender: agent.gender || "",
-      birthDate: agent.birthDate || null,
-      idType: agent.idType || "",
-      idNumber: agent.idNumber || "",
-      isApproved: !!agent.isApproved,
-      isActive: agent.isActive,
-      mustChangePassword: agent.mustChangePassword,
-      hasPassword: !!agent.passwordHash,
-      createdAt: agent.createdAt || null,
-      lastLoginAt: agent.lastLoginAt || null,
-      role: "agent",
-    };
-
-    // Première connexion : ne PAS vider authCodeHash (setPassword en a besoin)
-    if (agent.mustChangePassword) {
-      return res.json({ requiresPasswordSetup: true, token, agent: agentPayload });
-    }
-
-    // Login normal : vider authCodeHash, connecter
-    await Agent.updateOne(
-      { _id: agent._id },
-      { $set: { lastLoginAt: new Date() }, $unset: { authCodeHash: "", authCodeIssuedAt: "" } }
-    );
-    return res.json({ token, agent: agentPayload });
-  } catch (e) {
-    console.error("❌ verifyAgentOTP:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
+  let agent: any;
+  if (agentId) {
+    agent = await Agent.findById(agentId)
+      .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive mustChangePassword authCodeHash authCodeIssuedAt createdAt lastLoginAt")
+      .lean();
+  } else if (phone) {
+    agent = await Agent.findOne({ phone })
+      .select("_id name firstName lastName phone code city region country gender birthDate idType idNumber isApproved isActive mustChangePassword authCodeHash authCodeIssuedAt createdAt lastLoginAt")
+      .lean();
   }
-};
+
+  if (!agent) return next(new NotFoundError("Agent introuvable"));
+  if (!agent.isActive) return next(new ForbiddenError("Agent désactivé"));
+  if (!agent.authCodeHash) return next(new ValidationError("Aucun code envoyé"));
+  if (!agent.mustChangePassword && isAuthCodeExpired(agent.authCodeIssuedAt)) {
+    return next(new UnauthorizedError("Code expiré"));
+  }
+
+  const ok = await bcrypt.compare(code, agent.authCodeHash);
+  if (!ok) return next(new UnauthorizedError("Code invalide"));
+
+  const token = signAgentToken(String(agent._id));
+  const agentPayload = {
+    id: String(agent._id),
+    firstName: agent.firstName || "",
+    lastName: agent.lastName || "",
+    name: agent.name,
+    phone: agent.phone,
+    code: agent.code,
+    city: agent.city || "",
+    region: agent.region || "",
+    country: agent.country || "",
+    gender: agent.gender || "",
+    birthDate: agent.birthDate || null,
+    idType: agent.idType || "",
+    idNumber: agent.idNumber || "",
+    isApproved: !!agent.isApproved,
+    isActive: agent.isActive,
+    mustChangePassword: agent.mustChangePassword,
+    hasPassword: !!agent.passwordHash,
+    createdAt: agent.createdAt || null,
+    lastLoginAt: agent.lastLoginAt || null,
+    role: "agent",
+  };
+
+  // Première connexion : ne PAS vider authCodeHash (setPassword en a besoin)
+  if (agent.mustChangePassword) {
+    return res.json({ requiresPasswordSetup: true, token, agent: agentPayload });
+  }
+
+  // Login normal : vider authCodeHash, connecter
+  await Agent.updateOne(
+    { _id: agent._id },
+    { $set: { lastLoginAt: new Date() }, $unset: { authCodeHash: "", authCodeIssuedAt: "" } }
+  );
+  return res.json({ token, agent: agentPayload });
+});
 
 /* =====================================================
 POST /api/agent/auth/forgot-password (PUBLIC)
 - Génère un mot de passe temporaire et l'envoie par SMS
 ===================================================== */
-export const forgotPassword = async (req: Request, res: Response) => {
-  try {
-    const phoneRaw = String(req.body?.phone || "").trim();
-    const phone = normalizePhone(phoneRaw);
-    if (!phone) return res.status(400).json({ error: "Téléphone requis" });
+export const forgotPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const phoneRaw = String(req.body?.phone || "").trim();
+  const phone = normalizePhone(phoneRaw);
+  if (!phone) return next(new ValidationError("Téléphone requis"));
 
-    const agent = await Agent.findOne({ phone }).lean();
-    if (!agent) return res.status(404).json({ error: "Aucun agent trouvé avec ce numéro" });
-    if (!agent.isActive) return res.status(403).json({ error: "Agent désactivé" });
+  const agent = await Agent.findOne({ phone }).lean();
+  if (!agent) return next(new NotFoundError("Aucun agent trouvé avec ce numéro"));
+  if (!agent.isActive) return next(new ForbiddenError("Agent désactivé"));
 
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-    let tempPassword = "";
-    for (let i = 0; i < 8; i++) {
-      tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-
-    const hashed = await bcrypt.hash(tempPassword, 10);
-
-    await Agent.updateOne(
-      { _id: agent._id },
-      { $set: { passwordHash: hashed, mustChangePassword: true, lastLoginAt: null } }
-    );
-
-    let notifResult = { whatsapp: false, sms: false };
-    try {
-      const firstName = agent.firstName || agent.name?.split(" ")[0] || "";
-      notifResult = await notifyPasswordReset(phone, firstName, tempPassword);
-    } catch (e) {
-      console.error("❌ Notification forgotPassword échouée:", e);
-    }
-
-    const sent = notifResult.whatsapp || notifResult.sms;
-    const channel = notifResult.whatsapp ? "WhatsApp" : notifResult.sms ? "SMS" : "aucun";
-    return res.json({
-      message: sent ? `Mot de passe envoyé par ${channel}` : "Mot de passe réinitialisé (notification non envoyée)",
-      phone, sent, channel,
-    });
-  } catch (e) {
-    console.error("❌ forgotPassword:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let tempPassword = "";
+  for (let i = 0; i < 8; i++) {
+    tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-};
+
+  const hashed = await bcrypt.hash(tempPassword, 10);
+
+  await Agent.updateOne(
+    { _id: agent._id },
+    { $set: { passwordHash: hashed, mustChangePassword: true, lastLoginAt: null } }
+  );
+
+  let notifResult = { whatsapp: false, sms: false };
+  try {
+    const firstName = agent.firstName || agent.name?.split(" ")[0] || "";
+    notifResult = await notifyPasswordReset(phone, firstName, tempPassword);
+  } catch (e) {
+    console.error("❌ Notification forgotPassword échouée:", e);
+  }
+
+  const sent = notifResult.whatsapp || notifResult.sms;
+  const channel = notifResult.whatsapp ? "WhatsApp" : notifResult.sms ? "SMS" : "aucun";
+  return res.json({
+    message: sent ? `Mot de passe envoyé par ${channel}` : "Mot de passe réinitialisé (notification non envoyée)",
+    phone, sent, channel,
+  });
+});
 
 /* =====================================================
 POST /api/agent/auth/login (PUBLIC)
@@ -238,14 +224,13 @@ Body: { codeOrPhone, password? }
   - Si mustChangePassword : génère OTP, envoie SMS, retourne requiresPasswordSetup
   - Sinon : retourne requiresPassword (le frontend doit afficher le champ mot de passe)
 ===================================================== */
-export const loginAgent = async (req: Request, res: Response) => {
-try {
+export const loginAgent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const identifierRaw = String(req.body?.codeOrPhone || "").trim();
 const identifierPhone = normalizePhone(identifierRaw);
 const password = String(req.body?.password || "");
 
 if (!identifierRaw) {
-return res.status(400).json({ error: "Code agent ou téléphone requis" });
+return next(new ValidationError("Code agent ou téléphone requis"));
 }
 
 const agent: any = await Agent.findOne({
@@ -256,8 +241,8 @@ $or: [{ code: identifierRaw }, { phone: identifierPhone }],
 )
 .lean();
 
-if (!agent) return res.status(401).json({ error: "Identifiants invalides" });
-if (agent.isActive === false) return res.status(403).json({ error: "Agent désactivé" });
+if (!agent) return next(new UnauthorizedError("Identifiants invalides"));
+if (agent.isActive === false) return next(new ForbiddenError("Agent désactivé"));
 
 const makeAgentPayload = (a: any, mustChangePwd: boolean) => ({
   id: String(a._id),
@@ -291,15 +276,15 @@ if (password) {
   // 1ère connexion avec mot de passe temporaire
   if (agent.mustChangePassword && agent.passwordHash) {
     const ok = await bcrypt.compare(password, String(agent.passwordHash));
-    if (!ok) return res.status(401).json({ error: "Mot de passe invalide" });
+    if (!ok) return next(new UnauthorizedError("Mot de passe invalide"));
     const token = signAgentToken(String(agent._id));
     return res.json({ token, agent: makeAgentPayload(agent, true) });
   }
 
   // Login normal
-  if (!agent.passwordHash) return res.status(400).json({ error: "Aucun mot de passe défini. Connexion sans mot de passe d'abord." });
+  if (!agent.passwordHash) return next(new ValidationError("Aucun mot de passe défini. Connexion sans mot de passe d'abord."));
   const ok = await bcrypt.compare(password, String(agent.passwordHash));
-  if (!ok) return res.status(401).json({ error: "Identifiants invalides" });
+  if (!ok) return next(new UnauthorizedError("Identifiants invalides"));
 
   const token = signAgentToken(String(agent._id));
   Agent.updateOne({ _id: agent._id }, { $set: { lastLoginAt: new Date() } }).catch(() => {});
@@ -338,37 +323,31 @@ return res.json({
   requiresPassword: true,
   agent: makeAgentPayload(agent, false),
 });
-
-} catch (e) {
-console.error("❌ loginAgent:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 POST /api/agent/auth/complete-first-login (PROTECTED)
 Body: { newPassword, newCode? }
 ===================================================== */
-export const completeFirstLogin = async (req: Request, res: Response) => {
-try {
+export const completeFirstLogin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const agentId = String(req.agent?.id || "");
 const newPassword = String(req.body?.newPassword || "");
 const newCode = String(req.body?.newCode || "").trim().toUpperCase();
 
-if (!agentId) return res.status(401).json({ error: "Agent non authentifié" });
+if (!agentId) return next(new UnauthorizedError("Agent non authentifié"));
 if (newPassword.length < 6) {
-return res.status(400).json({ error: "Mot de passe trop court (min 6)" });
+return next(new ValidationError("Mot de passe trop court (min 6)"));
 }
 
 const agent: any = await Agent.findById(agentId)
 .select("_id code mustChangePassword")
 .lean();
 
-if (!agent) return res.status(404).json({ error: "Agent introuvable" });
+if (!agent) return next(new NotFoundError("Agent introuvable"));
 
-// ✅ évite qu’un agent déjà actif refasse le flow “first login”
+// ✅ évite qu’un agent déjà actif refasse le flow "first login"
 if (agent.mustChangePassword === false) {
-return res.status(400).json({ error: "Compte déjà activé" });
+return next(new ValidationError("Compte déjà activé"));
 }
 
 const passwordHash = await bcrypt.hash(newPassword, 10);
@@ -384,14 +363,14 @@ lastLoginAt: new Date(),
 // personnalisation code (optionnel)
 if (newCode) {
 if (!newCode.startsWith("AG-") || newCode.length < 6 || newCode.length > 20) {
-return res.status(400).json({ error: "Code invalide (ex: AG-1024-F)" });
+return next(new ValidationError("Code invalide (ex: AG-1024-F)"));
 }
 
 const exists = await Agent.findOne({ code: newCode, _id: { $ne: agentId } })
 .select("_id")
 .lean();
 
-if (exists) return res.status(409).json({ error: "Ce code est déjà utilisé" });
+if (exists) return next(new ValidationError("Ce code est déjà utilisé"));
 
 update.code = newCode;
 }
@@ -402,91 +381,82 @@ return res.json({
 message: "Compte agent activé",
 code: newCode || agent.code,
 });
-} catch (e) {
-console.error("❌ completeFirstLogin:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 POST /api/agent/auth/set-password (PUBLIC)
 Body: { agentId, newPassword }
 - Définir le mot de passe après première connexion
 ===================================================== */
-export const setPassword = async (req: Request, res: Response) => {
-  try {
-    const agentId = String(req.body?.agentId || "").trim();
-    const newPassword = String(req.body?.newPassword || "");
-    const authCode = String(req.body?.authCode || "").trim();
+export const setPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const agentId = String(req.body?.agentId || "").trim();
+  const newPassword = String(req.body?.newPassword || "");
+  const authCode = String(req.body?.authCode || "").trim();
 
-    if (!agentId) return res.status(400).json({ error: "agentId manquant" });
-    if (!authCode) return res.status(400).json({ error: "authCode requis (OTP d'abord)" });
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: "Mot de passe trop court (min 6)" });
-    }
-
-    const agent: any = await Agent.findById(agentId)
-      .select("_id code mustChangePassword authCodeHash authCodeIssuedAt isApproved isActive")
-      .lean();
-
-    if (!agent) return res.status(404).json({ error: "Agent introuvable" });
-    if (!agent.isApproved) return res.status(403).json({ error: "Compte non approuvé" });
-    if (agent.mustChangePassword === false) {
-      return res.status(400).json({ error: "Compte déjà activé" });
-    }
-
-    // ✅ Vérifier l'OTP/authCode AVANT de permettre le changement de mot de passe
-    if (!agent.authCodeHash) {
-      return res.status(400).json({ error: "Aucun authCode actif. Demande un nouveau code OTP." });
-    }
-    const ok = await bcrypt.compare(authCode, String(agent.authCodeHash || ""));
-    if (!ok) return res.status(401).json({ error: "Code OTP invalide" });
-
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-
-    await Agent.updateOne({ _id: agentId }, {
-      $set: {
-        passwordHash,
-        mustChangePassword: false,
-        authCodeHash: null,
-        authCodeIssuedAt: null,
-        lastLoginAt: new Date(),
-      }
-    });
-
-    const token = jwt.sign(
-      { agentId: agent._id, role: "agent", type: "agent" },
-      getAgentJwtSecret(),
-      { expiresIn: "7d" }
-    );
-
-    const updatedAgent = await Agent.findById(agentId)
-      .select("_id name firstName lastName phone code city country gender birthDate idType idNumber isApproved isActive mustChangePassword lastLoginAt createdAt")
-      .lean();
-
-    return res.json({
-      message: "Compte activé",
-      token,
-      agent: {
-        id: String(updatedAgent?._id),
-        firstName: updatedAgent?.firstName || "",
-        lastName: updatedAgent?.lastName || "",
-        name: updatedAgent?.name,
-        phone: updatedAgent?.phone,
-        code: updatedAgent?.code,
-        city: updatedAgent?.city || "",
-        country: updatedAgent?.country || "",
-        isApproved: !!updatedAgent?.isApproved,
-        isActive: updatedAgent?.isActive,
-        mustChangePassword: false,
-        role: "agent",
-      },
-    });
-  } catch (e) {
-    console.error("❌ setPassword:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
+  if (!agentId) return next(new ValidationError("agentId manquant"));
+  if (!authCode) return next(new ValidationError("authCode requis (OTP d'abord)"));
+  if (newPassword.length < 6) {
+    return next(new ValidationError("Mot de passe trop court (min 6)"));
   }
-};
+
+  const agent: any = await Agent.findById(agentId)
+    .select("_id code mustChangePassword authCodeHash authCodeIssuedAt isApproved isActive")
+    .lean();
+
+  if (!agent) return next(new NotFoundError("Agent introuvable"));
+  if (!agent.isApproved) return next(new ForbiddenError("Compte non approuvé"));
+  if (agent.mustChangePassword === false) {
+    return next(new ValidationError("Compte déjà activé"));
+  }
+
+  // ✅ Vérifier l'OTP/authCode AVANT de permettre le changement de mot de passe
+  if (!agent.authCodeHash) {
+    return next(new ValidationError("Aucun authCode actif. Demande un nouveau code OTP."));
+  }
+  const ok = await bcrypt.compare(authCode, String(agent.authCodeHash || ""));
+  if (!ok) return next(new UnauthorizedError("Code OTP invalide"));
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  await Agent.updateOne({ _id: agentId }, {
+    $set: {
+      passwordHash,
+      mustChangePassword: false,
+      authCodeHash: null,
+      authCodeIssuedAt: null,
+      lastLoginAt: new Date(),
+    }
+  });
+
+  const token = jwt.sign(
+    { agentId: agent._id, role: "agent", type: "agent" },
+    getAgentJwtSecret(),
+    { expiresIn: "7d" }
+  );
+
+  const updatedAgent = await Agent.findById(agentId)
+    .select("_id name firstName lastName phone code city country gender birthDate idType idNumber isApproved isActive mustChangePassword lastLoginAt createdAt")
+    .lean();
+
+  return res.json({
+    message: "Compte activé",
+    token,
+    agent: {
+      id: String(updatedAgent?._id),
+      firstName: updatedAgent?.firstName || "",
+      lastName: updatedAgent?.lastName || "",
+      name: updatedAgent?.name,
+      phone: updatedAgent?.phone,
+      code: updatedAgent?.code,
+      city: updatedAgent?.city || "",
+      country: updatedAgent?.country || "",
+      isApproved: !!updatedAgent?.isApproved,
+      isActive: updatedAgent?.isActive,
+      mustChangePassword: false,
+      role: "agent",
+    },
+  });
+});
 
 /* =====================================================
 GET /api/agent/me (PROTECTED)
@@ -498,10 +468,9 @@ return res.json({ agent: req.agent });
 /* =====================================================
 GET /api/agent/stores (PROTECTED)
 ===================================================== */
-export const listAgentStores = async (req: Request, res: Response) => {
-try {
+export const listAgentStores = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const agentCode = String(req.agent?.code || "").trim();
-if (!agentCode) return res.status(400).json({ error: "Agent code manquant" });
+if (!agentCode) return next(new ValidationError("Agent code manquant"));
 
 const qRaw = String(req.query?.q || "").trim();
 const q = qRaw ? escapeRegex(qRaw.toLowerCase()) : "";
@@ -566,26 +535,21 @@ stores: filtered.slice(start, end),
 meta: { page, limit, total, hasMore: end < total },
 filters: { q: qRaw || "", status: status || "", sub: sub || "" },
 });
-} catch (e) {
-console.error("❌ listAgentStores:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 GET /api/agent/analysis?range=30
 OU /api/agent/analysis?from=YYYY-MM-DD&to=YYYY-MM-DD
 ===================================================== */
-export const getAgentAnalysis = async (req: Request, res: Response) => {
-try {
+export const getAgentAnalysis = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const agentCode = String(req.agent?.code || "").trim();
-if (!agentCode) return res.status(400).json({ error: "Agent code manquant" });
+if (!agentCode) return next(new ValidationError("Agent code manquant"));
 
 const stores = await Store.find({ agentCode })
 .select("_id storeName shopId city phone plan lastActiveAt installedAt createdAt")
 .lean();
 
-const storeIdStrings = (stores as any[]).map((s) => String(s._id)); // ✅ DailyReport.storeId = String
+const storeIdStrings = (stores as any[]).map((s) => String(s._id));
 
 if (storeIdStrings.length === 0) {
 return res.json({
@@ -616,9 +580,9 @@ let startStr = "";
 let endStr = "";
 
 if (from || to) {
-if (!from || !to) return res.status(400).json({ error: "from et to doivent être fournis ensemble" });
-if (!isYMD(from) || !isYMD(to)) return res.status(400).json({ error: "from/to invalides (YYYY-MM-DD)" });
-if (from > to) return res.status(400).json({ error: "from doit être <= to" });
+if (!from || !to) return next(new ValidationError("from et to doivent être fournis ensemble"));
+if (!isYMD(from) || !isYMD(to)) return next(new ValidationError("from/to invalides (YYYY-MM-DD)"));
+if (from > to) return next(new ValidationError("from doit être <= to"));
 startStr = from;
 endStr = to;
 } else {
@@ -717,19 +681,14 @@ totals,
 series,
 topStores,
 });
-} catch (e) {
-console.error("❌ getAgentAnalysis:", e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 GET /api/agent/kpis?range=30 (PROTECTED)
 ===================================================== */
-export const getAgentKpis = async (req: Request, res: Response) => {
-try {
+export const getAgentKpis = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const agentCode = String(req.agent?.code || "").trim();
-if (!agentCode) return res.status(400).json({ error: "Agent code manquant" });
+if (!agentCode) return next(new ValidationError("Agent code manquant"));
 
 const rangeDays = Math.max(1, Math.min(180, Number(req.query?.range || 30)));
 const since = new Date();
@@ -775,25 +734,16 @@ converted,
 conversionRate,
 },
 });
-} catch (e) {
-  console.error("❌ getAgentKpis:", e);
-  return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 GET /api/agent/commissions (PROTECTED)
 ===================================================== */
-export const getCommissions = async (req: Request, res: Response) => {
-try {
+export const getCommissions = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const agentCode = String(req.agent?.code || "").trim();
-  if (!agentCode) return res.status(400).json({ error: "Agent code manquant" });
+  if (!agentCode) return next(new ValidationError("Agent code manquant"));
 
   const commissions = await getAgentCommissions(agentCode);
 
   return res.json({ commissions });
-} catch (e) {
-  console.error("❌ getCommissions:", e);
-  return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

@@ -1,5 +1,7 @@
 // controllers/storeAnalysisController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import Store from "../models/Store";
 import Sale from "../models/Sales";
 import DailyReport from "../models/DailyReport";
@@ -76,18 +78,18 @@ V2 ROBUSTE:
 - Aujourd’hui non clôturé -> Sales
 - Jours clôturés -> DailyReport
 ===================================================== */
-export const getStoreAnalysis = async (req: Request, res: Response) => {
-try {
+export const getStoreAnalysis = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 // anti-cache (utile en dev)
 res.setHeader("Cache-Control", "no-store");
 res.setHeader("Pragma", "no-cache");
 
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 // bornes (min=createdAt boutique, max=today)
 const store = await Store.findById(storeId).select("createdAt").lean();
-if (!store) return res.status(404).json({ error: "Boutique introuvable" });
+if (!store) return next(new NotFoundError("Boutique introuvable"));
 
 const today = startOfDay(new Date());
 const createdAt = store?.createdAt ? startOfDay(new Date(store.createdAt)) : today;
@@ -105,7 +107,7 @@ const fromDate = clampDate(startOfDay(rawFrom), minAllowed, maxAllowed);
 const toDate = clampDate(startOfDay(rawTo), minAllowed, maxAllowed);
 
 if (fromDate > toDate) {
-return res.status(400).json({ error: "Période invalide (from > to)" });
+return next(new ValidationError("Période invalide (from > to)"));
 }
 
 const fromYMD = toYMD(fromDate);
@@ -397,8 +399,4 @@ slowProducts,
 days: { bestDay, worstDay },
 insights,
 });
-} catch (err) {
-console.error("❌ getStoreAnalysis V2", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

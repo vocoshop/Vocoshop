@@ -1,30 +1,32 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import CallProxy from "../models/CallProxy";
 import Agent from "../models/Agent";
 import Store from "../models/Store";
 import { getStoreId } from "../utils/storeId";
 import { initiateProxyCall } from "../services/vonageVoiceService";
 
-export const initiateCall = async (req: Request, res: Response) => {
-try {
+export const initiateCall = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const { agentCode } = req.body;
-if (!agentCode || typeof agentCode !== "string") return res.status(400).json({ error: "code agent requis" });
+if (!agentCode || typeof agentCode !== "string") return next(new ValidationError("code agent requis"));
 
 const agent = await Agent.findOne({ code: agentCode.trim() }).lean();
-if (!agent) return res.status(404).json({ error: "Agent introuvable" });
-if (!agent.isActive) return res.status(400).json({ error: "Agent indisponible" });
+if (!agent) return next(new NotFoundError("Agent introuvable"));
+if (!agent.isActive) return next(new ValidationError("Agent indisponible"));
 
 const store = await Store.findById(storeId).lean();
-if (!store) return res.status(404).json({ error: "Boutique introuvable" });
+if (!store) return next(new NotFoundError("Boutique introuvable"));
 
 const callerPhone = store.phone || "";
-if (!callerPhone) return res.status(400).json({ error: "Aucun téléphone associé à cette boutique" });
+if (!callerPhone) return next(new ValidationError("Aucun téléphone associé à cette boutique"));
 
 const agentPhone = agent.phone || "";
-if (!agentPhone) return res.status(400).json({ error: "Aucun téléphone pour cet agent" });
+if (!agentPhone) return next(new ValidationError("Aucun téléphone pour cet agent"));
 
 const proxy = await CallProxy.create({
 storeId,
@@ -58,34 +60,26 @@ return res.json({
 message: "Appel en cours. Le système vous connecte à l'agent.",
 proxyId: proxy._id,
 });
-} catch (err) {
-console.error("❌ initiateCall:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
-export const answerWebhook = async (req: Request, res: Response) => {
-try {
+export const answerWebhook = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const { proxyId } = req.params;
 const proxy = await CallProxy.findById(proxyId);
-if (!proxy) return res.status(404).json({ error: "Session introuvable" });
+if (!proxy) return next(new NotFoundError("Session introuvable"));
 
 const { buildAnswerNcco } = await import("../services/vonageVoiceService");
 const ncco = buildAnswerNcco(proxy.agentPhone);
 return res.json(ncco);
-} catch (err) {
-console.error("❌ answerWebhook:", err);
-return res.status(500).json({ error: "Erreur webhook answer" });
-}
-};
+});
 
-export const eventWebhook = async (req: Request, res: Response) => {
-try {
+export const eventWebhook = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const { proxyId } = req.params;
 const event = req.body;
 
 const proxy = await CallProxy.findById(proxyId);
-if (!proxy) return res.status(404).json({ error: "Session introuvable" });
+if (!proxy) return next(new NotFoundError("Session introuvable"));
 
 const { handleCallEvent } = await import("../services/vonageVoiceService");
 const { status, duration } = handleCallEvent(event);
@@ -97,8 +91,4 @@ await proxy.save();
 console.log(`📞 Événement appel ${proxyId}: ${event.status} → ${status} (${duration}s)`);
 
 return res.status(200).end();
-} catch (err) {
-console.error("❌ eventWebhook:", err);
-return res.status(500).end();
-}
-};
+});

@@ -1,12 +1,14 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import mongoose from "mongoose";
 import Withdrawal from "../models/Withdrawal";
 
 /* =====================================================
 GET /api/admin/withdrawals
 ===================================================== */
-export const listWithdrawals = async (req: Request, res: Response) => {
-  try {
+export const listWithdrawals = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
     const statusFilter = String(req.query?.status || "").trim();
     const agentCode = String(req.query?.agentCode || "").trim();
     const page = Math.max(1, parseInt(String(req.query?.page || "1"), 10) || 1);
@@ -41,32 +43,28 @@ export const listWithdrawals = async (req: Request, res: Response) => {
       })),
       meta: { page, limit, total, hasMore: page * limit < total },
     });
-  } catch (e) {
-    console.error("❌ listWithdrawals:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+  });
 
 /* =====================================================
 PATCH /api/admin/withdrawals/:id
 ===================================================== */
-export const processWithdrawal = async (req: Request, res: Response) => {
-  try {
+export const processWithdrawal = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
     const id = String(req.params?.id || "").trim();
     const action = String(req.body?.action || req.body?.status || "").trim(); // "approved" | "rejected"
     const adminNote = String(req.body?.adminNote || "").trim();
     const adminId = req.user?.id;
 
-    if (!id) return res.status(400).json({ error: "ID requis" });
+    if (!id) return next(new ValidationError("ID requis"));
     if (!["approved", "rejected"].includes(action)) {
-      return res.status(400).json({ error: "action doit être 'approved' ou 'rejected'" });
+      return next(new ValidationError("action doit être 'approved' ou 'rejected'"));
     }
     if (action === "rejected" && !adminNote) {
-      return res.status(400).json({ error: "Un motif est requis pour le rejet" });
+      return next(new ValidationError("Un motif est requis pour le rejet"));
     }
 
     const withdrawal = await Withdrawal.findById(id);
-    if (!withdrawal) return res.status(404).json({ error: "Demande introuvable" });
+    if (!withdrawal) return next(new NotFoundError("Demande introuvable"));
     if (withdrawal.status !== "pending") {
       return res.status(400).json({ error: `Cette demande est déjà ${withdrawal.status}` });
     }
@@ -87,17 +85,13 @@ export const processWithdrawal = async (req: Request, res: Response) => {
         processedAt: withdrawal.processedAt,
       },
     });
-  } catch (e) {
-    console.error("❌ processWithdrawal:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+  });
 
 /* =====================================================
 GET /api/admin/withdrawals/stats
 ===================================================== */
-export const getWithdrawalStats = async (req: Request, res: Response) => {
-  try {
+export const getWithdrawalStats = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
     const stats = await Withdrawal.aggregate([
       { $group: { _id: "$status", count: { $sum: 1 }, total: { $sum: "$amount" } } },
     ]);
@@ -113,8 +107,4 @@ export const getWithdrawalStats = async (req: Request, res: Response) => {
     }
 
     return res.json(result);
-  } catch (e) {
-    console.error("❌ getWithdrawalStats:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+  });

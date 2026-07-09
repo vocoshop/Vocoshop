@@ -28,6 +28,7 @@ export default function OnboardingScreen({ route, navigation }: any) {
 
 // If navigated from LoginScreen (new account), phone is passed as param
 const incomingPhone: string | undefined = route?.params?.phone;
+const incomingOwnerPhone: string | undefined = route?.params?.ownerPhone;
 
 const { token, logout, loading: authLoading, registerWithPassword } = useContext(AuthContext);
 
@@ -35,7 +36,9 @@ const [storeName, setStoreName] = useState("");
 const [city, setCity] = useState("");
 
 const [ownerName, setOwnerName] = useState("");
-const [ownerPhone, setOwnerPhone] = useState("");
+const [ownerPhone, setOwnerPhone] = useState(incomingOwnerPhone || "");
+
+const [phoneInput, setPhoneInput] = useState(incomingPhone || "");
 
 const [agentCode, setAgentCode] = useState("");
 const [referralCode, setReferralCode] = useState("");
@@ -166,6 +169,11 @@ Alert.alert("Champ obligatoire", "Entre le nom commercial de la boutique.");
 return;
 }
 
+if (!cleanOwnerPhone) {
+Alert.alert("Champ obligatoire", "Entre le téléphone du propriétaire.");
+return;
+}
+
 if (incomingPhone) {
 // Nouveau compte : password obligatoire
 if (!cleanPassword || cleanPassword.length !== 6) {
@@ -182,12 +190,13 @@ setLoading(true);
 
 if (incomingPhone) {
 // 1) Créer le compte
+const cleanPhone = safeTrim(phoneInput) || incomingPhone;
 await registerWithPassword(
-incomingPhone,
+cleanPhone,
 cleanPassword,
 cleanStoreName,
 cleanOwnerName || undefined,
-cleanOwnerPhone || undefined,
+cleanOwnerPhone,
 cleanReferralCode || undefined,
 );
 // 2) Mettre à jour les infos restantes (city, agentCode)
@@ -197,7 +206,7 @@ const tk = await AsyncStorage.getItem("token");
 if (tk) authHeader = `Bearer ${tk}`;
 }
 if (authHeader) {
-const payload: any = {};
+const payload: any = { storeName: cleanStoreName };
 if (cleanCity) payload.city = cleanCity;
 if (cleanAgentCode) payload.agentCode = cleanAgentCode;
 await updateStoreOnboarding(payload, { Authorization: authHeader });
@@ -239,7 +248,7 @@ Alert.alert("Erreur", "Impossible d'enregistrer. Réessaie.");
 setLoading(false);
 }
 
-}, [agentCode, referralCode, city, ownerName, ownerPhone, password, confirmPassword, incomingPhone, headers, loading, navigation, storeName, registerWithPassword]);
+}, [agentCode, referralCode, city, ownerName, ownerPhone, phoneInput, password, confirmPassword, incomingPhone, headers, loading, navigation, storeName, registerWithPassword]);
 
 /* =====================================================
 UI
@@ -284,6 +293,20 @@ style={styles.input}
 autoCapitalize="words"
 />
 
+{incomingPhone && (
+<>
+<Text style={styles.label}>Téléphone de la boutique *</Text>
+<TextInput
+value={phoneInput}
+onChangeText={setPhoneInput}
+placeholder="+242 06 123 45 67"
+placeholderTextColor="rgba(255,255,255,0.35)"
+style={styles.input}
+keyboardType="phone-pad"
+/>
+</>
+)}
+
 <Text style={styles.label}>Ville</Text>
 <TextInput
 value={city}
@@ -304,7 +327,7 @@ style={styles.input}
 autoCapitalize="words"
 />
 
-<Text style={styles.label}>Téléphone du propriétaire (optionnel)</Text>
+<Text style={styles.label}>Téléphone du propriétaire *</Text>
 <TextInput
 value={ownerPhone}
 onChangeText={setOwnerPhone}

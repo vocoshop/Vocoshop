@@ -40,12 +40,12 @@ export const addSaleSchema = z.object({
 
 export const addProductSchema = z.object({
   name: z.string().min(1, "Nom du produit requis").max(200),
-  sellPrice: z.number().min(0, "Prix de vente invalide"),
-  quantity: z.number().min(0, "Quantité invalide").default(0),
+  sellPrice: z.coerce.number().min(0, "Prix de vente invalide"),
+  quantity: z.coerce.number().min(0, "Quantité invalide").default(0),
   category: z.string().max(100).optional(),
-  purchasePrice: z.number().min(0).optional(),
+  purchasePrice: z.coerce.number().min(0).optional(),
   unit: z.string().max(20).optional(),
-  alertThreshold: z.number().min(0).optional(),
+  alertThreshold: z.coerce.number().min(0).optional(),
   expirationDate: z.string().optional(),
 });
 

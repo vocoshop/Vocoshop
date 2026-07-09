@@ -1,4 +1,6 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import mongoose from "mongoose";
 import Withdrawal from "../models/Withdrawal";
 import Commission from "../models/Commission";
@@ -34,27 +36,27 @@ POST /api/agent/withdrawals
 - Auto-approuvé immédiatement
 - Transaction atomique pour éviter les race conditions
 ===================================================== */
-export const createWithdrawal = async (req: Request, res: Response) => {
-  try {
+export const createWithdrawal = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
     const agentCode = String(req.agent?.code || "").trim();
     const agentId = req.agent?.id;
     const agentName = req.agent?.name || "";
 
-    if (!agentCode) return res.status(400).json({ error: "Code agent manquant" });
+    if (!agentCode) return next(new ValidationError("Code agent manquant"));
 
     const amount = Math.round(Number(req.body?.amount) || 0);
     const phone = String(req.body?.phone || "").trim();
 
     // Validation
-    if (!phone) return res.status(400).json({ error: "Numéro de téléphone requis" });
-    if (amount < 1000) return res.status(400).json({ error: "Montant minimum : 1 000 FCFA" });
-    if (amount > 500000) return res.status(400).json({ error: "Montant maximum : 500 000 FCFA" });
+    if (!phone) return next(new ValidationError("Numéro de téléphone requis"));
+    if (amount < 1000) return next(new ValidationError("Montant minimum : 1 000 FCFA"));
+    if (amount > 500000) return next(new ValidationError("Montant maximum : 500 000 FCFA"));
 
     // Vérifier le téléphone de l'agent
     const agentPhone = String(req.agent?.phone || "").replace(/[^0-9]/g, "");
     const reqPhone = phone.replace(/[^0-9]/g, "");
     if (reqPhone !== agentPhone) {
-      return res.status(403).json({ error: "Le numéro de retrait doit être votre numéro enregistré" });
+      return next(new ForbiddenError("Le numéro de retrait doit être votre numéro enregistré"));
     }
 
     // Rate limit: max 3/jour
@@ -65,7 +67,7 @@ export const createWithdrawal = async (req: Request, res: Response) => {
 
     // Transaction atomique : balance + création
     const session = await mongoose.startSession();
-    try {
+
       session.startTransaction();
 
       const paid = await Commission.aggregate([
@@ -111,25 +113,15 @@ export const createWithdrawal = async (req: Request, res: Response) => {
           createdAt: withdrawal.createdAt,
         },
       });
-    } catch (e) {
-      await session.abortTransaction();
-      throw e;
-    } finally {
-      session.endSession();
-    }
-  } catch (e) {
-    console.error("❌ createWithdrawal:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+    });
 
 /* =====================================================
 GET /api/agent/withdrawals
 ===================================================== */
-export const listMyWithdrawals = async (req: Request, res: Response) => {
-  try {
+export const listMyWithdrawals = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
     const agentCode = String(req.agent?.code || "").trim();
-    if (!agentCode) return res.status(400).json({ error: "Code agent manquant" });
+    if (!agentCode) return next(new ValidationError("Code agent manquant"));
 
     const page = Math.max(1, parseInt(String(req.query?.page || "1"), 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(String(req.query?.limit || "20"), 10) || 20));
@@ -153,26 +145,18 @@ export const listMyWithdrawals = async (req: Request, res: Response) => {
       })),
       meta: { page, limit, total, hasMore: page * limit < total },
     });
-  } catch (e) {
-    console.error("❌ listMyWithdrawals:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+  });
 
 /* =====================================================
 GET /api/agent/balance
 ===================================================== */
-export const getMyBalance = async (req: Request, res: Response) => {
-  try {
+export const getMyBalance = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
     const agentCode = String(req.agent?.code || "").trim();
-    if (!agentCode) return res.status(400).json({ error: "Code agent manquant" });
+    if (!agentCode) return next(new ValidationError("Code agent manquant"));
 
     const balance = await getAvailableBalance(agentCode);
     const pendingCount = await Withdrawal.countDocuments({ agentCode, status: "pending" });
 
     return res.json({ balance, hasPendingRequest: pendingCount > 0 });
-  } catch (e) {
-    console.error("❌ getMyBalance:", e);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+  });

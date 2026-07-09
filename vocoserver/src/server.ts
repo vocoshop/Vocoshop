@@ -70,6 +70,7 @@ import fundingRoutes from "./routes/fundingRoutes";
 import communicationRoutes from "./routes/communicationRoutes";
 
 import { patchConsole } from "./utils/systemLogger";
+import { AppError } from "./utils/AppError";
 patchConsole();
 
 dotenv.config();
@@ -209,7 +210,10 @@ app.use("/api/yabetoo", yabetooRoutes);
 
 
 // ERROR HANDLER
-app.use((err: any, req: any, res: any, next: any) => {
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+if (err instanceof AppError) {
+return res.status(err.statusCode).json({ error: err.message });
+}
 console.error("🔥 SERVER ERROR:", err);
 res.status(500).json({ error: "Erreur interne serveur" });
 });

@@ -1,5 +1,7 @@
 // src/controllers/supplierController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import Supplier from "../models/Supplier";
 import Order from "../models/Order";
 import { getStoreId } from "../utils/storeId";
@@ -12,13 +14,13 @@ function escapeRegex(s: string): string {
 return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export const createSupplier = async (req: Request, res: Response) => {
-try {
+export const createSupplier = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const name = cleanStr(req.body?.name);
-if (!name) return res.status(400).json({ error: "Nom fournisseur requis" });
+if (!name) return next(new ValidationError("Nom fournisseur requis"));
 
 const supplier = await Supplier.create({
 storeId,
@@ -32,20 +34,16 @@ note: cleanStr(req.body?.note),
 });
 
 return res.status(201).json(supplier);
-} catch (err) {
-console.error("❌ createSupplier error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -----------------------
 LIST
 GET /api/suppliers?q=
 ------------------------ */
-export const getSuppliers = async (req: Request, res: Response) => {
-try {
+export const getSuppliers = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const qRaw = String(req.query?.q ?? "").trim();
 const filter: any = { storeId };
@@ -64,49 +62,41 @@ filter.$or = [
 
 const suppliers = await Supplier.find(filter).sort({ name: 1 }).lean();
 return res.json(suppliers);
-} catch (err) {
-console.error("❌ getSuppliers error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -----------------------
 GET ONE
 GET /api/suppliers/:id
 ------------------------ */
-export const getSupplierById = async (req: Request, res: Response) => {
-try {
+export const getSupplierById = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
 const supplier = await Supplier.findOne({ _id: id, storeId }).lean();
-if (!supplier) return res.status(404).json({ error: "Fournisseur introuvable" });
+if (!supplier) return next(new NotFoundError("Fournisseur introuvable"));
 
 return res.json(supplier);
-} catch (err) {
-console.error("❌ getSupplierById error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -----------------------
 UPDATE
 PATCH /api/suppliers/:id
 ------------------------ */
-export const updateSupplier = async (req: Request, res: Response) => {
-try {
+export const updateSupplier = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
 
 const supplier: any = await Supplier.findOne({ _id: id, storeId });
-if (!supplier) return res.status(404).json({ error: "Fournisseur introuvable" });
+if (!supplier) return next(new NotFoundError("Fournisseur introuvable"));
 
 if (req.body?.name !== undefined) {
 const name = cleanStr(req.body?.name);
-if (!name) return res.status(400).json({ error: "Nom fournisseur requis" });
+if (!name) return next(new ValidationError("Nom fournisseur requis"));
 supplier.name = name;
 }
 
@@ -119,41 +109,33 @@ if (req.body?.note !== undefined) supplier.note = cleanStr(req.body?.note);
 
 await supplier.save();
 return res.json(supplier);
-} catch (err) {
-console.error("❌ updateSupplier error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -----------------------
 DELETE
 DELETE /api/suppliers/:id
 ------------------------ */
-export const deleteSupplier = async (req: Request, res: Response) => {
-try {
+export const deleteSupplier = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
 const supplier: any = await Supplier.findOne({ _id: id, storeId });
-if (!supplier) return res.status(404).json({ error: "Fournisseur introuvable" });
+if (!supplier) return next(new NotFoundError("Fournisseur introuvable"));
 
 await supplier.deleteOne();
 return res.json({ message: "Fournisseur supprimé" });
-} catch (err) {
-console.error("❌ deleteSupplier error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* -----------------------
 DASHBOARD
 GET /api/suppliers/dashboard
 ------------------------ */
-export const getSupplierDashboard = async (req: Request, res: Response) => {
-try {
+export const getSupplierDashboard = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const suppliers = await Supplier.find({ storeId }).sort({ name: 1 }).lean();
 
@@ -197,8 +179,4 @@ hasRecentOrder: o?.lastOrder
 });
 
 return res.json(enriched);
-} catch (err) {
-console.error("❌ getSupplierDashboard error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

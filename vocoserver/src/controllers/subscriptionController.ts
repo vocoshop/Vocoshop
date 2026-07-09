@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import Store from "../models/Store";
 import Invoice from "../models/Invoice";
 import RevenueMonthly from "../models/RevenueMonthly";
@@ -7,6 +7,8 @@ import { generateInvoiceNumber } from "../utils/generateInvoiceNumber";
 import { generateCommissions } from "../services/commissionService";
 import { logActivity } from "./activityController";
 import { emitActivity } from "../services/realtimeService";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 
 const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY || "";
 
@@ -33,18 +35,17 @@ return { periodStart, periodEnd };
 /* =====================================================
 🔥 GET MY SUBSCRIPTION
 ===================================================== */
-export const getMySubscription = async (req: Request, res: Response) => {
-try {
+export const getMySubscription = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
 res.setHeader("Pragma", "no-cache");
 res.setHeader("Expires", "0");
 res.setHeader("Surrogate-Control", "no-store");
 
 const { storeId } = req.user || {};
-if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+if (!storeId) return next(new ValidationError("storeId manquant"));
 
 const store: any = await Store.findById(storeId);
-if (!store) return res.status(404).json({ error: "Store not found" });
+if (!store) return next(new NotFoundError("Store not found"));
 
 const now = new Date();
 let subscriptionStatus = store.subscriptionStatus || "trial";
@@ -71,26 +72,20 @@ paidUntil: store.paidUntil || null,
 graceUntil: store.graceUntil || null,
 autoRenew: store.autoRenew ?? true,
 });
-
-} catch (e) {
-console.error("❌ getMySubscription error", e);
-return res.status(500).json({ error: "getMySubscription failed" });
-}
-};
+});
 
 /* =====================================================
 🔹 ACTIVATE SUBSCRIPTION
 ===================================================== */
-export const activateSubscription = async (req: Request, res: Response) => {
-try {
+export const activateSubscription = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const { storeId } = req.user || {};
 const { method, phone, card, expiry, cvc } = req.body || {};
 
 if (!storeId)
-  return res.status(400).json({ error: "storeId manquant" });
+  return next(new ValidationError("storeId manquant"));
 
 if (!method)
-  return res.status(400).json({ error: "Méthode de paiement manquante" });
+  return next(new ValidationError("Méthode de paiement manquante"));
 
 const result = await processSubscriptionPayment({
   method, phone, card, expiry, cvc, storeId,
@@ -114,12 +109,7 @@ return res.json({
   status: "ACTIVE",
   message: "Abonnement activé",
 });
-
-} catch (e) {
-console.error("❌ activateSubscription error", e);
-return res.status(500).json({ error: "activateSubscription failed" });
-}
-};
+});
 
 /* =====================================================
 🔥 CONFIRM SUBSCRIPTION + REVENUE TRACKING
@@ -231,15 +221,14 @@ console.error("❌ confirmSubscriptionPayment error", error);
 /* =====================================================
 🔥 CANCEL SUBSCRIPTION
 ===================================================== */
-export const cancelSubscription = async (req: Request, res: Response) => {
-try {
+export const cancelSubscription = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const { storeId } = req.user || {};
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const store: any = await Store.findById(storeId);
 if (!store)
-return res.status(404).json({ error: "Store not found" });
+return next(new NotFoundError("Store not found"));
 
 store.autoRenew = false;
 await store.save();
@@ -250,9 +239,4 @@ autoRenew: false,
 message:
 "Renouvellement automatique désactivé. L'abonnement reste actif jusqu'à expiration.",
 });
-
-} catch (e) {
-console.error("❌ cancelSubscription error", e);
-return res.status(500).json({ error: "cancelSubscription failed" });
-}
-};
+});

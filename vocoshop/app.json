@@ -33,7 +33,6 @@
 },
 
 "plugins": [
-  "expo-barcode-scanner",
   "expo-image-picker",
   "expo-media-library",
   [
@@ -45,7 +44,7 @@
 ],
 
 "extra": {
-  "EXPO_PUBLIC_API_URL": "https://unglozed-supermetropolitan-tamar.ngrok-free.dev",
+  "EXPO_PUBLIC_API_URL": "https://vocoshop.onrender.com",
   "eas": {
     "projectId": "919b0a70-eae9-414a-8493-c0197daa9337"
   }

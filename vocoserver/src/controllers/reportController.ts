@@ -1,5 +1,5 @@
-Ôªø// controllers/reportController.ts
-import { Request, Response } from "express";
+// controllers/reportController.ts
+import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import PDFDocument = require("pdfkit");
 import QRCode from "qrcode";
@@ -14,9 +14,11 @@ import OcrScan from "../models/OcrScan";
 import { anchorReport, getAnchorsForHash } from "../services/blockchainAnchorService";
 import { getStoreId } from "../utils/storeId";
 import { getBusinessDate, safeNum, escapeRegex } from "../utils/helpers";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 
 /* =======================================================
-UTILS (b√©ton)
+UTILS (bÈton)
 ===================================================== */
 function isISODate(s: any): s is string {
   return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -82,8 +84,8 @@ export function computeDataHash(data: {
 }
 
 /* =======================================================
-PDF BUILDER (b√©ton)
-======================================================= */
+PDF BUILDER (bÈton)
+====================================================== */
 function buildSharedReportPdf(params: {
   month: string;
   from: string;
@@ -114,7 +116,7 @@ function buildSharedReportPdf(params: {
     size: "A4",
     margin: 40,
     info: {
-      Title: `Bilan s√©curis√© ${month}`,
+      Title: `Bilan sÈcurisÈ ${month}`,
       Author: "Vocoshop",
       Subject: "Rapport financier officiel Vocoshop",
       Keywords: `vocoshop,bilan,${month},${from},${to}`,
@@ -128,21 +130,21 @@ function buildSharedReportPdf(params: {
   const addFooter = (doc: any) => {
     const fy = doc.page.height - 30;
     doc.fontSize(7).fillColor("#999");
-    doc.text("Vocoshop ‚Äî Document officiel authentifi√© par empreinte num√©rique", left, fy, { width: pageW - left * 2, align: "center" });
+    doc.text("Vocoshop ó Document officiel authentifiÈ par empreinte numÈrique", left, fy, { width: pageW - left * 2, align: "center" });
     if (verifyUrl) {
       doc.fontSize(6).fillColor("#aaa");
-      doc.text(`V√©rification : ${verifyUrl}`, left, fy + 10, { width: pageW - left * 2, align: "center" });
+      doc.text(`VÈrification : ${verifyUrl}`, left, fy + 10, { width: pageW - left * 2, align: "center" });
     }
   };
 
   doc.fontSize(7).fillColor("#22c55e");
-  doc.text("‚úÖ DOCUMENT OFFICIEL VOCOshop ‚Äî Authentifi√© num√©riquement", left, 25, { width: pageW - left * 2, align: "center" });
+  doc.text("? DOCUMENT OFFICIEL VOCOshop ó AuthentifiÈ numÈriquement", left, 25, { width: pageW - left * 2, align: "center" });
   doc.moveDown(0.3);
 
-  doc.fontSize(18).font("Helvetica-Bold").fillColor("#000").text("Bilan s√©curis√© (lecture seule)", left, 40);
+  doc.fontSize(18).font("Helvetica-Bold").fillColor("#000").text("Bilan sÈcurisÈ (lecture seule)", left, 40);
   doc.moveDown(0.5);
   doc.fontSize(10).font("Helvetica").fillColor("#333");
-  doc.text(`P√©riode : ${from} ‚Üí ${to}`, left);
+  doc.text(`PÈriode : ${from} ? ${to}`, left);
   doc.text(`Mois : ${month}`, left);
   doc.text(`Expire le : ${String(expiresAt).slice(0, 10)}`, left);
   if (dataHash) {
@@ -155,12 +157,12 @@ function buildSharedReportPdf(params: {
   doc.moveDown(1);
 
   doc.fillColor("#000");
-  doc.fontSize(12).font("Helvetica-Bold").text("Synth√®se", left);
+  doc.fontSize(12).font("Helvetica-Bold").text("SynthËse", left);
   doc.moveDown(0.5);
 
   const kpiLines = [
     ["Chiffre d'affaires", `${formatMoney(kpis.monthlyRevenue)} FCFA`],
-    ["COGS (co√ªt d'achat)", `${formatMoney(kpis.monthlyCogs)} FCFA`],
+    ["COGS (co˚t d'achat)", `${formatMoney(kpis.monthlyCogs)} FCFA`],
     ["Profit brut", `${formatMoney(kpis.monthlyGrossProfit)} FCFA`],
     ["Profit net", `${formatMoney(kpis.monthlyNetProfit)} FCFA`],
     ["Marge", `${Math.round(kpis.monthlyMarginPercent * 10) / 10}%`],
@@ -182,7 +184,7 @@ function buildSharedReportPdf(params: {
   doc.moveTo(left, doc.y).lineTo(right, doc.y).strokeColor("#DDD").stroke();
   doc.moveDown(1);
 
-  doc.fillColor("#000").font("Helvetica-Bold").fontSize(12).text("D√©tails par jour", left);
+  doc.fillColor("#000").font("Helvetica-Bold").fontSize(12).text("DÈtails par jour", left);
   doc.moveDown(0.6);
 
   const col = {
@@ -214,8 +216,8 @@ function buildSharedReportPdf(params: {
 
     if (y > doc.page.height - 80) {
       doc.addPage();
-      doc.fontSize(7).fillColor("#22c55e").text("‚úÖ DOCUMENT OFFICIEL VOCOshop (suite)", left, 25, { width: pageW - left * 2, align: "center" });
-      doc.font("Helvetica-Bold").fontSize(12).fillColor("#000").text("D√©tails par jour (suite)", left, 40);
+      doc.fontSize(7).fillColor("#22c55e").text("? DOCUMENT OFFICIEL VOCOshop (suite)", left, 25, { width: pageW - left * 2, align: "center" });
+      doc.font("Helvetica-Bold").fontSize(12).fillColor("#000").text("DÈtails par jour (suite)", left, 40);
       doc.moveDown(0.8);
 
       const hy = doc.y;
@@ -252,18 +254,18 @@ function buildSharedReportPdf(params: {
 
   doc.addPage();
 
-  doc.fontSize(7).fillColor("#22c55e").text("‚úÖ DOCUMENT OFFICIEL VOCOshop", left, 25, { width: pageW - left * 2, align: "center" });
+  doc.fontSize(7).fillColor("#22c55e").text("? DOCUMENT OFFICIEL VOCOshop", left, 25, { width: pageW - left * 2, align: "center" });
 
-  doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("V√©rification d'authenticit√©", left, 50);
+  doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("VÈrification d'authenticitÈ", left, 50);
   doc.moveDown(1);
   doc.fontSize(10).font("Helvetica").fillColor("#444");
-  doc.text("Ce document est prot√©g√© par une empreinte num√©rique (SHA-256).", left);
-  doc.text("Pour v√©rifier son int√©grit√©, scannez le QR code ci-dessous", left);
-  doc.text("ou rendez-vous sur le lien de v√©rification.", left);
+  doc.text("Ce document est protÈgÈ par une empreinte numÈrique (SHA-256).", left);
+  doc.text("Pour vÈrifier son intÈgritÈ, scannez le QR code ci-dessous", left);
+  doc.text("ou rendez-vous sur le lien de vÈrification.", left);
   doc.moveDown(1);
 
   if (verifyUrl) {
-    doc.fontSize(9).fillColor("#555").text("Lien de v√©rification :", left);
+    doc.fontSize(9).fillColor("#555").text("Lien de vÈrification :", left);
     doc.fontSize(8).fillColor("#22c55e").text(verifyUrl, left);
 
     try {
@@ -281,9 +283,9 @@ function buildSharedReportPdf(params: {
   doc.fontSize(9).font("Helvetica").fillColor("#444");
   doc.text("Informations du document :", left);
   doc.fontSize(8).fillColor("#555");
-  doc.text(`P√©riode : ${from} ‚Üí ${to}`, left + 10);
+  doc.text(`PÈriode : ${from} ? ${to}`, left + 10);
   doc.text(`Mois : ${month}`, left + 10);
-  doc.text(`G√©n√©r√© le : ${new Date().toISOString().slice(0, 10)}`, left + 10);
+  doc.text(`GÈnÈrÈ le : ${new Date().toISOString().slice(0, 10)}`, left + 10);
   doc.text(`Expire le : ${String(expiresAt).slice(0, 10)}`, left + 10);
   if (dataHash) {
     doc.text(`Empreinte SHA-256 : ${dataHash}`, left + 10);
@@ -291,7 +293,7 @@ function buildSharedReportPdf(params: {
   doc.moveDown(0.5);
 
   doc.fontSize(7).fillColor("#888");
-  doc.text("Vocoshop ‚Äî Plateforme de gestion de boutiques agr√©√©e.", left);
+  doc.text("Vocoshop ó Plateforme de gestion de boutiques agrÈÈe.", left);
 
   addFooter(doc);
 
@@ -299,422 +301,390 @@ function buildSharedReportPdf(params: {
 }
 
 /* =======================================================
-1Ô∏è‚É£ KPI (STOCK + VENTES mois si from/to)
+1?? KPI (STOCK + VENTES mois si from/to)
 GET /report/kpis?from=YYYY-MM-DD&to=YYYY-MM-DD
-======================================================= */
-export const getReportKpis = async (req: Request, res: Response) => {
-  try {
-    const storeId = getStoreId(req);
-    if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+====================================================== */
+export const getReportKpis = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
 
-    const products = await Product.find({ storeId }).lean();
+  const products = await Product.find({ storeId }).lean();
 
-    let totalQuantity = 0;
-    let totalStockValue = 0;
-    let estimatedResellValue = 0;
-    let totalPotentialProfit = 0;
+  let totalQuantity = 0;
+  let totalStockValue = 0;
+  let estimatedResellValue = 0;
+  let totalPotentialProfit = 0;
 
-    for (const p of products as any[]) {
-      const qty = safeNum(p?.quantity);
-      const buy = safeNum(p?.purchasePrice);
-      const sell = safeNum(p?.sellPrice);
-      totalQuantity += qty;
-      totalStockValue += qty * buy;
-      estimatedResellValue += qty * sell;
-      totalPotentialProfit += qty * (sell - buy);
-    }
-
-    const from = (req.query as any)?.from;
-    const to = (req.query as any)?.to;
-
-    let monthlyRevenue = 0;
-    let monthlySalesCount = 0;
-    let monthlyCogs = 0;
-    let monthlyGrossProfit = 0;
-    let monthlyNetProfit = 0;
-    let monthlyMarginPercent = 0;
-
-    if (isISODate(from) && isISODate(to)) {
-      const reports = await DailyReport.find({
-        storeId,
-        date: { $gte: from, $lte: to },
-      }).lean();
-
-      monthlyRevenue = (reports as any[]).reduce((sum, r) => sum + safeNum(r?.totalRevenue), 0);
-      monthlySalesCount = (reports as any[]).reduce((sum, r) => sum + safeNum(r?.totalSales), 0);
-      monthlyCogs = (reports as any[]).reduce((sum, r) => sum + safeNum(r?.cogs), 0);
-      monthlyGrossProfit = (reports as any[]).reduce((sum, r) => {
-        const v = r?.grossProfit ?? r?.netProfit ?? r?.totalProfit ?? r?.profitEstimated ?? 0;
-        return sum + safeNum(v);
-      }, 0);
-      monthlyNetProfit = (reports as any[]).reduce((sum, r) => {
-        const v = r?.netProfit ?? r?.grossProfit ?? r?.totalProfit ?? r?.profitEstimated ?? 0;
-        return sum + safeNum(v);
-      }, 0);
-      monthlyMarginPercent = monthlyRevenue > 0 ? (monthlyGrossProfit / monthlyRevenue) * 100 : 0;
-      monthlyMarginPercent = clamp(Number.isFinite(monthlyMarginPercent) ? monthlyMarginPercent : 0, 0, 100);
-    }
-
-    return res.json({
-      totalProducts: products.length,
-      totalQuantity,
-      totalStockValue,
-      estimatedResellValue,
-      totalPotentialProfit,
-      monthlyRevenue,
-      monthlySalesCount,
-      monthlyProfit: monthlyNetProfit,
-      monthlyCogs,
-      monthlyGrossProfit,
-      monthlyNetProfit,
-      monthlyMarginPercent,
-    });
-  } catch (err) {
-    console.error("‚ùå getReportKpis", err);
-    return res.status(500).json({ error: "Erreur serveur" });
+  for (const p of products as any[]) {
+    const qty = safeNum(p?.quantity);
+    const buy = safeNum(p?.purchasePrice);
+    const sell = safeNum(p?.sellPrice);
+    totalQuantity += qty;
+    totalStockValue += qty * buy;
+    estimatedResellValue += qty * sell;
+    totalPotentialProfit += qty * (sell - buy);
   }
-};
 
-/* =======================================================
-2Ô∏è‚É£ INVENTORY DIFFS
-GET /report/inventory-diffs
-======================================================= */
-export const getInventoryDiffs = async (req: Request, res: Response) => {
-  try {
-    const storeId = getStoreId(req);
-    if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+  const from = (req.query as any)?.from;
+  const to = (req.query as any)?.to;
 
-    const history = await StockHistory.find({ storeId }).lean();
+  let monthlyRevenue = 0;
+  let monthlySalesCount = 0;
+  let monthlyCogs = 0;
+  let monthlyGrossProfit = 0;
+  let monthlyNetProfit = 0;
+  let monthlyMarginPercent = 0;
 
-    if (!history.length) {
-      return res.json({
-        summary: { movementsCount: 0, gainsValue: 0, lossesValue: 0, netImpact: 0 },
-        list: [],
-      });
-    }
-
-    const productIds = Array.from(new Set((history as any[]).map((h) => h.productId).filter(Boolean)));
-    const products = productIds.length
-      ? await Product.find({ _id: { $in: productIds } }).select("_id name purchasePrice").lean()
-      : [];
-
-    const productMap: Record<string, { name: string; unitPrice: number }> = {};
-    for (const p of products as any[]) {
-      productMap[p._id.toString()] = { name: p.name, unitPrice: safeNum(p.purchasePrice) };
-    }
-
-    let gainsValue = 0;
-    let lossesValue = 0;
-    const list: any[] = [];
-
-    for (const h of history as any[]) {
-      const diff = safeNum(h.diff);
-      const product = productMap[h.productId?.toString?.() ?? ""];
-      const unitPrice = product?.unitPrice ?? 0;
-      const totalValue = diff * unitPrice;
-
-      if (totalValue > 0) gainsValue += totalValue;
-      if (totalValue < 0) lossesValue += Math.abs(totalValue);
-
-      list.push({
-        productId: h.productId,
-        productName: product?.name ?? "Produit inconnu",
-        diff,
-        unitPrice,
-        totalValue,
-        date: h.createdAt ?? h.appliedAt ?? null,
-      });
-    }
-
-    return res.json({
-      summary: {
-        movementsCount: history.length,
-        gainsValue,
-        lossesValue,
-        netImpact: gainsValue - lossesValue,
-      },
-      list,
-    });
-  } catch (err) {
-    console.error("‚ùå getInventoryDiffs error:", err);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
-/* =======================================================
-3Ô∏è‚É£ AUJOURD'HUI ‚Äì BILAN DU JOUR
-GET /report/today
-======================================================= */
-export const getTodayReport = async (req: Request, res: Response) => {
-  try {
-    const storeId = getStoreId(req);
-    if (!storeId) return res.status(400).json({ error: "storeId manquant" });
-
-    const date = getBusinessDate();
-    const report = await DailyReport.findOne({ storeId, date }).lean();
-
-    if (!report) {
-      return res.json({
-        date,
-        totalSales: 0,
-        totalRevenue: 0,
-        cogs: 0,
-        grossProfit: 0,
-        netProfit: 0,
-        marginPercent: 0,
-        sales: [],
-      });
-    }
-
-    const totalRevenue = safeNum((report as any)?.totalRevenue);
-    const grossProfit = safeNum((report as any)?.grossProfit);
-    const marginPercent = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
-
-    return res.json({
-      ...(report as any),
-      marginPercent: clamp(Number.isFinite(marginPercent) ? marginPercent : 0, 0, 100),
-    });
-  } catch (err) {
-    console.error("‚ùå getTodayReport", err);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
-/* =======================================================
-4Ô∏è‚É£ CL√îTURE DE JOURN√âE (Sale -> DailyReport) ‚Äî PROFIT R√âEL
-POST /report/close-day
-======================================================= */
-export const closeDayReport = async (req: Request, res: Response) => {
-  try {
-    const storeId = getStoreId(req);
-    if (!storeId) return res.status(400).json({ error: "storeId manquant" });
-
-    const date = getBusinessDate();
-
-    const sales = await Sale.find({ storeId, businessDate: date }).lean();
-    const totalRevenue = (sales as any[]).reduce((sum, s) => sum + safeNum(s?.totalAmount), 0);
-
-    const productIds = Array.from(
-      new Set((sales as any[]).map((s) => (s?.productId ? String(s.productId) : null)).filter(Boolean))
-    );
-
-    const products = productIds.length
-      ? await Product.find({ _id: { $in: productIds } }).select("_id purchasePrice name").lean()
-      : [];
-
-    const productBuyMap = new Map<string, number>();
-    const productNameMap = new Map<string, string>();
-    for (const p of products as any[]) {
-      productBuyMap.set(String(p._id), safeNum(p.purchasePrice));
-      productNameMap.set(String(p._id), String(p.name ?? ""));
-    }
-
-    let cogs = 0;
-    let grossProfit = 0;
-
-    const lines = (sales as any[]).map((s) => {
-      const qty = safeNum(s?.quantity);
-      const unitPrice = safeNum(s?.unitPrice);
-      const totalAmount = safeNum(s?.totalAmount);
-      const productId = s?.productId ? String(s.productId) : null;
-
-      const purchasePrice =
-        safeNum((s as any)?.purchasePriceAtSale) ||
-        safeNum((s as any)?.purchasePrice) ||
-        (productId ? productBuyMap.get(productId) ?? 0 : 0);
-
-      const lineCogs = purchasePrice * qty;
-      const lineProfit = (unitPrice - purchasePrice) * qty;
-
-      cogs += lineCogs;
-      grossProfit += lineProfit;
-
-      return {
-        productId: productId ?? undefined,
-        productName:
-          String(s?.productName ?? "") || (productId ? productNameMap.get(productId) ?? "Produit" : "Produit"),
-        quantity: qty,
-        unitPrice,
-        purchasePrice,
-        totalAmount,
-        lineProfit,
-      };
-    });
-
-    const netProfit = grossProfit;
-
-    const report = await DailyReport.findOneAndUpdate(
-      { storeId, date },
-      {
-        storeId,
-        date,
-        totalSales: (sales as any[]).length,
-        totalRevenue,
-        cogs,
-        grossProfit,
-        netProfit,
-        sales: lines,
-      },
-      { upsert: true, new: true }
-    ).lean();
-
-    return res.json(report);
-  } catch (err) {
-    console.error("‚ùå closeDayReport", err);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
-/* =======================================================
-5Ô∏è‚É£ HISTORIQUE DES BILANS
-GET /report/history?from=YYYY-MM-DD&to=YYYY-MM-DD
-======================================================= */
-export const getReportHistory = async (req: Request, res: Response) => {
-  try {
-    const storeId = getStoreId(req);
-    if (!storeId) return res.status(400).json({ error: "storeId manquant" });
-
-    const from = (req.query as any)?.from;
-    const to = (req.query as any)?.to;
-
-    const filter: any = { storeId };
-    if (isISODate(from) && isISODate(to)) filter.date = { $gte: from, $lte: to };
-
-    const reports = await DailyReport.find(filter).sort({ date: 1 }).lean();
-
-    const out = (reports as any[]).map((r) => {
-      const rev = safeNum(r?.totalRevenue);
-      const gp = safeNum(r?.grossProfit);
-      const marginPercent = rev > 0 ? (gp / rev) * 100 : 0;
-      return { ...r, marginPercent: clamp(Number.isFinite(marginPercent) ? marginPercent : 0, 0, 100) };
-    });
-
-    return res.json(out);
-  } catch (err) {
-    console.error("‚ùå getReportHistory error:", err);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
-/* =======================================================
-6Ô∏è‚É£ PARTAGE ‚Äî CR√âER LIEN (priv√©)
-POST /report/share/month
-======================================================= */
-export const createMonthlyShareLink = async (req: Request, res: Response) => {
-  try {
-    const storeId = getStoreId(req);
-    if (!storeId) return res.status(400).json({ error: "storeId manquant" });
-
-    const { month, from, to, expiresInDays } = (req.body || {}) as {
-      month?: string;
-      from?: string;
-      to?: string;
-      expiresInDays?: number;
-    };
-
-    let finalMonth: string;
-    let rangeFrom: string;
-    let rangeTo: string;
-
-    if (isISOMonth(month)) {
-      finalMonth = month;
-      const r = monthToRange(month);
-      rangeFrom = r.from;
-      rangeTo = r.to;
-    } else if (isISODate(from) && isISODate(to)) {
-      finalMonth = toMonthFromFromDate(from);
-      rangeFrom = from;
-      rangeTo = to;
-    } else {
-      return res.status(400).json({
-        error: "Param√®tres invalides. Utilise month (YYYY-MM) ou from/to (YYYY-MM-DD).",
-      });
-    }
-
-    const days = clamp(safeNum(expiresInDays ?? 30), 1, 180);
-    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-
+  if (isISODate(from) && isISODate(to)) {
     const reports = await DailyReport.find({
       storeId,
-      date: { $gte: rangeFrom, $lte: rangeTo },
-    }).sort({ date: 1 }).lean();
+      date: { $gte: from, $lte: to },
+    }).lean();
 
-    const monthlyRevenue = (reports as any[]).reduce((s, r) => s + safeNum(r?.totalRevenue), 0);
-    const monthlyCogs = (reports as any[]).reduce((s, r) => s + safeNum(r?.cogs), 0);
-    const monthlyGrossProfit = (reports as any[]).reduce((s, r) => s + safeNum(r?.grossProfit), 0);
-    const monthlyNetProfit = (reports as any[]).reduce((s, r) => s + safeNum(r?.netProfit), 0);
-    const monthlySalesCount = (reports as any[]).reduce((s, r) => s + safeNum(r?.totalSales), 0);
-    const monthlyMarginPercent = monthlyRevenue > 0 ? clamp((monthlyGrossProfit / monthlyRevenue) * 100, 0, 100) : 0;
-
-    const dataRows = (reports as any[]).map(r => ({
-      date: String(r.date || "").slice(0, 10),
-      revenue: safeNum(r?.totalRevenue),
-      cogs: safeNum(r?.cogs),
-      profit: safeNum(r?.netProfit || r?.grossProfit),
-      sales: safeNum(r?.totalSales),
-    }));
-
-    const dataHash = computeDataHash({
-      revenue: monthlyRevenue, cogs: monthlyCogs,
-      grossProfit: monthlyGrossProfit, netProfit: monthlyNetProfit,
-      salesCount: monthlySalesCount, marginPercent: monthlyMarginPercent,
-      from: rangeFrom, to: rangeTo, rows: dataRows,
-    });
-
-    const token = crypto.randomBytes(32).toString("hex");
-
-    await SharedReportLink.updateMany({ storeId, month: finalMonth, isActive: true }, { $set: { isActive: false } });
-
-    const storeName = String((reports as any[])[0]?.storeName || req.body?.storeName || "Boutique").trim();
-
-    const link = await SharedReportLink.create({
-      storeId,
-      month: finalMonth,
-      token,
-      isActive: true,
-      expiresAt,
-      dataHash,
-      storeName,
-    });
-
-    let blockchainProof: any = null;
-    try {
-      blockchainProof = await anchorReport({ dataHash, storeId, month: finalMonth });
-    } catch (e) {
-      console.error("blockchain anchor non-bloquant:", e);
-    }
-
-    const base = getPublicBaseUrl(req);
-    const url = `${base}/api/public/report/share/${token}`;
-    const verifyUrl = `${base}/api/public/report/verify/${token}`;
-
-    return res.json({
-      linkId: link._id,
-      month: finalMonth,
-      from: rangeFrom,
-      to: rangeTo,
-      url,
-      verifyUrl,
-      expiresAt,
-      dataHash,
-      blockchainProof: blockchainProof ? {
-        type: blockchainProof.type,
-        chainHash: blockchainProof.chainHash,
-        explorerUrl: blockchainProof.explorerUrl,
-        chainLabel: blockchainProof.chainLabel,
-      } : null,
-    });
-  } catch (err) {
-    console.error("‚ùå createMonthlyShareLink:", err);
-    return res.status(500).json({ error: "Erreur serveur" });
+    monthlyRevenue = (reports as any[]).reduce((sum, r) => sum + safeNum(r?.totalRevenue), 0);
+    monthlySalesCount = (reports as any[]).reduce((sum, r) => sum + safeNum(r?.totalSales), 0);
+    monthlyCogs = (reports as any[]).reduce((sum, r) => sum + safeNum(r?.cogs), 0);
+    monthlyGrossProfit = (reports as any[]).reduce((sum, r) => {
+      const v = r?.grossProfit ?? r?.netProfit ?? r?.totalProfit ?? r?.profitEstimated ?? 0;
+      return sum + safeNum(v);
+    }, 0);
+    monthlyNetProfit = (reports as any[]).reduce((sum, r) => {
+      const v = r?.netProfit ?? r?.grossProfit ?? r?.totalProfit ?? r?.profitEstimated ?? 0;
+      return sum + safeNum(v);
+    }, 0);
+    monthlyMarginPercent = monthlyRevenue > 0 ? (monthlyGrossProfit / monthlyRevenue) * 100 : 0;
+    monthlyMarginPercent = clamp(Number.isFinite(monthlyMarginPercent) ? monthlyMarginPercent : 0, 0, 100);
   }
-};
+
+  return res.json({
+    totalProducts: products.length,
+    totalQuantity,
+    totalStockValue,
+    estimatedResellValue,
+    totalPotentialProfit,
+    monthlyRevenue,
+    monthlySalesCount,
+    monthlyProfit: monthlyNetProfit,
+    monthlyCogs,
+    monthlyGrossProfit,
+    monthlyNetProfit,
+    monthlyMarginPercent,
+  });
+});
 
 /* =======================================================
-7Ô∏è‚É£ PARTAGE ‚Äî DASHBOARD COMPL√àTE POUR MICROFINANCE
+2?? INVENTORY DIFFS
+GET /report/inventory-diffs
+====================================================== */
+export const getInventoryDiffs = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
+
+  const history = await StockHistory.find({ storeId }).lean();
+
+  if (!history.length) {
+    return res.json({
+      summary: { movementsCount: 0, gainsValue: 0, lossesValue: 0, netImpact: 0 },
+      list: [],
+    });
+  }
+
+  const productIds = Array.from(new Set((history as any[]).map((h) => h.productId).filter(Boolean)));
+  const products = productIds.length
+    ? await Product.find({ _id: { $in: productIds } }).select("_id name purchasePrice").lean()
+    : [];
+
+  const productMap: Record<string, { name: string; unitPrice: number }> = {};
+  for (const p of products as any[]) {
+    productMap[p._id.toString()] = { name: p.name, unitPrice: safeNum(p.purchasePrice) };
+  }
+
+  let gainsValue = 0;
+  let lossesValue = 0;
+  const list: any[] = [];
+
+  for (const h of history as any[]) {
+    const diff = safeNum(h.diff);
+    const product = productMap[h.productId?.toString?.() ?? ""];
+    const unitPrice = product?.unitPrice ?? 0;
+    const totalValue = diff * unitPrice;
+
+    if (totalValue > 0) gainsValue += totalValue;
+    if (totalValue < 0) lossesValue += Math.abs(totalValue);
+
+    list.push({
+      productId: h.productId,
+      productName: product?.name ?? "Produit inconnu",
+      diff,
+      unitPrice,
+      totalValue,
+      date: h.createdAt ?? h.appliedAt ?? null,
+    });
+  }
+
+  return res.json({
+    summary: {
+      movementsCount: history.length,
+      gainsValue,
+      lossesValue,
+      netImpact: gainsValue - lossesValue,
+    },
+    list,
+  });
+});
+
+/* =======================================================
+3?? AUJOURD'HUI ñ BILAN DU JOUR
+GET /report/today
+====================================================== */
+export const getTodayReport = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
+
+  const date = getBusinessDate();
+  const report = await DailyReport.findOne({ storeId, date }).lean();
+
+  if (!report) {
+    return res.json({
+      date,
+      totalSales: 0,
+      totalRevenue: 0,
+      cogs: 0,
+      grossProfit: 0,
+      netProfit: 0,
+      marginPercent: 0,
+      sales: [],
+    });
+  }
+
+  const totalRevenue = safeNum((report as any)?.totalRevenue);
+  const grossProfit = safeNum((report as any)?.grossProfit);
+  const marginPercent = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+
+  return res.json({
+    ...(report as any),
+    marginPercent: clamp(Number.isFinite(marginPercent) ? marginPercent : 0, 0, 100),
+  });
+});
+
+/* =======================================================
+4?? CL‘TURE DE JOURN…E (Sale -> DailyReport) ó PROFIT R…EL
+POST /report/close-day
+====================================================== */
+export const closeDayReport = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
+
+  const date = getBusinessDate();
+
+  const sales = await Sale.find({ storeId, businessDate: date }).lean();
+  const totalRevenue = (sales as any[]).reduce((sum, s) => sum + safeNum(s?.totalAmount), 0);
+
+  const productIds = Array.from(
+    new Set((sales as any[]).map((s) => (s?.productId ? String(s.productId) : null)).filter(Boolean))
+  );
+
+  const products = productIds.length
+    ? await Product.find({ _id: { $in: productIds } }).select("_id purchasePrice name").lean()
+    : [];
+
+  const productBuyMap = new Map<string, number>();
+  const productNameMap = new Map<string, string>();
+  for (const p of products as any[]) {
+    productBuyMap.set(String(p._id), safeNum(p.purchasePrice));
+    productNameMap.set(String(p._id), String(p.name ?? ""));
+  }
+
+  let cogs = 0;
+  let grossProfit = 0;
+
+  const lines = (sales as any[]).map((s) => {
+    const qty = safeNum(s?.quantity);
+    const unitPrice = safeNum(s?.unitPrice);
+    const totalAmount = safeNum(s?.totalAmount);
+    const productId = s?.productId ? String(s.productId) : null;
+
+    const purchasePrice =
+      safeNum((s as any)?.purchasePriceAtSale) ||
+      safeNum((s as any)?.purchasePrice) ||
+      (productId ? productBuyMap.get(productId) ?? 0 : 0);
+
+    const lineCogs = purchasePrice * qty;
+    const lineProfit = (unitPrice - purchasePrice) * qty;
+
+    cogs += lineCogs;
+    grossProfit += lineProfit;
+
+    return {
+      productId: productId ?? undefined,
+      productName:
+        String(s?.productName ?? "") || (productId ? productNameMap.get(productId) ?? "Produit" : "Produit"),
+      quantity: qty,
+      unitPrice,
+      purchasePrice,
+      totalAmount,
+      lineProfit,
+    };
+  });
+
+  const netProfit = grossProfit;
+
+  const report = await DailyReport.findOneAndUpdate(
+    { storeId, date },
+    {
+      storeId,
+      date,
+      totalSales: (sales as any[]).length,
+      totalRevenue,
+      cogs,
+      grossProfit,
+      netProfit,
+      sales: lines,
+    },
+    { upsert: true, new: true }
+  ).lean();
+
+  return res.json(report);
+});
+
+/* =======================================================
+5?? HISTORIQUE DES BILANS
+GET /report/history?from=YYYY-MM-DD&to=YYYY-MM-DD
+====================================================== */
+export const getReportHistory = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
+
+  const from = (req.query as any)?.from;
+  const to = (req.query as any)?.to;
+
+  const filter: any = { storeId };
+  if (isISODate(from) && isISODate(to)) filter.date = { $gte: from, $lte: to };
+
+  const reports = await DailyReport.find(filter).sort({ date: 1 }).lean();
+
+  const out = (reports as any[]).map((r) => {
+    const rev = safeNum(r?.totalRevenue);
+    const gp = safeNum(r?.grossProfit);
+    const marginPercent = rev > 0 ? (gp / rev) * 100 : 0;
+    return { ...r, marginPercent: clamp(Number.isFinite(marginPercent) ? marginPercent : 0, 0, 100) };
+  });
+
+  return res.json(out);
+});
+
+/* =======================================================
+6?? PARTAGE ó CR…ER LIEN (privÈ)
+POST /report/share/month
+====================================================== */
+export const createMonthlyShareLink = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
+
+  const { month, from, to, expiresInDays } = (req.body || {}) as {
+    month?: string;
+    from?: string;
+    to?: string;
+    expiresInDays?: number;
+  };
+
+  let finalMonth: string;
+  let rangeFrom: string;
+  let rangeTo: string;
+
+  if (isISOMonth(month)) {
+    finalMonth = month;
+    const r = monthToRange(month);
+    rangeFrom = r.from;
+    rangeTo = r.to;
+  } else if (isISODate(from) && isISODate(to)) {
+    finalMonth = toMonthFromFromDate(from);
+    rangeFrom = from;
+    rangeTo = to;
+  } else {
+    return next(new ValidationError("ParamËtres invalides. Utilise month (YYYY-MM) ou from/to (YYYY-MM-DD)."));
+  }
+
+  const days = clamp(safeNum(expiresInDays ?? 30), 1, 180);
+  const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+  const reports = await DailyReport.find({
+    storeId,
+    date: { $gte: rangeFrom, $lte: rangeTo },
+  }).sort({ date: 1 }).lean();
+
+  const monthlyRevenue = (reports as any[]).reduce((s, r) => s + safeNum(r?.totalRevenue), 0);
+  const monthlyCogs = (reports as any[]).reduce((s, r) => s + safeNum(r?.cogs), 0);
+  const monthlyGrossProfit = (reports as any[]).reduce((s, r) => s + safeNum(r?.grossProfit), 0);
+  const monthlyNetProfit = (reports as any[]).reduce((s, r) => s + safeNum(r?.netProfit), 0);
+  const monthlySalesCount = (reports as any[]).reduce((s, r) => s + safeNum(r?.totalSales), 0);
+  const monthlyMarginPercent = monthlyRevenue > 0 ? clamp((monthlyGrossProfit / monthlyRevenue) * 100, 0, 100) : 0;
+
+  const dataRows = (reports as any[]).map(r => ({
+    date: String(r.date || "").slice(0, 10),
+    revenue: safeNum(r?.totalRevenue),
+    cogs: safeNum(r?.cogs),
+    profit: safeNum(r?.netProfit || r?.grossProfit),
+    sales: safeNum(r?.totalSales),
+  }));
+
+  const dataHash = computeDataHash({
+    revenue: monthlyRevenue, cogs: monthlyCogs,
+    grossProfit: monthlyGrossProfit, netProfit: monthlyNetProfit,
+    salesCount: monthlySalesCount, marginPercent: monthlyMarginPercent,
+    from: rangeFrom, to: rangeTo, rows: dataRows,
+  });
+
+  const token = crypto.randomBytes(32).toString("hex");
+
+  await SharedReportLink.updateMany({ storeId, month: finalMonth, isActive: true }, { $set: { isActive: false } });
+
+  const storeName = String((reports as any[])[0]?.storeName || req.body?.storeName || "Boutique").trim();
+
+  const link = await SharedReportLink.create({
+    storeId,
+    month: finalMonth,
+    token,
+    isActive: true,
+    expiresAt,
+    dataHash,
+    storeName,
+  });
+
+  let blockchainProof: any = null;
+  try {
+    blockchainProof = await anchorReport({ dataHash, storeId, month: finalMonth });
+  } catch (e) {
+    console.error("blockchain anchor non-bloquant:", e);
+  }
+
+  const base = getPublicBaseUrl(req);
+  const url = `${base}/api/public/report/share/${token}`;
+  const verifyUrl = `${base}/api/public/report/verify/${token}`;
+
+  return res.json({
+    linkId: link._id,
+    month: finalMonth,
+    from: rangeFrom,
+    to: rangeTo,
+    url,
+    verifyUrl,
+    expiresAt,
+    dataHash,
+    blockchainProof: blockchainProof ? {
+      type: blockchainProof.type,
+      chainHash: blockchainProof.chainHash,
+      explorerUrl: blockchainProof.explorerUrl,
+      chainLabel: blockchainProof.chainLabel,
+    } : null,
+  });
+});
+
+/* =======================================================
+7?? PARTAGE ó DASHBOARD COMPL»TE POUR MICROFINANCE
 GET /api/public/report/share/:id
 GET /api/public/report/share/:id?month=YYYY-MM
-======================================================= */
+====================================================== */
 export const viewSharedReport = async (req: Request, res: Response) => {
   try {
     const token = String(req.params.id || "").trim();
@@ -727,7 +697,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
       expiresAt: { $gt: new Date() },
     }).lean();
 
-    if (!link) return res.status(404).send("Lien invalide ou expir√©.");
+    if (!link) return res.status(404).send("Lien invalide ou expirÈ.");
 
     const storeId = String(link.storeId || "").trim();
     const defaultMonth = String(link.month || "").trim();
@@ -857,7 +827,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
       const stockVal = qty * buy;
       return `<tr>
         <td>${escapeHtml(p?.name)}</td>
-        <td>${escapeHtml(p?.category || "‚Äî")}</td>
+        <td>${escapeHtml(p?.category || "ó")}</td>
         <td>${qty}</td>
         <td>${formatMoney(sell)}</td>
         <td>${formatMoney(buy)}</td>
@@ -869,10 +839,10 @@ export const viewSharedReport = async (req: Request, res: Response) => {
       const diff = safeNum(h?.diff);
       const sign = diff > 0 ? "+" : "";
       const diffColor = diff > 0 ? "#22c55e" : diff < 0 ? "#ef4444" : "#A8A3C2";
-      const dateStr = h?.appliedAt ? new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(h.appliedAt)) : "‚Äî";
+      const dateStr = h?.appliedAt ? new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(h.appliedAt)) : "ó";
       return `<tr>
         <td>${dateStr}</td>
-        <td>${escapeHtml(h?.productName || "‚Äî")}</td>
+        <td>${escapeHtml(h?.productName || "ó")}</td>
         <td style="color:${diffColor};font-weight:700">${sign}${diff}</td>
         <td>${safeNum(h?.previousQuantity)}</td>
         <td>${safeNum(h?.newQuantity)}</td>
@@ -907,7 +877,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Dashboard Vocoshop ‚Äî ${merchantName}</title>
+<title>Dashboard Vocoshop ó ${merchantName}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0A0617;color:#E8E4F0;line-height:1.5}
@@ -980,10 +950,10 @@ select:focus{outline:1px solid #A78BFA}
 <div class="card card-green" style="padding:10px 14px">
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
 <div style="display:flex;align-items:center;gap:8px">
-<div class="seal ${hashValid ? 'seal-valid' : 'seal-invalid'}">${hashValid ? '‚úì' : '!!'} ${hashValid ? 'Document officiel Vocoshop' : 'Document non v√©rifi√©'}</div>
-<div class="text-xs muted">SHA-256 authentifi√©</div>
+<div class="seal ${hashValid ? 'seal-valid' : 'seal-invalid'}">${hashValid ? '?' : '!!'} ${hashValid ? 'Document officiel Vocoshop' : 'Document non vÈrifiÈ'}</div>
+<div class="text-xs muted">SHA-256 authentifiÈ</div>
 </div>
-<a href="${escapeHtml(verifyUrl)}" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">V√©rifier l'authenticit√© ‚Üí</a>
+<a href="${escapeHtml(verifyUrl)}" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">VÈrifier l'authenticitÈ ?</a>
 </div>
 </div>
 
@@ -992,15 +962,15 @@ select:focus{outline:1px solid #A78BFA}
 <div>
 <h1 style="font-size:20px;font-weight:900;margin:0;color:#fff">${merchantName}</h1>
 <div class="text-sm muted mt-8">
-ID : ${shopId}${merchantCity ? ' ¬∑ ' + merchantCity : ''}${merchantPhone ? ' ¬∑ ' + merchantPhone : ''}
+ID : ${shopId}${merchantCity ? ' ∑ ' + merchantCity : ''}${merchantPhone ? ' ∑ ' + merchantPhone : ''}
 </div>
 <div class="text-xs muted mt-8">
-Membre depuis ${createdAtStr} ¬∑ Derni√®re activit√© : ${lastActiveStr}
+Membre depuis ${createdAtStr} ∑ DerniËre activitÈ : ${lastActiveStr}
 </div>
 </div>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
-<a class="btn" href="${pdfUrlAbsolute}" download>T√©l√©charger PDF</a>
-<a class="btn btn-outline" href="${escapeHtml(verifyUrl)}" target="_blank">V√©rifier</a>
+<a class="btn" href="${pdfUrlAbsolute}" download>TÈlÈcharger PDF</a>
+<a class="btn btn-outline" href="${escapeHtml(verifyUrl)}" target="_blank">VÈrifier</a>
 </div>
 </div>
 </div>
@@ -1019,12 +989,12 @@ stroke-dasharray="${(totalScore / 100) * 327} 327" stroke-linecap="round"/>
 <div class="badge badge-${totalScore >= 70 ? 'green' : totalScore >= 40 ? 'yellow' : 'red'}" style="margin-top:8px">${scoreLabel}</div>
 </div>
 <div class="card" style="flex:1">
-<div class="section-title">D√©tail du score</div>
+<div class="section-title">DÈtail du score</div>
 ${[
-{s: dayScore, max: 30, label: "R√©gularit√© d'utilisation"},
-{s: dataScore, max: 20, label: "Qualit√© des donn√©es"},
-{s: ancienneteScore, max: 15, label: "Anciennet√©"},
-{s: stabilityScore, max: 15, label: "Stabilit√© commerciale"},
+{s: dayScore, max: 30, label: "RÈgularitÈ d'utilisation"},
+{s: dataScore, max: 20, label: "QualitÈ des donnÈes"},
+{s: ancienneteScore, max: 15, label: "AnciennetÈ"},
+{s: stabilityScore, max: 15, label: "StabilitÈ commerciale"},
 {s: stockScoreVal, max: 10, label: "Gestion du stock"},
 ].map(item => {
 const pct = item.max > 0 ? (item.s / item.max) * 100 : 0;
@@ -1093,13 +1063,13 @@ ${availableMonths.length > 0 ? `<select onchange="window.location.href='?month='
 <div class="kpi-value text-sm">${totalSalesCount}</div>
 </div></div>
 <div class="col"><div class="kpi-box">
-<div class="kpi-label">Anciennet√©</div>
+<div class="kpi-label">AnciennetÈ</div>
 <div class="kpi-value text-sm">${monthsActive} mois</div>
 </div></div>
 </div>
 
 <div class="card mt-12">
-<div class="section-title">√âvolution du chiffre d'affaires</div>
+<div class="section-title">…volution du chiffre d'affaires</div>
 ${values.length > 0 ? `
 <svg width="100%" viewBox="0 0 ${w} ${h}" style="margin-top:8px">
 <defs>
@@ -1116,11 +1086,11 @@ const y = pad + (h - pad * 2) * (1 - v / maxVal);
 return `<circle cx="${x}" cy="${y}" r="3" fill="#A78BFA"/>`;
 }).join("")}
 </svg>
-` : '<div class="muted text-sm" style="padding:20px 0;text-align:center">Aucune donn√©e pour cette p√©riode</div>'}
+` : '<div class="muted text-sm" style="padding:20px 0;text-align:center">Aucune donnÈe pour cette pÈriode</div>'}
 </div>
 
 <div class="card mt-12">
-<div class="section-title">D√©tails par jour</div>
+<div class="section-title">DÈtails par jour</div>
 ${rows ? `
 <div style="overflow-x:auto">
 <table>
@@ -1128,7 +1098,7 @@ ${rows ? `
 <tbody>${rows}</tbody>
 </table>
 </div>
-` : '<div class="muted text-sm" style="padding:20px 0;text-align:center">Aucune donn√©e journali√®re</div>'}
+` : '<div class="muted text-sm" style="padding:20px 0;text-align:center">Aucune donnÈe journaliËre</div>'}
 </div>
 
 <div class="card mt-12">
@@ -1148,7 +1118,7 @@ ${productRows ? `
 <div class="section-title">Produits (${totalProductsCount})</div>
 <div style="overflow-x:auto">
 <table>
-<thead><tr><th>Nom</th><th>Cat√©gorie</th><th>Qt√©</th><th>Prix vente</th><th>Prix achat</th><th>Valeur stock</th></tr></thead>
+<thead><tr><th>Nom</th><th>CatÈgorie</th><th>QtÈ</th><th>Prix vente</th><th>Prix achat</th><th>Valeur stock</th></tr></thead>
 <tbody>${productRows}</tbody>
 </table>
 </div>
@@ -1157,10 +1127,10 @@ ${productRows ? `
 
 ${stockRows ? `
 <div class="card mt-12">
-<div class="section-title">Mouvements de stock r√©cents</div>
+<div class="section-title">Mouvements de stock rÈcents</div>
 <div style="overflow-x:auto">
 <table>
-<thead><tr><th>Date</th><th>Produit</th><th>Variation</th><th>Avant</th><th>Apr√®s</th></tr></thead>
+<thead><tr><th>Date</th><th>Produit</th><th>Variation</th><th>Avant</th><th>AprËs</th></tr></thead>
 <tbody>${stockRows}</tbody>
 </table>
 </div>
@@ -1173,15 +1143,15 @@ ${stockRows ? `
 <div class="badge badge-purple">Blockchain</div>
 <div class="text-xs muted">Empreinte SHA-256</div>
 </div>
-<div class="text-xs muted">Cha√Æne : ${(link.dataHash || "").slice(0, 24)}...</div>
+<div class="text-xs muted">ChaÓne : ${(link.dataHash || "").slice(0, 24)}...</div>
 </div>
 </div>
 
 <div class="footer">
-<div>Vocoshop ‚Äî Document officiel ¬∑ Lien s√©curis√© r√©vocable et expirant</div>
+<div>Vocoshop ó Document officiel ∑ Lien sÈcurisÈ rÈvocable et expirant</div>
 <div class="mt-8">
-<a href="${escapeHtml(verifyUrl)}" target="_blank">V√©rifier l'authenticit√©</a>
- ¬∑ G√©n√©r√© le ${new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(now)}
+<a href="${escapeHtml(verifyUrl)}" target="_blank">VÈrifier l'authenticitÈ</a>
+ ∑ GÈnÈrÈ le ${new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(now)}
 </div>
 </div>
 
@@ -1192,15 +1162,15 @@ ${stockRows ? `
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.status(200).send(html);
   } catch (err) {
-    console.error("‚ùå viewSharedReport:", err);
+    console.error("? viewSharedReport:", err);
     return res.status(500).send("Erreur serveur.");
   }
 };
 
 /* =======================================================
-7BÔ∏è‚É£ PARTAGE ‚Äî PDF (PUBLIC)
+7B?? PARTAGE ó PDF (PUBLIC)
 GET /api/public/report/share/:id/pdf
-======================================================= */
+====================================================== */
 export const downloadSharedReportPdf = async (req: Request, res: Response) => {
   try {
     const token = String(req.params.id || "").trim();
@@ -1213,7 +1183,7 @@ export const downloadSharedReportPdf = async (req: Request, res: Response) => {
       expiresAt: { $gt: new Date() },
     }).lean();
 
-    if (!link) return res.status(404).send("Lien invalide ou expir√©.");
+    if (!link) return res.status(404).send("Lien invalide ou expirÈ.");
 
     const storeId = String(link.storeId || "").trim();
     const month = String(link.month || "").trim();
@@ -1292,102 +1262,92 @@ export const downloadSharedReportPdf = async (req: Request, res: Response) => {
     doc.pipe(res);
     doc.end();
   } catch (err) {
-    console.error("‚ùå downloadSharedReportPdf:", err);
+    console.error("? downloadSharedReportPdf:", err);
     return res.status(500).send("Erreur serveur.");
   }
 };
 
 /* =======================================================
-8Ô∏è‚É£ V√âRIFICATION D'AUTHENTICIT√â (PUBLIC)
+8?? V…RIFICATION D'AUTHENTICIT… (PUBLIC)
 GET /api/public/report/verify/:token
-======================================================= */
-export const verifySharedReport = async (req: Request, res: Response) => {
-  try {
-    const token = String(req.params.id || "").trim();
+====================================================== */
+export const verifySharedReport = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const token = String(req.params.id || "").trim();
 
-    if (!/^[a-f0-9]{64}$/i.test(token)) {
-      return res.status(200).json({ valid: false, error: "Token invalide." });
-    }
-
-    const link: any = await SharedReportLink.findOne({ token }).lean();
-
-    if (!link) {
-      return res.status(200).json({ valid: false, error: "Lien introuvable ou supprim√©." });
-    }
-
-    const expired = new Date(link.expiresAt) < new Date();
-    const active = link.isActive === true && !expired;
-
-    let blockchainAnchor = null;
-    try {
-      const anchors = await getAnchorsForHash(link.dataHash || "");
-      if (anchors.length > 0) {
-        blockchainAnchor = {
-          type: anchors[0].anchorType,
-          chainHash: anchors[0].dataHash,
-          previousHash: anchors[0].previousHash,
-          txHash: anchors[0].txHash,
-          blockNumber: anchors[0].blockNumber,
-          chainId: anchors[0].chainId,
-          explorerUrl: anchors[0].explorerUrl,
-          anchoredAt: anchors[0].createdAt,
-        };
-      }
-    } catch {}
-
-    const verification = {
-      valid: active,
-      token,
-      createdAt: link.createdAt,
-      expiresAt: link.expiresAt,
-      isActive: link.isActive,
-      isExpired: expired,
-      storeName: link.storeName || "",
-      month: link.month,
-      dataHash: link.dataHash || "",
-      viewsCount: link.viewsCount || 0,
-      downloadsCount: link.downloadsCount || 0,
-      lastViewedAt: link.lastViewedAt || null,
-      lastDownloadedAt: link.lastDownloadedAt || null,
-      blockchainAnchor,
-    };
-
-    if (!active) {
-      return res.status(200).json({
-        ...verification,
-        error: expired ? "Ce lien a expir√©." : "Ce lien a √©t√© r√©voqu√© par le propri√©taire.",
-      });
-    }
-
-    return res.status(200).json(verification);
-  } catch (err) {
-    console.error("‚ùå verifySharedReport:", err);
-    return res.status(500).json({ valid: false, error: "Erreur serveur" });
+  if (!/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(200).json({ valid: false, error: "Token invalide." });
   }
-};
+
+  const link: any = await SharedReportLink.findOne({ token }).lean();
+
+  if (!link) {
+    return res.status(200).json({ valid: false, error: "Lien introuvable ou supprimÈ." });
+  }
+
+  const expired = new Date(link.expiresAt) < new Date();
+  const active = link.isActive === true && !expired;
+
+  let blockchainAnchor = null;
+  try {
+    const anchors = await getAnchorsForHash(link.dataHash || "");
+    if (anchors.length > 0) {
+      blockchainAnchor = {
+        type: anchors[0].anchorType,
+        chainHash: anchors[0].dataHash,
+        previousHash: anchors[0].previousHash,
+        txHash: anchors[0].txHash,
+        blockNumber: anchors[0].blockNumber,
+        chainId: anchors[0].chainId,
+        explorerUrl: anchors[0].explorerUrl,
+        anchoredAt: anchors[0].createdAt,
+      };
+    }
+  } catch {}
+
+  const verification = {
+    valid: active,
+    token,
+    createdAt: link.createdAt,
+    expiresAt: link.expiresAt,
+    isActive: link.isActive,
+    isExpired: expired,
+    storeName: link.storeName || "",
+    month: link.month,
+    dataHash: link.dataHash || "",
+    viewsCount: link.viewsCount || 0,
+    downloadsCount: link.downloadsCount || 0,
+    lastViewedAt: link.lastViewedAt || null,
+    lastDownloadedAt: link.lastDownloadedAt || null,
+    blockchainAnchor,
+  };
+
+  if (!active) {
+    return res.status(200).json({
+      ...verification,
+      error: expired ? "Ce lien a expirÈ." : "Ce lien a ÈtÈ rÈvoquÈ par le propriÈtaire.",
+    });
+  }
+
+  return res.status(200).json(verification);
+});
 
 /* =======================================================
-9Ô∏è‚É£ PARTAGE ‚Äî R√âVOQUER (priv√©)
+9?? PARTAGE ó R…VOQUER (privÈ)
 POST /report/share/:id/revoke
-======================================================= */
-export const revokeShareLink = async (req: Request, res: Response) => {
-  try {
-    const storeId = getStoreId(req);
-    if (!storeId) return res.status(400).json({ error: "storeId manquant" });
+====================================================== */
+export const revokeShareLink = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
 
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const link = await SharedReportLink.findOneAndUpdate(
-      { _id: id, storeId },
-      { $set: { isActive: false } },
-      { new: true }
-    ).lean();
+  const link = await SharedReportLink.findOneAndUpdate(
+    { _id: id, storeId },
+    { $set: { isActive: false } },
+    { new: true }
+  ).lean();
 
-    if (!link) return res.status(404).json({ error: "Lien introuvable" });
+  if (!link) return next(new NotFoundError("Lien introuvable"));
 
-    return res.json({ message: "Lien r√©voqu√©", linkId: id });
-  } catch (err) {
-    console.error("‚ùå revokeShareLink:", err);
-    return res.status(500).json({ error: "Erreur serveur" });
-  }
-};
+  return res.json({ message: "Lien rÈvoquÈ", linkId: id });
+});

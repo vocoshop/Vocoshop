@@ -1,5 +1,7 @@
 // controllers/storeController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import Store from "../models/Store";
 import Product from "../models/Product";
 import Sale from "../models/Sales";
@@ -18,11 +20,11 @@ PATCH /api/store/onboarding
 → V12 ULTRA PRO
 🔥 FIX MAJEUR : ENREGISTRER referralCodeUsed
 ===================================================== */
-export const updateStoreOnboarding = async (req: Request, res: Response) => {
-try {
+export const updateStoreOnboarding = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const { storeName, city, agentCode, referralCode, ownerName, ownerPhone } = req.body as {
 storeName?: string;
@@ -41,12 +43,12 @@ const cleanOwnerName = safeTrim(ownerName);
 const cleanOwnerPhone = safeTrim(ownerPhone);
 
 if (!cleanStoreName) {
-return res.status(400).json({ error: "storeName obligatoire" });
+return next(new ValidationError("storeName obligatoire"));
 }
 
 const store: any = await Store.findById(storeId);
 if (!store)
-return res.status(404).json({ error: "Boutique introuvable" });
+return next(new NotFoundError("Boutique introuvable"));
 
 /* =====================================================
 🔥 UPDATE BASIQUE
@@ -120,20 +122,16 @@ ownerName: store.ownerName ?? "",
 ownerPhone: store.ownerPhone ?? "",
 isOnboarded,
 });
-} catch (err) {
-console.error("❌ updateStoreOnboarding", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 GET /api/store/me
 ===================================================== */
-export const getMyStoreProfile = async (req: Request, res: Response) => {
-try {
+export const getMyStoreProfile = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const store = await Store.findById(storeId)
 .select(
@@ -142,7 +140,7 @@ const store = await Store.findById(storeId)
 .lean();
 
 if (!store)
-return res.status(404).json({ error: "Boutique introuvable" });
+return next(new NotFoundError("Boutique introuvable"));
 
 const isOnboarded =
 typeof (store as any).isOnboarded === "boolean"
@@ -163,21 +161,17 @@ ownerName: (store as any).ownerName ?? "",
 ownerPhone: (store as any).ownerPhone ?? "",
 isOnboarded,
 });
-} catch (err) {
-console.error("❌ getMyStoreProfile", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 GET /api/store/kpis
 = EMA = (no séparateur de require)
 ===================================================== */
-export const getStoreKpis = async (req: Request, res: Response) => {
-try {
+export const getStoreKpis = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const totalProducts = await Product.countDocuments({ storeId });
 
@@ -252,17 +246,13 @@ expiringCount,
 todaySales,
 todayRevenue,
 });
-} catch (err) {
-console.error("❌ getStoreKpis", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 GET /api/store/my-agent
 ===================================================== */
-export const getMyAgent = async (req: Request, res: Response) => {
-try {
+export const getMyAgent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
 return res
@@ -274,7 +264,7 @@ const store = await Store.findById(storeId)
 .lean();
 
 if (!store)
-return res.status(404).json({ error: "Boutique introuvable" });
+return next(new NotFoundError("Boutique introuvable"));
 
 const agentCode = safeTrim((store as any)?.agentCode);
 if (!agentCode) {
@@ -301,8 +291,4 @@ contactPhone: contactPhone || null,
 };
 
 return res.status(200).json(payload);
-} catch (e: any) {
-console.error("❌ getMyAgent:", e?.message || e);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

@@ -1,5 +1,7 @@
 // controllers/agentPublicController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import Agent from "../models/Agent";
 import { getNextSequence, buildAgentCode, randomSuffix, generateAuthCode } from "../services/counterService";
 import bcrypt from "bcryptjs";
@@ -7,10 +9,10 @@ import fs from "fs";
 import path from "path";
 import { normalizePhone } from "../utils/phone";
 
-export const registerAgent = async (req: Request, res: Response) => {
-  try {
+export const registerAgent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-    
+
     const country = String(req.body?.country || "").trim();
     const firstName = String(req.body?.firstName || "").trim();
     const lastName = String(req.body?.lastName || "").trim();
@@ -22,7 +24,7 @@ export const registerAgent = async (req: Request, res: Response) => {
     const idNumber = String(req.body?.idNumber || "").trim();
 
     if (!country || !firstName || !lastName || !phone || !gender || !birthDate || !city || !idType || !idNumber) {
-      return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis" });
+      return next(new ValidationError("Tous les champs obligatoires doivent être remplis"));
     }
 
     const exists = await Agent.findOne({ phone }).select("_id").lean();
@@ -84,8 +86,4 @@ export const registerAgent = async (req: Request, res: Response) => {
         phone: agent.phone,
       },
     });
-  } catch (err: any) {
-    console.error("❌ registerAgent:", err);
-    res.status(500).json({ error: "Erreur lors de la création du compte" });
-  }
-};
+  });

@@ -1,5 +1,7 @@
 // controllers/otpController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
@@ -41,13 +43,13 @@ Body: { phone, deviceId }
 - si OK => token direct
 - sinon => REAUTH_REQUIRED / DEVICE_LOCKED / STORE_NOT_FOUND
 ===================================================== */
-export const deviceLogin = async (req: Request, res: Response) => {
-try {
+export const deviceLogin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const phone = normalizePhone(req.body?.phone);
 const deviceId = safeTrim(req.body?.deviceId);
 
-if (!phone) return res.status(400).json({ error: "Téléphone manquant" });
-if (!deviceId) return res.status(400).json({ error: "deviceId manquant" });
+if (!phone) return next(new ValidationError("Téléphone manquant"));
+if (!deviceId) return next(new ValidationError("deviceId manquant"));
 
 const store = await Store.findOne({ phone });
 if (!store) {
@@ -124,21 +126,17 @@ user,
 isOnboarded,
 otpSkipped: true,
 });
-} catch (err: any) {
-console.error("❌ deviceLogin error:", err?.message || err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 🔵 Demande OTP
 POST /api/otp/request (ou /otp/send selon tes routes)
 Body: { phone }
 ===================================================== */
-export const requestOTP = async (req: Request, res: Response) => {
-try {
+export const requestOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const phone = normalizePhone(req.body?.phone);
-if (!phone) return res.status(400).json({ error: "Téléphone manquant" });
+if (!phone) return next(new ValidationError("Téléphone manquant"));
 
 const code = generateCode();
 
@@ -152,11 +150,7 @@ await OTP.create({ phone, code, expiresAt });
 await sendSMS(phone, `Votre code de connexion Vocoshop est : ${code}`);
 
 return res.json({ message: "OTP envoyé" });
-} catch (err) {
-console.error("❌ requestOTP error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 🟣 Vérifie OTP
@@ -165,8 +159,8 @@ POST /api/otp/verify
 ✅ Device lock STRICT V2 : relink seulement si forceRelink=true
 Body: { phone, code, deviceId, forceRelink?, storeName? }
 ===================================================== */
-export const verifyOTP = async (req: Request, res: Response) => {
-try {
+export const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const phone = normalizePhone(req.body?.phone);
 const code = safeTrim(req.body?.code);
 const storeName = safeTrim(req.body?.storeName);
@@ -176,10 +170,10 @@ const deviceId = safeTrim(req.body?.deviceId);
 const forceRelink = safeBool(req.body?.forceRelink);
 
 if (!phone || !code) {
-return res.status(400).json({ error: "Données manquantes" });
+return next(new ValidationError("Données manquantes"));
 }
 if (!deviceId) {
-return res.status(400).json({ error: "deviceId manquant" });
+return next(new ValidationError("deviceId manquant"));
 }
 
 const otp = await OTP.findOne({
@@ -187,7 +181,7 @@ phone,
 code,
 expiresAt: { $gte: new Date() },
 });
-if (!otp) return res.status(400).json({ error: "Code incorrect ou expiré" });
+if (!otp) return next(new ValidationError("Code incorrect ou expiré"));
 
 // Nettoyer l’OTP après succès
 await OTP.deleteOne({ _id: otp._id }).catch(() => {});
@@ -308,8 +302,4 @@ user,
 isOnboarded,
 relinked,
 });
-} catch (err) {
-console.error("❌ verifyOTP error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

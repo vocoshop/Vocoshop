@@ -43,11 +43,21 @@ type DeviceLoginResult =
 | { ok: true }
 | { ok: false; reason: "OTP_REQUIRED" | "NO_ACCOUNT" | "UNKNOWN" };
 
+type StoreInfo = {
+_id: string;
+storeName: string;
+phone: string;
+city: string;
+hasPassword: boolean;
+};
+
 type CheckPhoneResult = {
 exists: boolean;
-hasPassword: boolean;
-phoneVerified: boolean;
-subscriptionActive: boolean;
+hasPassword?: boolean;
+phoneVerified?: boolean;
+subscriptionActive?: boolean;
+multipleStores?: boolean;
+stores?: StoreInfo[];
 };
 
 type LoginResponseData = {
@@ -79,6 +89,7 @@ options?: VerifyOtpOptions
 deviceLogin: (phone: string) => Promise<DeviceLoginResult>;
 
 checkPhone: (phone: string) => Promise<CheckPhoneResult>;
+tryAutoLogin: () => Promise<LoginResponseData | null>;
 loginWithPassword: (phone: string, password: string) => Promise<LoginResponseData>;
 registerWithPassword: (phone: string, password: string, storeName?: string, ownerName?: string, ownerPhone?: string, referralCodeUsed?: string) => Promise<LoginResponseData>;
 
@@ -328,6 +339,21 @@ const res = await API.post<CheckPhoneResult>("/auth/check-phone", { phone });
 return res.data;
 };
 
+const tryAutoLogin = async (): Promise<LoginResponseData | null> => {
+  try {
+    const deviceId = await getStableDeviceId();
+    const res = await API.post<LoginResponseData>("/auth/auto-login", { deviceId });
+    await applySession({
+      token: res.data.token,
+      storeId: res.data.storeId,
+      isOnboarded: res.data.isOnboarded,
+    });
+    return res.data;
+  } catch {
+    return null;
+  }
+};
+
 const loginWithPassword = async (phone: string, password: string) => {
 const deviceId = await getStableDeviceId();
 const res = await API.post<LoginResponseData>("/auth/login", { phone, password, deviceId });
@@ -480,6 +506,7 @@ requestOTP,
 verifyOTP,
 deviceLogin,
 checkPhone,
+tryAutoLogin,
 loginWithPassword,
 registerWithPassword,
 logout,

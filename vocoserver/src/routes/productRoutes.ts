@@ -1,5 +1,8 @@
 // routes/productRoutes.ts
 import { Router } from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import authMiddleware from "../middleware/authMiddleware";
 import Product from "../models/Product";
 
@@ -24,6 +27,31 @@ getProductsBySupplier,
 
 const router = Router();
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./uploads/products");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = file.originalname.split(".").pop();
+    cb(null, `${file.fieldname}-${uniqueSuffix}.${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp/;
+    const ext = allowed.test(file.originalname.toLowerCase());
+    const mime = allowed.test(file.mimetype);
+    if (ext && mime) cb(null, true);
+    else cb(new Error("Seules les images JPEG, PNG, WebP sont autorisées"));
+  },
+});
+
+fs.mkdirSync("./uploads/products", { recursive: true });
+
 // 🔐 Auth obligatoire pour tout le module
 router.use(authMiddleware);
 
@@ -36,7 +64,7 @@ Les routes spécifiques DOIVENT être avant "/:id"
 ➕ CRÉER UN PRODUIT
 ✅ inventory obligatoire
 ===================== */
-router.post("/", requirePermission("inventory"), validate(addProductSchema), createProduct);
+router.post("/", requirePermission("inventory"), upload.single("image"), validate(addProductSchema), createProduct);
 
 /* =====================
 ⚠️ STOCK FAIBLE

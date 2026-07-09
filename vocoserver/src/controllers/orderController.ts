@@ -1,5 +1,7 @@
 // src/controllers/orderController.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import mongoose from "mongoose";
 import Order from "../models/Order";
 import Supplier from "../models/Supplier";
@@ -43,11 +45,11 @@ if (!supplier) return { supplierId: null, supplierName: "" };
 return { supplierId: String(supplier._id), supplierName: supplier.name || "" };
 }
 
-export const createOrder = async (req: Request, res: Response) => {
-try {
+export const createOrder = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const { items, note, totalEstimated, supplierId } = req.body;
 
@@ -68,20 +70,16 @@ totalEstimated: safeNumber(totalEstimated, 0),
 });
 
 return res.status(201).json(order);
-} catch (err) {
-console.error("❌ createOrder error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 📦 LIST ORDERS (AVEC PAGINATION)
 ===================================================== */
-export const getOrders = async (req: Request, res: Response) => {
-try {
+export const getOrders = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const filter: any = { storeId };
 
@@ -114,55 +112,45 @@ total,
 totalPages: Math.ceil(total / limit),
 orders,
 });
-} catch (err) {
-console.error("❌ getOrders error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 📄 GET ONE ORDER
 ===================================================== */
-export const getOrderById = async (req: Request, res: Response) => {
-try {
+export const getOrderById = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
-if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
+if (!isValidObjectId(id)) return next(new ValidationError("ID commande invalide"));
 
 const order = await Order.findOne({ _id: id, storeId }).lean();
 if (!order)
-return res.status(404).json({ error: "Commande introuvable" });
+return next(new NotFoundError("Commande introuvable"));
 
 return res.json(order);
-} catch (err) {
-console.error("❌ getOrderById error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 ✏️ UPDATE ORDER (DRAFT ONLY)
 ===================================================== */
-export const updateOrder = async (req: Request, res: Response) => {
-try {
+export const updateOrder = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
-if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
+if (!isValidObjectId(id)) return next(new ValidationError("ID commande invalide"));
 const order: any = await Order.findOne({ _id: id, storeId });
 
 if (!order)
-return res.status(404).json({ error: "Commande introuvable" });
+return next(new NotFoundError("Commande introuvable"));
 
 if (order.status !== "draft") {
-return res.status(400).json({
-error: "Commande non modifiable (déjà envoyée)",
-});
+return next(new ValidationError("Commande non modifiable (déjà envoyée)"));
 }
 
 const { items, note, totalEstimated, supplierId } =
@@ -188,38 +176,30 @@ order.supplierName = supplierSnapshot.supplierName;
 
 await order.save();
 return res.json(order);
-} catch (err) {
-console.error("❌ updateOrder error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 ✅ CONFIRM ORDER (DRAFT → SENT)
 ===================================================== */
-export const confirmOrder = async (req: Request, res: Response) => {
-try {
+export const confirmOrder = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
-if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
+if (!isValidObjectId(id)) return next(new ValidationError("ID commande invalide"));
 const order: any = await Order.findOne({ _id: id, storeId });
 
 if (!order)
-return res.status(404).json({ error: "Commande introuvable" });
+return next(new NotFoundError("Commande introuvable"));
 
 if (order.status !== "draft") {
-return res.status(400).json({
-error: "Commande déjà confirmée",
-});
+return next(new ValidationError("Commande déjà confirmée"));
 }
 
 if (!order.items || order.items.length === 0) {
-return res.status(400).json({
-error: "Impossible de confirmer une commande vide",
-});
+return next(new ValidationError("Impossible de confirmer une commande vide"));
 }
 
 order.status = "sent";
@@ -228,67 +208,53 @@ order.receivedAt = null;
 
 await order.save();
 return res.json(order);
-} catch (err) {
-console.error("❌ confirmOrder error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
 /* =====================================================
 🗑 DELETE ORDER (DRAFT ONLY)
 ===================================================== */
-export const deleteOrder = async (req: Request, res: Response) => {
-try {
+export const deleteOrder = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
-if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
+if (!isValidObjectId(id)) return next(new ValidationError("ID commande invalide"));
 const order: any = await Order.findOne({ _id: id, storeId });
 
 if (!order)
-return res.status(404).json({ error: "Commande introuvable" });
+return next(new NotFoundError("Commande introuvable"));
 
 if (order.status !== "draft") {
-return res.status(400).json({
-error: "Impossible de supprimer une commande confirmée",
-});
+return next(new ValidationError("Impossible de supprimer une commande confirmée"));
 }
 
 await order.deleteOne();
 
 return res.json({ message: "Commande supprimée" });
 
-} catch (err) {
-console.error("❌ deleteOrder error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
-
+});
 
 /* =====================================================
 ✅ MARK RECEIVED (MANUAL)
 ===================================================== */
-export const markOrderReceived = async (req: Request, res: Response) => {
-try {
+export const markOrderReceived = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const storeId = getStoreId(req);
 if (!storeId)
-return res.status(400).json({ error: "storeId manquant" });
+return next(new ValidationError("storeId manquant"));
 
 const { id } = req.params;
-if (!isValidObjectId(id)) return res.status(400).json({ error: "ID commande invalide" });
+if (!isValidObjectId(id)) return next(new ValidationError("ID commande invalide"));
 
 const order: any = await Order.findOne({ _id: id, storeId });
 
 if (!order)
-return res.status(404).json({ error: "Commande introuvable" });
+return next(new NotFoundError("Commande introuvable"));
 
 if (order.status !== "sent") {
-return res.status(400).json({
-error:
-"Seules les commandes envoyées peuvent être marquées reçues",
-});
+return next(new ValidationError("Seules les commandes envoyées peuvent être marquées reçues"));
 }
 
 // réception complète forcée
@@ -303,8 +269,4 @@ await order.save();
 
 return res.json(order);
 
-} catch (err) {
-console.error("❌ markOrderReceived error:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});

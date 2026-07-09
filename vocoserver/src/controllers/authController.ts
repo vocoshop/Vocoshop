@@ -1,28 +1,65 @@
-﻿import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
 import bcrypt from "bcryptjs";
 import Store from "../models/Store";
 import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
 
-export const checkPhone = async (req: Request, res: Response) => {
-try {
+export const checkPhone = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const phone = normalizePhone(req.body?.phone);
-if (!phone) return res.status(400).json({ error: "Numero requis" });
+if (!phone) return next(new ValidationError("Numero requis"));
 
-const store = await Store.findOne({ phone }).select("passwordHash phoneVerified subscriptionActive").lean();
+// 1) Find direct store match (login phone)
+const directStore = await Store.findOne({ phone })
+  .select("passwordHash phoneVerified subscriptionActive ownerPhone storeName city")
+  .lean();
 
-return res.json({
-exists: !!store,
-hasPassword: !!store?.passwordHash,
-phoneVerified: store?.phoneVerified || false,
-subscriptionActive: store?.subscriptionActive || false,
-});
-} catch (err) {
-console.error("checkPhone:", err);
-return res.status(500).json({ error: "Erreur serveur" });
+// 2) Find stores by ownerPhone (the phone number alone might be the owner's personal phone)
+const ownedStores = await Store.find({ ownerPhone: phone })
+  .select("phone passwordHash phoneVerified subscriptionActive storeName city")
+  .lean();
+
+// 3) Merge — deduplicate by _id
+const storeMap = new Map<string, any>();
+if (directStore) storeMap.set(String(directStore._id), { ...directStore, matchType: "phone" });
+for (const s of ownedStores) {
+  if (!storeMap.has(String(s._id))) {
+    storeMap.set(String(s._id), { ...s, matchType: "ownerPhone" });
+  }
 }
-};
+const allStores = Array.from(storeMap.values());
+
+if (allStores.length === 0) {
+  return res.json({ exists: false });
+}
+
+if (allStores.length === 1) {
+  const s = allStores[0];
+  return res.json({
+    exists: true,
+    hasPassword: !!s.passwordHash,
+    phoneVerified: s.phoneVerified || false,
+    subscriptionActive: s.subscriptionActive || false,
+    multipleStores: false,
+  });
+}
+
+// Multiple stores → return them for picker
+return res.json({
+  exists: true,
+  multipleStores: true,
+  stores: allStores.map((s) => ({
+    _id: s._id,
+    storeName: s.storeName,
+    phone: s.phone,
+    city: s.city,
+    hasPassword: !!s.passwordHash,
+  })),
+});
+});
 
 function generateToken(storeId: string, phone?: string) {
 return jwt.sign(
@@ -32,15 +69,15 @@ process.env.JWT_SECRET || "",
 );
 }
 
-export const registerStore = async (req: Request, res: Response) => {
-try {
+export const registerStore = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const { phone, password, storeName, ownerName, ownerPhone, deviceId, referralCodeUsed } = req.body;
 
 const phoneNorm = normalizePhone(phone);
-if (!phoneNorm) return res.status(400).json({ error: "Numero requis" });
+if (!phoneNorm) return next(new ValidationError("Numero requis"));
 
 const exists = await Store.findOne({ phone: phoneNorm }).select("_id").lean();
-if (exists) return res.status(400).json({ error: "Ce numero est deja utilise" });
+if (exists) return next(new ValidationError("Ce numero est deja utilise"));
 
 const passwordHash = await bcrypt.hash(password, 10);
 
@@ -82,33 +119,31 @@ isOnboarded: typeof (store as any).isOnboarded === "boolean"
 phoneVerified: false,
 subscriptionActive: false,
 });
-} catch (err: any) {
-if (err?.code === 11000) return res.status(400).json({ error: "Ce numero est deja utilise" });
-console.error("registerStore:", err);
-return res.status(500).json({ error: "Erreur serveur" });
-}
-};
+});
 
-export const loginStore = async (req: Request, res: Response) => {
-try {
+export const loginStore = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
 const { phone, password, deviceId } = req.body;
 
 const phoneNorm = normalizePhone(phone);
-if (!phoneNorm) return res.status(400).json({ error: "Numero requis" });
+if (!phoneNorm) return next(new ValidationError("Numero requis"));
 
 const store = await Store.findOne({ phone: phoneNorm });
-if (!store) return res.status(404).json({ error: "Compte introuvable" });
+if (!store) return next(new NotFoundError("Compte introuvable"));
 
 if (store.passwordHash) {
-if (!password) return res.status(400).json({ error: "Mot de passe requis" });
+if (!password) return next(new ValidationError("Mot de passe requis"));
 
 const valid = await bcrypt.compare(password, store.passwordHash);
-if (!valid) return res.status(401).json({ error: "Mot de passe incorrect" });
+if (!valid) return next(new UnauthorizedError("Mot de passe incorrect"));
 
-await Store.updateOne(
-{ _id: store._id },
-{ $inc: { loginCount: 1 }, $set: { lastActiveAt: new Date() } }
-);
+  const updateFields: Record<string, any> = { lastActiveAt: new Date() };
+  if (deviceId) updateFields.deviceId = deviceId;
+
+  await Store.updateOne(
+      { _id: store._id },
+      { $inc: { loginCount: 1 }, $set: updateFields }
+    );
 
 const token = generateToken(store._id.toString(), store.phone);
     return res.json({
@@ -125,8 +160,8 @@ subscriptionActive: store.subscriptionActive || false,
 
 // Pas de mot de passe encore enregistre (ancien compte OTP)
 // Le premier mot de passe saisi devient le mot de passe du compte
-if (!password) return res.status(400).json({ error: "Mot de passe requis" });
-if (password.length < 6) return res.status(400).json({ error: "Mot de passe trop court" });
+if (!password) return next(new ValidationError("Mot de passe requis"));
+if (password.length < 6) return next(new ValidationError("Mot de passe trop court"));
 
 const passwordHash = await bcrypt.hash(password, 10);
 store.passwordHash = passwordHash;
@@ -149,8 +184,72 @@ isOnboarded: typeof (store as any).isOnboarded === "boolean"
 phoneVerified: store.phoneVerified || false,
 subscriptionActive: store.subscriptionActive || false,
 });
-} catch (err) {
-console.error("loginStore:", err);
-return res.status(500).json({ error: "Erreur serveur" });
+});
+
+export const getOwnerStores = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+const storeId = req.user?.storeId;
+if (!storeId) return next(new ValidationError("Authentification requise"));
+
+const store = await Store.findById(storeId).select("ownerPhone phone").lean();
+if (!store) return next(new NotFoundError("Boutique introuvable"));
+
+const ownerPhone = store.ownerPhone || store.phone;
+
+const stores = await Store.find({ ownerPhone })
+  .select("_id storeName phone city")
+  .lean();
+
+return res.json({
+  multipleStores: stores.length > 1,
+  stores: stores.map((s) => ({
+    _id: s._id,
+    storeName: s.storeName,
+    phone: s.phone,
+    city: s.city,
+  })),
+});
+});
+
+export const autoLogin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { deviceId } = req.body;
+  if (!deviceId) return next(new ValidationError("deviceId requis"));
+
+  const store = await Store.findOne({ deviceId })
+    .select("phone storeName isOnboarded phoneVerified subscriptionActive ownerPhone")
+    .lean();
+
+  if (!store) return next(new NotFoundError("Appareil non reconnu"));
+
+  const token = generateToken(store._id.toString(), store.phone);
+
+  return res.json({
+    storeId: store._id,
+    token,
+    isOnboarded: !!(store.storeName && String(store.storeName).trim().length > 0),
+    phoneVerified: store.phoneVerified || false,
+    subscriptionActive: store.subscriptionActive || false,
+  });
+});
+
+export const ownerSelectStore = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+const { phone, storeId } = req.body;
+const phoneNorm = normalizePhone(phone);
+if (!phoneNorm || !storeId) return next(new ValidationError("Numéro et boutique requis"));
+
+const store = await Store.findById(storeId).lean();
+if (!store) return next(new NotFoundError("Boutique introuvable"));
+
+if (store.ownerPhone !== phoneNorm) {
+return next(new UnauthorizedError("Vous n'êtes pas le propriétaire de cette boutique"));
 }
-};
+
+const token = generateToken(store._id.toString(), store.phone);
+
+return res.json({
+storeId: store._id,
+token,
+isOnboarded: !!(store.storeName && String(store.storeName).trim().length > 0),
+phoneVerified: store.phoneVerified || false,
+subscriptionActive: store.subscriptionActive || false,
+});
+});

@@ -24,6 +24,7 @@ import { navigationRef } from "./src/api/navigation/navigationRef";
 
 // AUTH
 import LoginScreen from "./screens/LoginScreen";
+import StorePickerScreen from "./screens/StorePickerScreen";
 import HomeScreen from "./screens/HomeScreen";
 
 // PROFIL / ONBOARDING
@@ -139,7 +140,7 @@ const Stack = createStackNavigator();
 * - fallback serveur /store/me si isOnboarded local false
 */
 function EntryGate({ navigation }: any) {
-const { token, loading } = useContext(AuthContext);
+const { token, loading, tryAutoLogin } = useContext(AuthContext);
 
 const [bootLoading, setBootLoading] = useState(true);
 const [bootToken, setBootToken] = useState<string | null>(null);
@@ -194,8 +195,21 @@ if (loading || bootLoading) return;
 const effectiveToken = token || bootToken;
 
 if (!effectiveToken) {
-navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-return;
+  const result = await tryAutoLogin();
+  if (result) {
+    const onboarded = result.isOnboarded;
+    if (onboarded) {
+      await AsyncStorage.setItem("isOnboarded", "true");
+      setOnboarded(true);
+      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+    } else {
+      await AsyncStorage.setItem("isOnboarded", "false");
+      navigation.reset({ index: 0, routes: [{ name: "Onboarding" }] });
+    }
+    return;
+  }
+  navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+  return;
 }
 
 if (onboarded) {
@@ -331,8 +345,9 @@ animation:"slide_from_right",
 {/* ✅ ROUTEUR */}
 <Stack.Screen name="Entry" component={EntryGate} />
 
-{/* 🔐 AUTH */}
-<Stack.Screen name="Login" component={LoginScreen} />
+  {/* 🔐 AUTH */}
+  <Stack.Screen name="Login" component={LoginScreen} />
+  <Stack.Screen name="StorePicker" component={StorePickerScreen} />
 
 {/* 🧩 ONBOARDING */}
 <Stack.Screen name="Onboarding" component={OnboardingScreen} />

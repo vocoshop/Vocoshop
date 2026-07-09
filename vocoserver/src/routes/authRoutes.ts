@@ -1,11 +1,15 @@
 import { Router } from "express";
-import { registerStore, loginStore, checkPhone } from "../controllers/authController";
+import { registerStore, loginStore, checkPhone, getOwnerStores, ownerSelectStore, autoLogin } from "../controllers/authController";
 import { validate, storeRegistrationSchema } from "../middleware/validate";
+import authMiddleware from "../middleware/authMiddleware";
 
 const router = Router();
 
 router.post("/register", validate(storeRegistrationSchema), registerStore);
 router.post("/login", loginStore);
 router.post("/check-phone", checkPhone);
+router.get("/owner-stores", authMiddleware, getOwnerStores);
+router.post("/owner-select-store", ownerSelectStore);
+router.post("/auto-login", autoLogin);
 
 export default router;
