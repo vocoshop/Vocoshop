@@ -14,10 +14,9 @@ import { navigate } from "./navigation/navigationRef";
  */
 const envUrl = process.env.EXPO_PUBLIC_API_URL;
 const extraUrl = (Constants.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL;
-export const API_BASE = envUrl || extraUrl || "";
-if (!API_BASE) {
-  console.warn("⚠️ EXPO_PUBLIC_API_URL non définie. Utilisation de l'URL relative /api");
-}
+const manifestUrl = (Constants as any)?.manifest?.extra?.EXPO_PUBLIC_API_URL;
+export const API_BASE = envUrl || extraUrl || manifestUrl || "https://vocoshop.onrender.com";
+console.warn("🔗 API_BASE =", API_BASE);
 
 /**
  * 🚀 INSTANCE AXIOS PRINCIPALE
