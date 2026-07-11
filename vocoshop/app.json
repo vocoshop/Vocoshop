@@ -20,10 +20,10 @@
 
 "android": {
 "package": "com.don_carly.vocoshop",
-"adaptiveIcon": {
-"foregroundImage": "./assets/adaptive-icon.png",
-"backgroundColor": "#070014"
-},
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#8A4DFF"
+      },
 "edgeToEdgeEnabled": true,
 "predictiveBackGestureEnabled": false,
 "permissions": [

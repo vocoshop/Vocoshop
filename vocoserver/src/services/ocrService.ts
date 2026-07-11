@@ -3,6 +3,7 @@ import OcrScan, { IOcrLine } from "../models/OcrScan";
 import ProductAlias from "../models/ProductAlias";
 import Product from "../models/Product";
 import Sale from "../models/Sales";
+import DailyReport from "../models/DailyReport";
 import { preprocessForVision, analyzeImageQuality } from "./imagePreprocess";
 import { isValidObjectId } from "../utils/helpers";
 
@@ -217,6 +218,37 @@ export class OcrService {
     scan.status = "imported";
     await scan.save();
 
+    // Recalculer le bilan pour cette date
+    const bDate = scan.businessDate || new Date().toISOString().split("T")[0];
+    const allSales = await Sale.find({ storeId, businessDate: bDate }).lean();
+    if (allSales.length > 0) {
+      const totalRevenue = (allSales as any[]).reduce((sum: number, s: any) => sum + (s.totalAmount || 0), 0);
+      const cogs = (allSales as any[]).reduce((sum: number, s: any) => sum + (s.purchasePriceAtSale || 0) * (s.quantity || 0), 0);
+      const gp = totalRevenue - cogs;
+      const lines = (allSales as any[]).map((s: any) => ({
+        productId: s.productId,
+        productName: s.productName,
+        quantity: s.quantity,
+        unitPrice: s.unitPrice,
+        purchasePrice: s.purchasePriceAtSale,
+        totalAmount: s.totalAmount,
+        lineProfit: ((s.unitPrice || 0) - (s.purchasePriceAtSale || 0)) * (s.quantity || 0),
+      }));
+      await DailyReport.findOneAndUpdate(
+        { storeId, date: bDate },
+        {
+          $set: {
+            storeId, date: bDate,
+            totalSales: allSales.length,
+            totalRevenue, cogs, grossProfit: gp, netProfit: gp,
+            marginPercent: totalRevenue > 0 ? Math.round((gp / totalRevenue) * 100) : 0,
+            sales: lines,
+          },
+        },
+        { upsert: true }
+      );
+    }
+
     return { importedCount, errors, unmatchedCount };
   }
 
@@ -423,6 +455,13 @@ export class OcrService {
     return { rawText, confidence, engine: "tesseract" };
   }
 
+  private isDateLine(line: string): boolean {
+    const l = line.trim();
+    if (/^\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4}$/.test(l)) return true;
+    if (/\b(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\b/i.test(l)) return true;
+    return false;
+  }
+
   private async parseLines(
     storeId: string,
     rawText: string,
@@ -437,6 +476,7 @@ export class OcrService {
     const results: IOcrLine[] = [];
 
     for (const line of lines) {
+      if (this.isDateLine(line)) continue;
       const parsed = await this.parseLine(storeId, line, products, defaultLineType);
       results.push({
         text: line,
@@ -470,7 +510,7 @@ export class OcrService {
     let quantity = this.extractQuantity(line);
     const prices = this.extractPrices(line);
     const detectedType = this.detectLineType(lower);
-    const type = detectedType === "unknown" && defaultLineType ? defaultLineType : detectedType;
+    const type = defaultLineType && defaultLineType !== "unknown" ? defaultLineType : detectedType;
 
     const sellPrice = knownProduct ? (knownProduct as any).sellPrice ?? 0 : 0;
     const isQtyPricePat = this.hasQtyPricePattern(line);
