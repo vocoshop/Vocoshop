@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import { navigate } from "./navigation/navigationRef";
 
 /**
@@ -11,10 +12,12 @@ import { navigate } from "./navigation/navigationRef";
  * - Le /api est ajouté dans baseURL
  * - Utiliser EXPO_PUBLIC_API_URL en production
  */
-if (!process.env.EXPO_PUBLIC_API_URL) {
+const envUrl = process.env.EXPO_PUBLIC_API_URL;
+const extraUrl = (Constants.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL;
+export const API_BASE = envUrl || extraUrl || "";
+if (!API_BASE) {
   console.warn("⚠️ EXPO_PUBLIC_API_URL non définie. Utilisation de l'URL relative /api");
 }
-export const API_BASE = process.env.EXPO_PUBLIC_API_URL || "";
 
 /**
  * 🚀 INSTANCE AXIOS PRINCIPALE

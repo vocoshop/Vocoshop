@@ -115,6 +115,7 @@ import MyShopScreen from "./screens/MyShopScreen";
 import ManageShopScreen from "./screens/ManageShopScreen";
 import OfflineBanner from "./src/api/components/OfflineBanner";
 import SyncIndicator from "./src/api/components/SyncIndicator";
+import ErrorBoundary from "./src/api/components/ErrorBoundary";
 import SplashScreen from "./screens/SplashScreen";
 import InvoiceListScreen from "./screens/invoiceListScreen";
 import InvoiceDetailScreen from "./screens/InvoiceDetailScreen";
@@ -321,6 +322,7 @@ return <SplashScreen onFinish={() => setShowSplash(false)} />;
 }
 
 return (
+<ErrorBoundary>
 <LanguageProvider>
 <AuthProvider>
 
@@ -459,6 +461,7 @@ component={SubscriptionBlockedScreen}
 </SubscriptionProvider>
 </AuthProvider>
 </LanguageProvider>
+</ErrorBoundary>
 
 );
 }

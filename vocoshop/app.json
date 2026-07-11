@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "vocoshop",
 
 "ios": {
@@ -35,6 +35,8 @@
 "plugins": [
   "expo-image-picker",
   "expo-media-library",
+  "expo-camera",
+  "expo-splash-screen",
   [
     "expo-notifications",
     {
