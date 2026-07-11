@@ -9,9 +9,11 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import API from "../src/api/api";
 
 interface OcrLine {
@@ -58,6 +60,9 @@ export default function OcrValidationScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searching, setSearching] = useState(false);
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [businessDate, setBusinessDate] = useState(new Date());
 
   const matchedCount = lines.filter((l) => l.productId).length;
   const unmatchedCount = lines.filter((l) => !l.productId).length;
@@ -162,23 +167,47 @@ export default function OcrValidationScreen() {
   );
 
   const handleValidate = useCallback(async () => {
+    setShowDatePicker(true);
+  }, []);
+
+  const handleDateChange = (_: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setBusinessDate(selectedDate);
+      if (Platform.OS === "android") {
+        confirmDate(selectedDate);
+      }
+    }
+  };
+
+  const confirmDate = useCallback(async (date: Date) => {
     if (!scan) return;
     setSaving(true);
+    setShowDatePicker(false);
     try {
+      const dateStr = date.toISOString().split("T")[0];
       await API.post(`/ocr/validate/${scan._id}`, {
         lines,
         feedback: { validatedAt: new Date().toISOString() },
+        businessDate: dateStr,
       });
-      Alert.alert("Validé", "Les données sont enregistrées.", [
-        { text: "Importer", onPress: () => handleImport() },
-        { text: "OK", style: "cancel" },
+      const res = await API.post(`/ocr/import/${scan._id}`);
+      const data = res.data as { importedCount: number; errors: string[]; unmatchedCount?: number };
+      const { importedCount, errors } = data;
+      const unmatched = data.unmatchedCount ?? 0;
+      let msg = `${importedCount} ligne(s) importée(s)`;
+      if (unmatched > 0) msg += `\n${unmatched} ligne(s) sans produit correspondant`;
+      if (errors.length) msg += `\n${errors.length} erreur(s)`;
+      Alert.alert(`Importé au ${dateStr}`, msg, [
+        { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
       Alert.alert("Erreur", err?.response?.data?.error || "Erreur");
-    } finally {
       setSaving(false);
     }
-  }, [scan, lines]);
+  }, [scan, lines, navigation]);
 
   const handleImport = useCallback(async () => {
     if (!scan) return;
@@ -458,6 +487,39 @@ export default function OcrValidationScreen() {
           </View>
         </View>
       </Modal>
+
+      {showDatePicker && (
+        Platform.OS === "ios" ? (
+          <Modal transparent animationType="slide">
+            <View style={styles.datePickerOverlay}>
+              <View style={styles.datePickerContainer}>
+                <Text style={styles.datePickerTitle}>Choisir la date</Text>
+                <DateTimePicker
+                  value={businessDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                />
+                <TouchableOpacity
+                  style={styles.dateConfirmBtn}
+                  onPress={() => confirmDate(businessDate)}
+                >
+                  <Text style={styles.dateConfirmText}>Confirmer</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={businessDate}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+            maximumDate={new Date()}
+          />
+        )
+      )}
     </View>
   );
 }
@@ -571,4 +633,16 @@ const styles = StyleSheet.create({
   productName: { color: "#fff", fontSize: 15, fontWeight: "600", flex: 1 },
   productPrice: { color: "#4CAF50", fontSize: 14, fontWeight: "700" },
   emptySearch: { color: "#666", textAlign: "center", marginTop: 20, fontSize: 14 },
+  datePickerOverlay: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center",
+  },
+  datePickerContainer: {
+    backgroundColor: "#18122B", borderRadius: 20, padding: 24, width: "85%", alignItems: "center",
+  },
+  datePickerTitle: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 16 },
+  dateConfirmBtn: {
+    backgroundColor: "#4CAF50", paddingVertical: 12, paddingHorizontal: 40,
+    borderRadius: 12, marginTop: 16, width: "100%", alignItems: "center",
+  },
+  dateConfirmText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

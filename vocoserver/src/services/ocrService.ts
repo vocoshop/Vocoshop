@@ -83,7 +83,8 @@ export class OcrService {
     scanId: string,
     storeId: string,
     validatedLines: IOcrLine[],
-    feedback?: Record<string, string>
+    feedback?: Record<string, string>,
+    businessDate?: string
   ): Promise<typeof OcrScan.prototype.toObject> {
     if (!isValidObjectId(scanId)) throw new Error("ID scan invalide");
     const scan = await OcrScan.findOne({ _id: scanId, storeId });
@@ -99,6 +100,7 @@ export class OcrService {
     scan.validatedByUser = true;
     scan.status = "validated";
     if (feedback) scan.correctionFeedback = feedback;
+    if (businessDate) scan.businessDate = businessDate;
     await scan.save();
 
     return scan.toObject();
@@ -162,7 +164,7 @@ export class OcrService {
             unitPrice,
             purchasePriceAtSale: product.purchasePrice ?? 0,
             totalAmount,
-            businessDate: new Date().toISOString().split("T")[0],
+            businessDate: scan.businessDate || new Date().toISOString().split("T")[0],
             isVoiced: false,
             isReverted: false,
           });
@@ -441,12 +443,10 @@ export class OcrService {
     if (knownProduct && prices.length > 0) {
       if (quantity) {
         if (isQtyPricePat) {
-          // "2 x 500" → price après "x" = unitPrice
           const m = line.match(/(\d+)\s*(x|×)\s*(\d+)/i);
           unitPrice = m ? parseInt(m[3], 10) : Math.round(prices[prices.length - 1] / quantity);
           total = quantity * unitPrice;
         } else if (sellPrice > 0 && prices.length === 1 && prices[0] === sellPrice) {
-          // "10 Savon 500" → prix = unitPrice, total = qty * unitPrice
           unitPrice = sellPrice;
           total = quantity * sellPrice;
         } else {
@@ -480,6 +480,11 @@ export class OcrService {
         quantity = 1;
         unitPrice = prices[0];
         total = prices.length > 1 ? prices[prices.length - 1] : prices[0];
+      }
+      // Si le prix vente connu et le total détecté est exactement divisible, on corrige
+      if (sellPrice > 0 && total && total >= sellPrice && Number.isInteger(total / sellPrice)) {
+        quantity = total / sellPrice;
+        unitPrice = sellPrice;
       }
     } else if (knownProduct && sellPrice > 0) {
       quantity = quantity || 1;

@@ -35,14 +35,14 @@ export const scanDocument = asyncHandler(async (req: Request, res: Response, nex
 export const validateScan = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
     const { id } = req.params;
-    const { lines, feedback } = req.body;
+    const { lines, feedback, businessDate } = req.body;
     const storeId = getStoreId(req);
 
     if (!storeId) {
       return next(new UnauthorizedError("Authentification requise"));
     }
 
-    const result = await ocrService.validateScan(id, storeId, lines, feedback);
+    const result = await ocrService.validateScan(id, storeId, lines, feedback, businessDate);
     res.json(result);
   });
 
