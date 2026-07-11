@@ -136,16 +136,22 @@ export default function OcrValidationScreen() {
     (index: number, product: Product) => {
       setLines((prev) => {
         const updated = [...prev];
+        const line = updated[index];
+        const sellPrice = product.sellPrice || 0;
+        const currentTotal = line.total || 0;
+        let qty = line.quantity || 1;
+        if (sellPrice > 0 && currentTotal > 0 && currentTotal % sellPrice === 0) {
+          qty = Math.round(currentTotal / sellPrice);
+        }
         updated[index] = {
-          ...updated[index],
+          ...line,
           productName: product.name,
           productId: product._id,
-          unitPrice: product.sellPrice || updated[index].unitPrice,
+          unitPrice: sellPrice || line.unitPrice,
+          quantity: qty,
+          total: qty * (sellPrice || 1) || currentTotal,
           corrected: true,
         };
-        if (updated[index].quantity && product.sellPrice) {
-          updated[index].total = updated[index].quantity! * product.sellPrice;
-        }
         return updated;
       });
       setLinkingIndex(null);

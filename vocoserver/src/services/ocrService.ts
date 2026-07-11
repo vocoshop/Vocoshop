@@ -461,10 +461,16 @@ export class OcrService {
           unitPrice = sellPrice;
           total = sellPrice;
         } else if (lastPrice > sellPrice) {
-          const inferred = Math.round(lastPrice / sellPrice);
-          quantity = inferred;
-          unitPrice = sellPrice;
-          total = lastPrice;
+          const quotient = lastPrice / sellPrice;
+          if (Number.isInteger(quotient)) {
+            quantity = quotient;
+            unitPrice = sellPrice;
+            total = lastPrice;
+          } else {
+            quantity = 1;
+            unitPrice = sellPrice;
+            total = lastPrice;
+          }
         } else {
           quantity = 1;
           unitPrice = lastPrice;
@@ -557,7 +563,8 @@ export class OcrService {
   }
 
   private extractPrices(line: string): number[] {
-    const amounts = line.match(/\d{3,}\s*(F|fcfa|franc)?|\d{1,2}\s*(F|fcfa|franc)/gi);
+    const normalized = line.replace(/(\d)\s+(?=\d{3})/g, '$1');
+    const amounts = normalized.match(/\d{3,}\s*(F|fcfa|franc)?|\d{1,2}\s*(F|fcfa|franc)/gi);
     if (!amounts) return [];
     return amounts.map((a) => parseInt(a.replace(/[\sFfcfa]/gi, ""), 10));
   }
