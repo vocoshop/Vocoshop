@@ -35,6 +35,7 @@ interface ScanData {
   lines: OcrLine[];
   globalConfidence: number;
   status: string;
+  detectedDate?: string;
 }
 
 interface Product {
@@ -62,7 +63,14 @@ export default function OcrValidationScreen() {
   const [searching, setSearching] = useState(false);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [businessDate, setBusinessDate] = useState(new Date());
+  const parseDetectedDate = (d: string | undefined): Date => {
+    if (!d) return new Date();
+    const parts = d.split("-");
+    if (parts.length === 3) return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    return new Date();
+  };
+  const [businessDate, setBusinessDate] = useState<Date>(() => parseDetectedDate(scan?.detectedDate));
+  const dateAutoDetected = !!scan?.detectedDate;
 
   const matchedCount = lines.filter((l) => l.productId).length;
   const unmatchedCount = lines.filter((l) => !l.productId).length;
@@ -405,6 +413,15 @@ export default function OcrValidationScreen() {
         </View>
       )}
 
+      {dateAutoDetected && (
+        <View style={styles.dateInfoBox}>
+          <Ionicons name="calendar-outline" size={16} color="#7DA6FF" />
+          <Text style={styles.dateInfoText}>
+            Date détectée : {businessDate.toLocaleDateString("fr-FR")}
+          </Text>
+        </View>
+      )}
+
       <FlatList
         data={lines}
         renderItem={renderLine}
@@ -633,6 +650,12 @@ const styles = StyleSheet.create({
   productName: { color: "#fff", fontSize: 15, fontWeight: "600", flex: 1 },
   productPrice: { color: "#4CAF50", fontSize: 14, fontWeight: "700" },
   emptySearch: { color: "#666", textAlign: "center", marginTop: 20, fontSize: 14 },
+  dateInfoBox: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#0F1F3A", marginHorizontal: 20, marginBottom: 8,
+    padding: 10, borderRadius: 10, gap: 8,
+  },
+  dateInfoText: { color: "#7DA6FF", fontSize: 12, flex: 1 },
   datePickerOverlay: {
     flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center",
   },

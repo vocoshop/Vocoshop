@@ -22,6 +22,7 @@ export interface IOcrScan extends Document {
   validatedByUser: boolean;
   status: "pending" | "validated" | "imported" | "rejected";
   correctionFeedback: Record<string, string>;
+  detectedDate?: string;
   businessDate?: string;
   pageCount: number;
   createdAt: Date;
@@ -62,6 +63,7 @@ const OcrScanSchema = new Schema<IOcrScan>(
       default: "pending",
     },
     correctionFeedback: { type: Schema.Types.Mixed, default: {} },
+    detectedDate: { type: String, default: undefined },
     businessDate: { type: String, default: undefined },
     pageCount: { type: Number, default: 1 },
   },

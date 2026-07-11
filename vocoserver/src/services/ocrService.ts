@@ -27,6 +27,42 @@ function removeBase64Header(imageBase64: string): string {
   return imageBase64.replace(/^data:image\/\w+;base64,/, "");
 }
 
+const MONTHS_FR: Record<string, number> = {
+  janvier: 1, février: 2, mars: 3, avril: 4, mai: 5, juin: 6,
+  juillet: 7, août: 8, septembre: 9, octobre: 10, novembre: 11, décembre: 12,
+};
+const DAYS_FR = /(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s*/i;
+
+function detectDate(text: string): string | null {
+  // Format numérique: 12/04/2027, 12-04-2027, 12.04.2027, 12/04/27
+  const numMatch = text.match(/\b(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})\b/);
+  if (numMatch) {
+    let [, d, m, y] = numMatch;
+    let dd = parseInt(d, 10), mm = parseInt(m, 10), yy = parseInt(y, 10);
+    if (yy < 100) yy += 2000;
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yy >= 2020 && yy <= 2100) {
+      return `${yy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+    }
+  }
+
+  // Format texte: "Mardi 12 Avril 2027" ou "12 Avril 2027"
+  const frPattern = new RegExp(
+    `(?:${DAYS_FR.source})?(\\d{1,2})\\s*(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\\s*(\\d{4})`,
+    "i"
+  );
+  const frMatch = text.match(frPattern);
+  if (frMatch) {
+    const dd = parseInt(frMatch[1], 10);
+    const mm = MONTHS_FR[frMatch[2].toLowerCase()];
+    const yyyy = parseInt(frMatch[3], 10);
+    if (mm && dd >= 1 && dd <= 31 && yyyy >= 2020 && yyyy <= 2100) {
+      return `${yyyy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+    }
+  }
+
+  return null;
+}
+
 export class OcrService {
   private readonly MIN_CONFIDENCE = 30;
 
@@ -64,15 +100,18 @@ export class OcrService {
     }
 
     const avgConfidence = Math.round(totalConfidence / images.length);
+    const fullText = allTexts.join("\n---\n");
+    const detectedDate = detectDate(fullText);
 
     const scan = await OcrScan.create({
       storeId,
       images,
-      rawText: allTexts.join("\n---\n"),
+      rawText: fullText,
       lines: allLines,
       globalConfidence: avgConfidence,
       needsReview: anyNeedsReview,
       status: "pending",
+      detectedDate,
       pageCount: options?.pageCount ?? images.length,
     });
 
