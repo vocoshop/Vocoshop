@@ -57,12 +57,20 @@ const [cart, setCart] = useState<CartItem[]>([]);
 /* =====================================================
 LOAD PRODUCTS (SAFE OFFLINE)
 ===================================================== */
+const PRODUCTS_CACHE_KEY = `products_cache_${storeId}`;
+
 const loadProducts = useCallback(async () => {
 try {
 setLoading(true);
 
 // 🔥 IMPORTANT : ne pas taper API si offline
 if (isOffline()) {
+const cached = await AsyncStorage.getItem(PRODUCTS_CACHE_KEY);
+if (cached) {
+const list: Product[] = JSON.parse(cached);
+setProducts(list);
+setFiltered(list);
+}
 setLoading(false);
 return;
 }
@@ -78,12 +86,22 @@ const list: Product[] = Array.isArray(data)
 
 setProducts(list);
 setFiltered(list);
+
+// ✅ cache local pour l'offline
+await AsyncStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(list));
 } catch (err) {
 console.log("❌ loadProducts:", err);
+// fallback cache si API en erreur
+const cached = await AsyncStorage.getItem(PRODUCTS_CACHE_KEY);
+if (cached) {
+const list: Product[] = JSON.parse(cached);
+setProducts(list);
+setFiltered(list);
+}
 } finally {
 setLoading(false);
 }
-}, [headers]);
+}, [headers, PRODUCTS_CACHE_KEY]);
 
 useEffect(() => {
 loadProducts();

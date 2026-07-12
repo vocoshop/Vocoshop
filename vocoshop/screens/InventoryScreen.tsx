@@ -210,7 +210,16 @@ const list: Product[] = Array.isArray(data?.products)
 
 setProducts(list);
 startFade();
+
+await AsyncStorage.setItem(`products_cache_${storeId}`, JSON.stringify(list));
 } catch (err: any) {
+// fallback cache si offline / erreur
+const cached = await AsyncStorage.getItem(`products_cache_${storeId}`);
+if (cached) {
+const list: Product[] = JSON.parse(cached);
+setProducts(list);
+startFade();
+}
 showApiError("Produits", err);
 } finally {
 if (!opts?.silent) setLoading(false);
