@@ -1,5 +1,5 @@
 // screens/StockHistoryScreen.tsx
-import React, { useEffect, useState, useContext, useCallback } from "react";
+import React, { useEffect, useState, useContext, useCallback, useMemo } from "react";
 import {
 View,
 Text,
@@ -19,6 +19,7 @@ const { token, storeId } = useContext(AuthContext);
 
 const [list, setList] = useState<any[]>([]);
 const [loading, setLoading] = useState(true);
+const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
 const load = useCallback(async () => {
 try {
@@ -39,71 +40,50 @@ useEffect(() => {
 load();
 }, [load]);
 
+// Grouper par date
+const groups = useMemo(() => {
+const map = new Map<string, any[]>();
+for (const item of list) {
+const key = item.date ? new Date(item.date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Date inconnue";
+if (!map.has(key)) map.set(key, []);
+map.get(key)!.push(item);
+}
+return Array.from(map.entries()).sort((a, b) => {
+const da = a[1][0]?.date ? new Date(a[1][0].date).getTime() : 0;
+const db = b[1][0]?.date ? new Date(b[1][0].date).getTime() : 0;
+return db - da;
+});
+}, [list]);
+
+const toggleDate = (dateKey: string) => {
+setExpandedDate((prev) => (prev === dateKey ? null : dateKey));
+};
+
 const renderIcon = (type: string) => {
 switch (type) {
 case "inventory":
-return <Ionicons name="clipboard-outline" size={34} color="#C59CFF" />;
+return <Ionicons name="clipboard-outline" size={20} color="#C59CFF" />;
 case "addition":
-return <Ionicons name="add-circle-outline" size={34} color="#4ADE80" />;
+return <Ionicons name="add-circle-outline" size={20} color="#4ADE80" />;
 case "withdrawal":
-return <Ionicons name="remove-circle-outline" size={34} color="#F87171" />;
+return <Ionicons name="remove-circle-outline" size={20} color="#F87171" />;
 default:
-return <Ionicons name="ellipse-outline" size={34} color="#A8A3C2" />;
+return <Ionicons name="ellipse-outline" size={20} color="#A8A3C2" />;
 }
 };
 
-const renderCard = (item: any, index: number) => {
-const dateStr = item.date
-? new Date(item.date).toLocaleString()
-: "Date inconnue";
-
-const isInventory = item.type === "inventory";
-
-return (
-<TouchableOpacity
-key={`${item.id}-${index}`}
-style={styles.card}
-onPress={() => {
-if (isInventory) {
-navigation.navigate("AppliedInventoryDetail", {
-sessionId: item.id,
-});
+const getSummary = (items: any[]) => {
+let additions = 0, withdrawals = 0, inventories = 0;
+for (const item of items) {
+if (item.type === "inventory") inventories++;
+else if (item.type === "addition") additions++;
+else if (item.type === "withdrawal") withdrawals++;
 }
-}}
-disabled={!isInventory}
->
-{renderIcon(item.type)}
-
-<View style={{ flex: 1, marginLeft: 14 }}>
-<Text style={styles.cardTitle}>{item.label}</Text>
-<Text style={styles.cardDate}>{dateStr}</Text>
-
-{isInventory && (
-<Text style={styles.cardSubtitle}>
-{item.modifiedProducts} produit(s) modifié(s)
-</Text>
-)}
-
-{item.type === "addition" && (
-<View style={styles.row}>
-<Text style={styles.qtyAdded}>+{item.quantity}</Text>
-<Text style={styles.productName}>{item.productName}</Text>
-</View>
-)}
-
-{item.type === "withdrawal" && (
-<View style={styles.row}>
-<Text style={styles.qtyRemoved}>-{item.quantity}</Text>
-<Text style={styles.productName}>{item.productName}</Text>
-</View>
-)}
-</View>
-
-{isInventory && (
-<Ionicons name="chevron-forward" size={22} color="#cfcfcf" />
-)}
-</TouchableOpacity>
-);
+const parts: string[] = [];
+if (inventories) parts.push(`${inventories} inventaire${inventories > 1 ? "s" : ""}`);
+if (additions) parts.push(`${additions} ajout${additions > 1 ? "s" : ""}`);
+if (withdrawals) parts.push(`${withdrawals} retrait${withdrawals > 1 ? "s" : ""}`);
+return parts.join(", ") || "Aucune opération";
 };
 
 return (
@@ -123,13 +103,83 @@ Toutes les opérations : inventaires, ajouts et retraits
 
 {loading ? (
 <ActivityIndicator size="large" color="#A78BFA" style={{ marginTop: 50 }} />
-) : (
-<ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
-{list.length === 0 ? (
+) : groups.length === 0 ? (
 <Text style={styles.empty}>Aucune opération pour le moment.</Text>
 ) : (
-list.map((item, index) => renderCard(item, index))
+<ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+{groups.map(([dateKey, items]) => {
+const isOpen = expandedDate === dateKey;
+const totalOps = items.length;
+return (
+<View key={dateKey} style={styles.group}>
+<TouchableOpacity
+style={styles.groupHeader}
+activeOpacity={0.8}
+onPress={() => toggleDate(dateKey)}
+>
+<View style={styles.groupHeaderLeft}>
+<View style={styles.dateBadge}>
+<Text style={styles.dateBadgeText}>{totalOps}</Text>
+</View>
+<View style={{ flex: 1 }}>
+<Text style={styles.groupDate}>{dateKey}</Text>
+<Text style={styles.groupSummary}>{getSummary(items)}</Text>
+</View>
+</View>
+<Ionicons
+name={isOpen ? "chevron-up" : "chevron-down"}
+size={20}
+color="#888"
+/>
+</TouchableOpacity>
+
+{isOpen && (
+<View style={styles.groupBody}>
+{items.map((item: any, idx: number) => {
+const isInventory = item.type === "inventory";
+const timeStr = item.date
+? new Date(item.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+: "";
+return (
+<TouchableOpacity
+key={`${item.id}-${idx}`}
+style={styles.detailRow}
+onPress={() => {
+if (isInventory) {
+navigation.navigate("AppliedInventoryDetail", {
+sessionId: item.id,
+});
+}
+}}
+activeOpacity={isInventory ? 0.7 : 1}
+>
+<View style={styles.detailIcon}>{renderIcon(item.type)}</View>
+<View style={{ flex: 1 }}>
+<Text style={styles.detailTitle}>{item.label}</Text>
+<Text style={styles.detailTime}>{timeStr}</Text>
+{isInventory && (
+<Text style={styles.detailSub}>{item.modifiedProducts} produit(s) modifié(s)</Text>
 )}
+{item.type === "addition" && (
+<Text style={styles.detailProduct}>
+<Text style={styles.qtyAdded}>+{item.quantity}</Text> {item.productName}
+</Text>
+)}
+{item.type === "withdrawal" && (
+<Text style={styles.detailProduct}>
+<Text style={styles.qtyRemoved}>-{item.quantity}</Text> {item.productName}
+</Text>
+)}
+</View>
+{isInventory && <Ionicons name="chevron-forward" size={18} color="#666" />}
+</TouchableOpacity>
+);
+})}
+</View>
+)}
+</View>
+);
+})}
 </ScrollView>
 )}
 </View>
@@ -164,48 +214,96 @@ marginTop: 30,
 fontSize: 15,
 textAlign: "center",
 },
-card: {
+group: {
+marginBottom: 10,
+},
+groupHeader: {
 backgroundColor: "#18122B",
-padding: 16,
+padding: 14,
 borderRadius: 14,
 flexDirection: "row",
 alignItems: "center",
-marginBottom: 12,
+justifyContent: "space-between",
 },
-cardTitle: {
-color: "#fff",
-fontSize: 15,
-fontWeight: "700",
-marginBottom: 2,
-},
-cardDate: {
-color: "#A8A3C2",
-fontSize: 12,
-marginBottom: 4,
-},
-cardSubtitle: {
-color: "#A8A3C2",
-fontSize: 13,
-},
-row: {
+groupHeaderLeft: {
 flexDirection: "row",
 alignItems: "center",
-gap: 8,
+gap: 12,
+flex: 1,
+},
+dateBadge: {
+width: 32,
+height: 32,
+borderRadius: 10,
+backgroundColor: "rgba(167,139,250,0.15)",
+alignItems: "center",
+justifyContent: "center",
+},
+dateBadgeText: {
+color: "#A78BFA",
+fontSize: 14,
+fontWeight: "800",
+},
+groupDate: {
+color: "#fff",
+fontSize: 14,
+fontWeight: "700",
+},
+groupSummary: {
+color: "#888",
+fontSize: 12,
+marginTop: 2,
+},
+groupBody: {
+backgroundColor: "#18122B",
+borderBottomLeftRadius: 14,
+borderBottomRightRadius: 14,
+paddingHorizontal: 14,
+paddingBottom: 6,
+marginTop: -6,
+},
+detailRow: {
+flexDirection: "row",
+alignItems: "center",
+paddingVertical: 10,
+borderTopWidth: 1,
+borderTopColor: "rgba(255,255,255,0.04)",
+},
+detailIcon: {
+width: 32,
+height: 32,
+borderRadius: 8,
+backgroundColor: "rgba(255,255,255,0.04)",
+alignItems: "center",
+justifyContent: "center",
+marginRight: 12,
+},
+detailTitle: {
+color: "#fff",
+fontSize: 13,
+fontWeight: "600",
+},
+detailTime: {
+color: "#666",
+fontSize: 11,
+marginTop: 1,
+},
+detailSub: {
+color: "#A8A3C2",
+fontSize: 11,
+marginTop: 1,
+},
+detailProduct: {
+color: "#C6C0DD",
+fontSize: 12,
 marginTop: 2,
 },
 qtyAdded: {
 color: "#4ADE80",
-fontSize: 15,
-fontWeight: "800",
+fontWeight: "700",
 },
 qtyRemoved: {
 color: "#F87171",
-fontSize: 15,
-fontWeight: "800",
-},
-productName: {
-color: "#C6C0DD",
-fontSize: 13,
-flex: 1,
+fontWeight: "700",
 },
 });
