@@ -3,6 +3,7 @@ import { Router } from "express";
 import authMiddleware from "../middleware/authMiddleware";
 import requirePermission from "../middleware/permissionMiddleware";
 import Product from "../models/Product";
+import InventoryHistory from "../models/InventoryHistory";
 import { PushNotificationService } from "../services/pushNotificationService";
 import { isValidObjectId } from "../utils/helpers";
 
@@ -99,6 +100,13 @@ new Date(a).getTime() - new Date(b).getTime()
 
 await product.save();
 
+await InventoryHistory.create({
+storeId,
+productId: product._id,
+type: "addition",
+quantity: q,
+});
+
 return res.json({
 message: "Stock ajouté avec succès",
 newQuantity: product.quantity,
@@ -144,6 +152,13 @@ if (!product) return res.status(404).json({ error: "Produit introuvable" });
 
 product.quantity = Math.max(0, Number(product.quantity || 0) - q);
 await product.save();
+
+await InventoryHistory.create({
+storeId,
+productId: product._id,
+type: "withdrawal",
+quantity: q,
+});
 
 // 🔔 Alerte stock faible → push notification
 const alertLevel = Number(product.alertLevel || 0);
