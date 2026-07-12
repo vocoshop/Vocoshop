@@ -2,9 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { onSyncState } from "../offline/syncEngine";
-import { getFailedJobsUI, retryAllFailedJobs, clearAllFailedJobs, forceSync } from "../offline/syncEngine";
-import { clearQueue } from "../offline/queue";
+import { onSyncState, getFailedJobsUI, retryAllFailedJobs, clearAllFailedJobs, forceSync, clearAllPending } from "../offline/syncEngine";
 
 export default function SyncIndicator() {
   const [syncing, setSyncing] = useState(false);
@@ -93,7 +91,7 @@ export default function SyncIndicator() {
           <TouchableOpacity
             style={[styles.failedBtn, styles.failedBtnDanger]}
             onPress={async () => {
-              await clearQueue();
+              await clearAllPending();
               setShowPending(false);
             }}
           >

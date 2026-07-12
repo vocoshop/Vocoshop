@@ -202,6 +202,16 @@ export async function clearAllFailedJobs(): Promise<void> {
 }
 
 /* =====================================================
+CLEAR ALL PENDING JOBS
+===================================================== */
+
+export async function clearAllPending(): Promise<void> {
+  const { clearQueue } = await import("./queue");
+  await clearQueue();
+  await refreshStats();
+}
+
+/* =====================================================
 QUEUE DETAILS
 ===================================================== */
 
