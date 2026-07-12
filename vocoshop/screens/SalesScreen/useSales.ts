@@ -246,23 +246,48 @@ const [completedSales, setCompletedSales] = useState(0);
 const [dayActive, setDayActive] = useState(false);
 
 const DAY_ACTIVE_KEY = `dayActive_${storeId}`;
+const DAY_OPENED_KEY = `dayOpenedAt_${storeId}`;
 
+const resetDayOpen = useCallback(() => {
+setDayActive(false);
+setCompletedSales(0);
+AsyncStorage.removeItem(DAY_ACTIVE_KEY);
+AsyncStorage.removeItem(DAY_OPENED_KEY);
+}, [DAY_ACTIVE_KEY, DAY_OPENED_KEY]);
+
+// Auto-clôture si on change de jour
 useEffect(() => {
-AsyncStorage.getItem(DAY_ACTIVE_KEY).then((val) => {
-if (val === "true") setDayActive(true);
-});
-}, [DAY_ACTIVE_KEY]);
+if (!token || !storeId) return;
+(async () => {
+const val = await AsyncStorage.getItem(DAY_ACTIVE_KEY);
+if (val !== "true") return;
+
+const openedAt = await AsyncStorage.getItem(DAY_OPENED_KEY);
+const today = new Date().toISOString().split("T")[0];
+
+if (openedAt && openedAt !== today) {
+try { await API.post("/sales/close-day", {}, { headers }); } catch (e) { console.log("⚠️ auto-close day:", e); }
+resetDayOpen();
+return;
+}
+
+setDayActive(true);
+})();
+}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 const incCompletedSales = useCallback(() => {
 setCompletedSales((c) => {
 const next = c + 1;
 if (!dayActive) {
 setDayActive(true);
-AsyncStorage.setItem(DAY_ACTIVE_KEY, "true");
+AsyncStorage.multiSet([
+[DAY_ACTIVE_KEY, "true"],
+[DAY_OPENED_KEY, new Date().toISOString().split("T")[0]],
+]);
 }
 return next;
 });
-}, [dayActive, DAY_ACTIVE_KEY]);
+}, [dayActive, DAY_ACTIVE_KEY, DAY_OPENED_KEY]);
 
 const finalizeSale = async (): Promise<"success" | "error" | "offline"> => {
 if (!cart.length) return "error";
@@ -343,12 +368,6 @@ const quickSell = async (product: Product) => {
 /* =====================================================
 RETURN
 ===================================================== */
-const resetDayOpen = useCallback(() => {
-setDayActive(false);
-setCompletedSales(0);
-AsyncStorage.removeItem(DAY_ACTIVE_KEY);
-}, [DAY_ACTIVE_KEY]);
-
 return {
   loading,
   products,
