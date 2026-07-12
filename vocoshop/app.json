@@ -8,6 +8,11 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "scheme": "vocoshop",
+    "splash": {
+      "image": "./assets/adaptive-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0617"
+    },
 
 "ios": {
 "supportsTablet": true,

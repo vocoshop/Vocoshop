@@ -16,7 +16,7 @@ const envUrl = process.env.EXPO_PUBLIC_API_URL;
 const extraUrl = (Constants.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL;
 const manifestUrl = (Constants as any)?.manifest?.extra?.EXPO_PUBLIC_API_URL;
 export const API_BASE = envUrl || extraUrl || manifestUrl || "https://vocoshop.onrender.com";
-console.warn("🔗 API_BASE =", API_BASE);
+if (__DEV__) console.warn("🔗 API_BASE =", API_BASE);
 
 /**
  * 🚀 INSTANCE AXIOS PRINCIPALE

@@ -44,9 +44,9 @@ listeners.forEach((fn) => fn(payload));
 * - null => retour au vrai NetInfo
 */
 export function setForceOffline(v: boolean | null) {
-forcedOffline = v;
-console.log("🧪 setForceOffline =", v);
-notify();
+  forcedOffline = v;
+  if (__DEV__) console.log("🧪 setForceOffline =", v);
+  notify();
 }
 
 export function getForceOffline() {
