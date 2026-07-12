@@ -135,7 +135,7 @@ return next(new ValidationError("storeId manquant"));
 
 const store = await Store.findById(storeId)
 .select(
-"storeName phone shopId plan referralCode referredCount paidReferrals city agentCode isOnboarded ownerName ownerPhone"
+"storeName phone shopId plan referralCode referredCount paidReferrals city agentCode isOnboarded ownerName ownerPhone ownershipStatus"
 )
 .lean();
 
@@ -159,6 +159,7 @@ city: (store as any).city ?? "",
 agentCode: (store as any).agentCode ?? "",
 ownerName: (store as any).ownerName ?? "",
 ownerPhone: (store as any).ownerPhone ?? "",
+ownershipStatus: (store as any).ownershipStatus ?? "active",
 isOnboarded,
 });
 });

@@ -14,7 +14,9 @@ Animated,
 Easing,
 } from "react-native";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import PhoneInput from "react-native-phone-number-input";
+import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
 import { useLanguage } from "../src/api/context/LanguageContext";
 import LanguagePicker from "../src/api/components/LanguagePicker";
@@ -154,6 +156,19 @@ setLoading(true);
 setErrorMsg("");
 try {
 await loginWithPassword(cleanPhone, pwd);
+// Vérifier si une invitation propriétaire est en attente
+try {
+const invRes = await API.get("/invitations/pending", { params: { phone: cleanPhone } });
+if ((invRes.data as any)?.hasInvitation) {
+// Récupérer le token depuis la notif ou stockage local
+const tk = await AsyncStorage.getItem("token");
+navigation.reset({
+index: 0,
+routes: [{ name: "AcceptInvitation", params: { phone: cleanPhone, token: tk ? "pending" : "" } }],
+});
+return;
+}
+} catch {}
 navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
 } catch (e: any) {
 setErrorMsg(e?.response?.data?.error || "Erreur de connexion");

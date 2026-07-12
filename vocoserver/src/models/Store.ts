@@ -98,6 +98,11 @@ agentCode: { type: String, default: "", trim: true },
 
 ownerName: { type: String, trim: true },
 ownerPhone: { type: String, trim: true },
+ownershipStatus: {
+  type: String,
+  enum: ["active", "pending_invite"],
+  default: "active",
+},
 
 /* =========================
 📱 VÉRIFICATION TÉLÉPHONE

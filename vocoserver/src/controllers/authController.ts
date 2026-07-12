@@ -71,7 +71,7 @@ process.env.JWT_SECRET || "",
 
 export const registerStore = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
-const { phone, password, storeName, ownerName, ownerPhone, deviceId, referralCodeUsed } = req.body;
+const { phone, password, storeName, ownerName, ownerPhone, deviceId, referralCodeUsed, isOwner } = req.body;
 
 const phoneNorm = normalizePhone(phone);
 if (!phoneNorm) return next(new ValidationError("Numero requis"));
@@ -84,6 +84,8 @@ const passwordHash = await bcrypt.hash(password, 10);
 const referralSafe = typeof referralCodeUsed === "string" ? referralCodeUsed.trim() : "";
 const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
+const ownershipStatus = isOwner === false ? "pending_invite" : "active";
+
 const store = await Store.create({
 phone: phoneNorm,
 passwordHash,
@@ -92,6 +94,7 @@ ownerName: typeof ownerName === "string" ? ownerName.trim() : undefined,
 ownerPhone: typeof ownerPhone === "string" ? ownerPhone.trim() : undefined,
 deviceId: deviceId || null,
 referralCodeUsed: referralSafe,
+ownershipStatus,
 loginCount: 1,
 lastActiveAt: new Date(),
 trialEnd,
@@ -118,6 +121,7 @@ isOnboarded: typeof (store as any).isOnboarded === "boolean"
 : !!(store.storeName && String(store.storeName).trim().length > 0),
 phoneVerified: false,
 subscriptionActive: false,
+ownershipStatus: store.ownershipStatus,
 });
 });
 
@@ -155,6 +159,7 @@ isOnboarded: typeof (store as any).isOnboarded === "boolean"
 : !!(store.storeName && String(store.storeName).trim().length > 0),
 phoneVerified: store.phoneVerified || false,
 subscriptionActive: store.subscriptionActive || false,
+ownershipStatus: (store as any).ownershipStatus ?? "active",
 });
 }
 
@@ -226,9 +231,10 @@ export const autoLogin = asyncHandler(async (req: Request, res: Response, next: 
     storeId: store._id,
     token,
     isOnboarded: !!(store.storeName && String(store.storeName).trim().length > 0),
-    phoneVerified: store.phoneVerified || false,
-    subscriptionActive: store.subscriptionActive || false,
-  });
+phoneVerified: store.phoneVerified || false,
+subscriptionActive: store.subscriptionActive || false,
+ownershipStatus: (store as any).ownershipStatus ?? "active",
+});
 });
 
 export const ownerSelectStore = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {

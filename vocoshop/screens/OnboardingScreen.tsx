@@ -1,4 +1,4 @@
-// screens/OnboardingScreen.tsx
+﻿// screens/OnboardingScreen.tsx
 
 import React, { useCallback, useContext, useMemo, useState, useEffect } from "react";
 import {
@@ -12,6 +12,7 @@ Platform,
 ScrollView,
 Alert,
 Linking,
+ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +20,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import { AuthContext } from "../src/api/context/AuthContext";
 import { updateStoreOnboarding } from "../src/api/services/storeService";
+import API from "../src/api/api";
 
 function safeTrim(v: any) {
 return typeof v === "string" ? v.trim() : "";
@@ -48,6 +50,10 @@ const [confirmPassword, setConfirmPassword] = useState("");
 const [showPassword, setShowPassword] = useState(false);
 
 const [loading, setLoading] = useState(false);
+const [saving, setSaving] = useState(false);
+const [saveStep, setSaveStep] = useState("");
+const [saveProgress, setSaveProgress] = useState(0);
+const [isOwner, setIsOwner] = useState<boolean | null>(null);
 
 const headers = useMemo(
 () => ({
@@ -151,9 +157,7 @@ CONTINUE
 ===================================================== */
 const onContinue = useCallback(async () => {
 
-if (loading) return;
-
-try {
+if (loading || saving) return;
 
 const cleanStoreName = safeTrim(storeName);
 const cleanCity = safeTrim(city);
@@ -169,13 +173,12 @@ Alert.alert("Champ obligatoire", "Entre le nom commercial de la boutique.");
 return;
 }
 
-if (!cleanOwnerPhone) {
+if (isOwner === false && !cleanOwnerPhone) {
 Alert.alert("Champ obligatoire", "Entre le téléphone du propriétaire.");
 return;
 }
 
 if (incomingPhone) {
-// Nouveau compte : password obligatoire
 if (!cleanPassword || cleanPassword.length !== 6) {
 Alert.alert("Champ obligatoire", "Le code secret doit contenir 6 chiffres.");
 return;
@@ -186,69 +189,125 @@ return;
 }
 }
 
-setLoading(true);
+setSaving(true);
 
-if (incomingPhone) {
-// 1) Créer le compte
-const cleanPhone = safeTrim(phoneInput) || incomingPhone;
-await registerWithPassword(
-cleanPhone,
-cleanPassword,
-cleanStoreName,
-cleanOwnerName || undefined,
-cleanOwnerPhone,
-cleanReferralCode || undefined,
-);
-// 2) Mettre à jour les infos restantes (city, agentCode)
-let authHeader = headers.Authorization;
-if (!authHeader) {
-const tk = await AsyncStorage.getItem("token");
-if (tk) authHeader = `Bearer ${tk}`;
-}
-if (authHeader) {
-const payload: any = { storeName: cleanStoreName };
-if (cleanCity) payload.city = cleanCity;
-if (cleanAgentCode) payload.agentCode = cleanAgentCode;
-await updateStoreOnboarding(payload, { Authorization: authHeader });
-}
-} else {
-let authHeader = headers.Authorization;
-if (!authHeader) {
-const tk = await AsyncStorage.getItem("token");
-if (tk) authHeader = `Bearer ${tk}`;
-}
+try {
+  if (incomingPhone) {
+    // Nouveau compte
+    setSaveStep("Création de la boutique");
+    setSaveProgress(20);
+    const cleanPhone = safeTrim(phoneInput) || incomingPhone;
+    await registerWithPassword(
+      cleanPhone,
+      cleanPassword,
+      cleanStoreName,
+      cleanOwnerName || undefined,
+      cleanOwnerPhone,
+      cleanReferralCode || undefined,
+    );
 
-if (!authHeader) {
-Alert.alert("Erreur", "Session invalide. Reconnecte-toi.");
-navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-return;
-}
+    let authHeader = headers.Authorization;
+    if (!authHeader) {
+      const tk = await AsyncStorage.getItem("token");
+      if (tk) authHeader = `Bearer ${tk}`;
+    }
 
-const payload: any = {
-storeName: cleanStoreName,
-city: cleanCity,
-};
+    setSaveStep("Configuration de la boutique");
+    setSaveProgress(50);
+    if (authHeader) {
+      const payload: any = { storeName: cleanStoreName };
+      if (cleanCity) payload.city = cleanCity;
+      if (cleanAgentCode) payload.agentCode = cleanAgentCode;
+      await updateStoreOnboarding(payload, { Authorization: authHeader });
+    }
 
-if (cleanAgentCode) payload.agentCode = cleanAgentCode;
-if (cleanReferralCode) payload.referralCode = cleanReferralCode;
-if (cleanOwnerName) payload.ownerName = cleanOwnerName;
-if (cleanOwnerPhone) payload.ownerPhone = cleanOwnerPhone;
+    if (isOwner === false && cleanOwnerPhone) {
+      setSaveStep("Préparation de l'invitation du propriétaire");
+      setSaveProgress(75);
+      try {
+        const invRes = await API.post("/invitations/send", {
+          ownerPhone: cleanOwnerPhone,
+          ownerName: cleanOwnerName || undefined,
+        }, { headers: { Authorization: authHeader } });
+        const shareLink = (invRes.data as any)?.shareLink || "";
+        await AsyncStorage.setItem("isOnboarded", "true");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "StoreCreated", params: { shareLink, storeName: cleanStoreName, ownerPhone: cleanOwnerPhone } }]
+        });
+      } catch {
+        // Invitation échouée mais boutique créée
+        await AsyncStorage.setItem("isOnboarded", "true");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "StoreCreated", params: { shareLink: "", storeName: cleanStoreName, ownerPhone: cleanOwnerPhone } }]
+        });
+      }
+      return;
+    }
 
-await updateStoreOnboarding(payload, { Authorization: authHeader });
-}
+    await AsyncStorage.setItem("isOnboarded", "true");
+    navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
 
-await AsyncStorage.setItem("isOnboarded", "true");
+  } else {
+    // Compte existant - mise à jour onboarding
+    let authHeader = headers.Authorization;
+    if (!authHeader) {
+      const tk = await AsyncStorage.getItem("token");
+      if (tk) authHeader = `Bearer ${tk}`;
+    }
+    if (!authHeader) {
+      Alert.alert("Erreur", "Session invalide. Reconnecte-toi.");
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+      return;
+    }
 
-navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
+    setSaveStep("Mise à jour de la boutique");
+    setSaveProgress(50);
+    const payload: any = { storeName: cleanStoreName, city: cleanCity };
+    if (cleanAgentCode) payload.agentCode = cleanAgentCode;
+    if (cleanReferralCode) payload.referralCode = cleanReferralCode;
+    if (cleanOwnerName) payload.ownerName = cleanOwnerName;
+    if (cleanOwnerPhone) payload.ownerPhone = cleanOwnerPhone;
+    await updateStoreOnboarding(payload, { Authorization: authHeader });
 
+    if (isOwner === false && cleanOwnerPhone) {
+      setSaveStep("Préparation de l'invitation du propriétaire");
+      setSaveProgress(75);
+      try {
+        const invRes = await API.post("/invitations/send", {
+          ownerPhone: cleanOwnerPhone,
+          ownerName: cleanOwnerName || undefined,
+        }, { headers: { Authorization: authHeader } });
+        const shareLink = (invRes.data as any)?.shareLink || "";
+        await AsyncStorage.setItem("isOnboarded", "true");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "StoreCreated", params: { shareLink, storeName: cleanStoreName, ownerPhone: cleanOwnerPhone } }]
+        });
+        return;
+      } catch {
+        await AsyncStorage.setItem("isOnboarded", "true");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "StoreCreated", params: { shareLink: "", storeName: cleanStoreName, ownerPhone: cleanOwnerPhone } }]
+        });
+        return;
+      }
+    }
+
+    await AsyncStorage.setItem("isOnboarded", "true");
+    navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
+  }
 } catch (err: any) {
 console.log("❌ Onboarding save error:", err?.response?.data || err);
 Alert.alert("Erreur", "Impossible d'enregistrer. Réessaie.");
 } finally {
+setSaving(false);
 setLoading(false);
 }
 
-}, [agentCode, referralCode, city, ownerName, ownerPhone, phoneInput, password, confirmPassword, incomingPhone, headers, loading, navigation, storeName, registerWithPassword]);
+}, [agentCode, referralCode, city, ownerName, ownerPhone, phoneInput, password, confirmPassword, incomingPhone, headers, loading, saving, navigation, storeName, registerWithPassword, isOwner]);
 
 /* =====================================================
 UI
@@ -257,9 +316,25 @@ UI
 return (
 <View style={styles.container}>
 
+{/* ===== SAVING OVERLAY ===== */}
+{saving && (
+  <View style={styles.savingOverlay}>
+    <View style={styles.savingCard}>
+      <ActivityIndicator size="large" color="#8A4DFF" />
+      <Text style={styles.savingTitle}>Création en cours...</Text>
+      <View style={styles.progressBar}>
+        <View style={[styles.progressFill, { width: `${saveProgress}%` }]} />
+      </View>
+      <Text style={styles.savingStep}>{saveStep}</Text>
+    </View>
+  </View>
+)}
+
 <View style={styles.header}>
 <View style={{ width: 26 }} />
-<Text style={styles.headerTitle}>Configurer la boutique</Text>
+<Text style={styles.headerTitle}>
+  {isOwner === null ? "Nouvelle boutique" : "Configurer la boutique"}
+</Text>
 <View style={{ width: 26 }} />
 </View>
 
@@ -271,17 +346,31 @@ behavior={Platform.OS === "ios" ? "padding" : undefined}
 <ScrollView contentContainerStyle={{ paddingBottom: 180 }}>
 <View style={styles.card}>
 
-<View style={styles.heroRow}>
-<View style={styles.heroIcon}>
-<Ionicons name="storefront-outline" size={22} color="#fff" />
-</View>
-<View style={{ flex: 1 }}>
-<Text style={styles.title}>Bienvenue 👋</Text>
-<Text style={styles.sub}>
-Dernière étape : renseigne le nom et la ville pour activer Vocoshop.
-</Text>
-</View>
-</View>
+{isOwner === null ? (
+  <>
+    <View style={styles.ownerQuestionCard}>
+      <View style={styles.ownerQuestionIcon}>
+        <Ionicons name="storefront-outline" size={32} color="#8A4DFF" />
+      </View>
+      <Text style={styles.ownerQuestionTitle}>Es-tu le propriétaire de cette boutique ?</Text>
+      <TouchableOpacity style={styles.ownerChoiceBtn} onPress={() => setIsOwner(true)}>
+        <Ionicons name="checkmark-circle-outline" size={22} color="#4ADE80" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ownerChoiceTitle}>Oui, c'est ma boutique</Text>
+          <Text style={styles.ownerChoiceSub}>J'aurai tous les droits de gestion</Text>
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.ownerChoiceBtn} onPress={() => setIsOwner(false)}>
+        <Ionicons name="person-outline" size={22} color="#FACC15" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ownerChoiceTitle}>Non, je la crée pour quelqu'un d'autre</Text>
+          <Text style={styles.ownerChoiceSub}>Je serai administrateur temporaire</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  </>
+) : (
+<>
 
 <Text style={styles.label}>Nom commercial *</Text>
 <TextInput
@@ -317,6 +406,12 @@ style={styles.input}
 autoCapitalize="words"
 />
 
+{isOwner === false && (
+<>
+<View style={styles.ownerFieldsHeader}>
+<Ionicons name="person-outline" size={18} color="#FACC15" />
+<Text style={styles.ownerFieldsTitle}>Informations du propriétaire</Text>
+</View>
 <Text style={styles.label}>Nom du propriétaire (optionnel)</Text>
 <TextInput
 value={ownerName}
@@ -336,6 +431,8 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.input}
 keyboardType="phone-pad"
 />
+</>
+)}
 
 <Text style={styles.label}>Code agent (optionnel)</Text>
 <TextInput
@@ -406,6 +503,8 @@ Code parrainage = invitation par une boutique.
 </Text>
 </View>
 
+</>
+)}
 </View>
 </ScrollView>
 
@@ -555,5 +654,102 @@ switchText: {
 color: "rgba(255,255,255,0.75)",
 fontSize: 13,
 fontWeight: "700",
+},
+
+/* ===== OWNER QUESTION ===== */
+ownerQuestionCard: {
+alignItems: "center",
+gap: 20,
+paddingVertical: 16,
+},
+ownerQuestionIcon: {
+width: 72,
+height: 72,
+borderRadius: 36,
+backgroundColor: "rgba(139, 92, 246, 0.15)",
+alignItems: "center",
+justifyContent: "center",
+},
+ownerQuestionTitle: {
+color: "#fff",
+fontSize: 20,
+fontWeight: "900",
+textAlign: "center",
+paddingHorizontal: 10,
+},
+ownerChoiceBtn: {
+flexDirection: "row",
+backgroundColor: "#1E1838",
+borderRadius: 16,
+padding: 16,
+gap: 12,
+alignItems: "center",
+width: "100%",
+borderWidth: 1,
+borderColor: "rgba(255,255,255,0.06)",
+},
+ownerChoiceTitle: {
+color: "#fff",
+fontSize: 15,
+fontWeight: "700",
+},
+ownerChoiceSub: {
+color: "#A8A3C2",
+fontSize: 12,
+marginTop: 2,
+},
+
+/* ===== OWNER FIELDS HEADER ===== */
+ownerFieldsHeader: {
+flexDirection: "row",
+alignItems: "center",
+gap: 8,
+marginTop: 8,
+marginBottom: 4,
+},
+ownerFieldsTitle: {
+color: "#FACC15",
+fontSize: 15,
+fontWeight: "700",
+},
+
+/* ===== SAVING OVERLAY ===== */
+savingOverlay: {
+position: "absolute",
+top: 0, left: 0, right: 0, bottom: 0,
+backgroundColor: "rgba(0,0,0,0.7)",
+zIndex: 100,
+justifyContent: "center",
+alignItems: "center",
+},
+savingCard: {
+backgroundColor: "#161228",
+borderRadius: 24,
+padding: 32,
+alignItems: "center",
+width: "80%",
+maxWidth: 320,
+gap: 16,
+},
+savingTitle: {
+color: "#fff",
+fontSize: 18,
+fontWeight: "900",
+},
+progressBar: {
+width: "100%",
+height: 6,
+backgroundColor: "#1E1838",
+borderRadius: 3,
+overflow: "hidden",
+},
+progressFill: {
+height: "100%",
+backgroundColor: "#8A4DFF",
+borderRadius: 3,
+},
+savingStep: {
+color: "#A8A3C2",
+fontSize: 13,
 },
 });

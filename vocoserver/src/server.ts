@@ -1,4 +1,4 @@
-// server.ts
+﻿// server.ts
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -67,6 +67,7 @@ import managerSupportRoutes from "./routes/managerSupportRoutes";
 import ocrRoutes from "./routes/ocrRoutes";
 import callProxyRoutes from "./routes/callProxyRoutes";
 import fundingRoutes from "./routes/fundingRoutes";
+import invitationRoutes from "./routes/invitationRoutes";
 import communicationRoutes from "./routes/communicationRoutes";
 
 import { patchConsole } from "./utils/systemLogger";
@@ -202,6 +203,7 @@ app.use("/api/admin-manager", generalLimiter, managerRoutes);
 app.use("/api/realtime", generalLimiter, realtimeRoutes);
 app.use("/api/ocr", generalLimiter, ocrRoutes);
 app.use("/api/funding", generalLimiter, fundingRoutes);
+app.use("/api/invitations", generalLimiter, invitationRoutes);
 app.use("/api/call-proxy", generalLimiter, callProxyRoutes);
 app.use("/api/manager/support", generalLimiter, managerSupportRoutes);
 app.use("/api/webhook", generalLimiter, paymentWebhookRoutes);

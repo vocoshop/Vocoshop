@@ -55,6 +55,8 @@ import NotificationsScreen from "./screens/NotificationsScreen";
 // PROFIL
 import ProfileScreen from "./screens/ProfileScreen";
 import FundingScreen from "./screens/FundingScreen";
+import AcceptInvitationScreen from "./screens/AcceptInvitationScreen";
+import StoreCreatedScreen from "./screens/StoreCreatedScreen";
 import GestionPartenaires from "./screens/admin/GestionPartenaires";
 import PersonalInfoScreen from "./screens/PersonalInfoScreen";
 import SubscriptionBlockedScreen from "./screens/SubscriptionBlockedScreen";
@@ -407,6 +409,8 @@ component={SubscriptionBlockedScreen}
 {/* 👤 PROFIL */}
 <Stack.Screen name="Profile" component={ProfileScreen} />
 <Stack.Screen name="Funding" component={FundingScreen} />
+<Stack.Screen name="AcceptInvitation" component={AcceptInvitationScreen} />
+<Stack.Screen name="StoreCreated" component={StoreCreatedScreen} />
 <Stack.Screen name="GestionPartenaires" component={GestionPartenaires} />
 <Stack.Screen name="MyAgent" component={MyAgentScreen} />
 <Stack.Screen name="Notifications" component={NotificationsScreen} />
