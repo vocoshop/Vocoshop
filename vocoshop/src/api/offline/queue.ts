@@ -275,7 +275,13 @@ export async function runOrQueue(
       return { mode: "online", conflict: true };
     }
 
-    return { mode: "online" };
+    if (result.ok) {
+      return { mode: "online" };
+    }
+
+    // ❌ Online mais requête échouée → on queue pour retry plus tard
+    const job = await enqueueJob(params);
+    return { mode: "offline", jobId: job.id };
   }
 
   const job = await enqueueJob(params);

@@ -176,11 +176,37 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
       /* =====================================================
       🟢 ONLINE MODE
       ===================================================== */
-      const res = await API.post<CloseDayResponse>(
-        "/sales/close-day",
-        {},
-        { headers }
-      );
+      let res;
+      try {
+        res = await API.post<CloseDayResponse>(
+          "/sales/close-day",
+          {},
+          { headers }
+        );
+      } catch {
+        // Si la requête échoue (timeout, réseau instable), on queue
+        await runOrQueue({
+          title: "Clôture journée",
+          method: "POST",
+          url: "/sales/close-day",
+          body: {},
+          headers,
+        });
+
+        setDaySummary({
+          date: new Date().toISOString(),
+          totalSales: 0,
+          totalRevenue: 0,
+          sales: [],
+        });
+
+        Alert.alert(
+          "Synchronisation en attente ✅",
+          "La clôture sera réessayée automatiquement."
+        );
+
+        return;
+      }
 
       const data: any = res.data;
       const report: TodaySummary | undefined =
