@@ -106,9 +106,14 @@ export default function FundingScreen() {
 
   const loadScore = useCallback(async () => {
     try {
-      const res = await API.get<{ score: number; breakdown: ScoreBreakdownItem[]; meta: ScoreMeta }>("/funding/score");
+      const res = await API.get<{ score: number; breakdown: Record<string, ScoreBreakdownItem>; meta: ScoreMeta }>("/funding/score");
       setScore(res.data?.score || 0);
-      setScoreBreakdown(res.data?.breakdown || null);
+      if (res.data?.breakdown) {
+        const arr = Object.values(res.data.breakdown);
+        setScoreBreakdown(arr);
+      } else {
+        setScoreBreakdown(null);
+      }
       setScoreMeta(res.data?.meta || null);
     } catch {
       setScore(0);

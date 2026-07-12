@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef } from "react";
+﻿import React, { useState, useContext, useEffect, useRef } from "react";
 import {
 View,
 Text,
@@ -45,11 +45,33 @@ const [selectedStoreName, setSelectedStoreName] = useState(route?.params?.select
 
 const [errorMsg, setErrorMsg] = useState("");
 
+const fadeAnim = useRef(new Animated.Value(1)).current;
+const slideAnim = useRef(new Animated.Value(0)).current;
+const transitioning = useRef(false);
+
+const animateToStep = (target: "phone" | "password") => {
+  if (transitioning.current) return;
+  transitioning.current = true;
+  Animated.parallel([
+    Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
+    Animated.timing(slideAnim, { toValue: target === "phone" ? 30 : -20, duration: 120, useNativeDriver: true }),
+  ]).start(() => {
+    setStep(target);
+    slideAnim.setValue(target === "phone" ? -20 : 30);
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+    ]).start(() => {
+      transitioning.current = false;
+      if (target === "password") hiddenRef.current?.focus();
+    });
+  });
+};
+
 useEffect(() => {
   if (route?.params?.preselectedPhone) {
-    // If returning from store picker, go directly to password step
     checkPhone(buildFullPhone()).then((result) => {
-      if (result.exists) setStep("password");
+      if (result.exists) animateToStep("password");
     });
   }
 }, [route?.params?.preselectedPhone]);
@@ -82,9 +104,9 @@ return `+${prefix}${cleaned}`;
 };
 
 const resetForm = () => {
-setStep("phone");
-setPassword("");
-setErrorMsg("");
+  setPassword("");
+  setErrorMsg("");
+  animateToStep("phone");
 };
 
 const continueWithPhone = async () => {
@@ -106,7 +128,7 @@ const continueWithPhone = async () => {
       navigation.navigate("StorePicker", { stores: result.stores, ownerPhone: cleanPhone });
       return;
     }
-    setStep("password");
+    animateToStep("password");
   } catch (e: any) {
     setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
   } finally {
@@ -143,6 +165,8 @@ setLoading(false);
 return (
 <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+
+<Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
 {step === "phone" && (
 <View style={styles.langRow}>
@@ -236,10 +260,11 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 </View>
 )}
 
+        </Animated.View>
 </ScrollView>
 </KeyboardAvoidingView>
-);
-}
+    );
+  }
 
 const styles = StyleSheet.create({
 

@@ -362,7 +362,7 @@ autoCorrect={false}
 <Text style={styles.label}>Code secret 6 chiffres *</Text>
 <View style={styles.inputWrap}>
 <TextInput
-value={showPassword ? password : password.replace(/./g, "•")}
+value={password}
 onChangeText={(t) => {
 const digits = t.replace(/[^0-9]/g, "").slice(0, 6);
 setPassword(digits);
@@ -370,6 +370,7 @@ setConfirmPassword("");
 }}
 style={styles.input}
 keyboardType="numeric"
+secureTextEntry={!showPassword}
 placeholder="_ _ _ _ _ _"
 placeholderTextColor="rgba(255,255,255,0.35)"
 />
@@ -381,13 +382,14 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 <Text style={styles.label}>Confirmer le code secret *</Text>
 <View style={styles.inputWrap}>
 <TextInput
-value={showPassword ? confirmPassword : confirmPassword.replace(/./g, "•")}
+value={confirmPassword}
 onChangeText={(t) => {
 const digits = t.replace(/[^0-9]/g, "").slice(0, 6);
 setConfirmPassword(digits);
 }}
 style={styles.input}
 keyboardType="numeric"
+secureTextEntry={!showPassword}
 placeholder="_ _ _ _ _ _"
 placeholderTextColor="rgba(255,255,255,0.35)"
 />
