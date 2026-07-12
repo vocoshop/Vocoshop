@@ -29,10 +29,24 @@ router.get("/me", getMyStoreProfile);
 👤 UTILISATEUR CONNECTÉ (permissions, rôle, etc.)
 GET /api/store/me/user
 ===================================================== */
-router.get("/me/user", (req: any, res) => {
+router.get("/me/user", async (req: any, res) => {
 const user = req.user || null;
 if (!user) return res.status(401).json({ error: "Non authentifié" });
-res.json(user);
+
+// Enrichir avec le statut de propriété
+let ownershipStatus = "active";
+let storeName = "";
+if (user.storeId) {
+  try {
+    const store = await (require("../models/Store").default as any).findById(user.storeId).select("ownershipStatus storeName").lean();
+    if (store) {
+      ownershipStatus = store.ownershipStatus || "active";
+      storeName = store.storeName || "";
+    }
+  } catch {}
+}
+
+res.json({ ...user, ownershipStatus, storeName });
 });
 
 /* =====================================================

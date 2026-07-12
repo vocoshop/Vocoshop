@@ -1,5 +1,6 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware";
+import requireStoreOwner from "../middleware/requireStoreOwner";
 
 import { evaluateSubscription } from "../services/subscriptionEngine";
 
@@ -51,7 +52,7 @@ error: "subscription error",
 * Lance seulement le paiement (le webhook activera)
 * =====================================================
 */
-router.post("/activate", authMiddleware, activateSubscription);
+router.post("/activate", authMiddleware, requireStoreOwner, activateSubscription);
 
 /**
 * =====================================================
@@ -59,6 +60,6 @@ router.post("/activate", authMiddleware, activateSubscription);
 * Désactive seulement autoRenew
 * =====================================================
 */
-router.post("/cancel", authMiddleware, cancelSubscription);
+router.post("/cancel", authMiddleware, requireStoreOwner, cancelSubscription);
 
 export default router;

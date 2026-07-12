@@ -54,10 +54,16 @@ const [isOnboarded, setIsOnboarded] = useState<boolean>(true);
 const [ownerPhoneModal, setOwnerPhoneModal] = useState(false);
 const [ownerPhoneInput, setOwnerPhoneInput] = useState("");
 
-// ✅ Owner/admin only
+// ✅ Owner uniquement (propriétaire réel ayant accepté)
 const isOwner = useMemo(() => {
 const role = String(user?.role || "");
-return role === "owner" || role === "admin";
+const ownershipStatus = String(user?.ownershipStatus || "active");
+return role === "owner" && ownershipStatus === "active";
+}, [user]);
+
+const isTempAdmin = useMemo(() => {
+const ownershipStatus = String(user?.ownershipStatus || "active");
+return ownershipStatus === "pending_invite";
 }, [user]);
 
 // ✅ headers SAFE : uniquement token
@@ -292,7 +298,6 @@ fontWeight:"900"
 </View>
 
 {/* ===== BLOC PROFIL FIXE (NE SCROLL PAS) ===== */}
-{isOwner && (
 <View style={styles.fixedTop}>
 <View style={styles.shopCard}>
 <View style={styles.shopLeft}>
@@ -345,7 +350,6 @@ activeOpacity={0.7}
 {/* petite séparation propre */}
 <View style={styles.divider} />
 </View>
-)}
 
 {/* ===== CONTENU DÉFILANT (LE RESTE) ===== */}
 <ScrollView
@@ -353,7 +357,7 @@ contentContainerStyle={styles.scrollContent}
 showsVerticalScrollIndicator={false}
 >
 {/* ===== PARRAINAGE (OWNER ONLY) ===== */}
-{isOwner && (
+{isOwner ? (
 <View style={styles.referralCard}>
 <View style={styles.referralHeader}>
 <Ionicons name="gift-outline" size={20} color="#FACC15" />
@@ -466,7 +470,14 @@ Partager mon code
 })()}
 
 </View>
-)}
+) : isTempAdmin ? (
+<View style={styles.lockedCard}>
+<View style={styles.lockedRow}>
+<Ionicons name="lock-closed-outline" size={18} color="#A78BFA" />
+<Text style={styles.lockedText}>Parrainage réservé au propriétaire</Text>
+</View>
+</View>
+) : null}
 
 {/* ===== MON COMPTE ===== */}
 <Text style={styles.sectionTitle}>Mon compte</Text>
@@ -478,7 +489,7 @@ subtitle="Modifier vos infos"
 onPress={() => navigation.navigate("PersonalInfo")}
 />
 
-{isOwner && (
+{isOwner ? (
 <ProfileItem
 icon="phone-portrait-outline"
 title="Téléphone du propriétaire"
@@ -488,9 +499,15 @@ setOwnerPhoneInput(storeOwnerPhone || "");
 setOwnerPhoneModal(true);
 }}
 />
-)}
+) : isTempAdmin ? (
+<View style={styles.lockedCard}>
+<View style={styles.lockedRow}>
+<Ionicons name="lock-closed-outline" size={18} color="#A78BFA" />
+<Text style={styles.lockedText}>Téléphone propriétaire réservé</Text>
+</View>
+</View>
+) : null}
 
-{isOwner && (
 <>
 <ProfileItem
 icon="bar-chart-outline"
@@ -527,7 +544,6 @@ subtitle="Développez votre activité grâce à vos données"
 onPress={() => navigation.navigate("Funding")}
 />
 </>
-)}
 
 {/* ===== DÉCONNEXION ===== */}
 <TouchableOpacity
@@ -669,6 +685,25 @@ paddingVertical: 3,
 borderRadius: 6,
 },
 
+lockedCard: {
+backgroundColor: "#1E1838",
+marginHorizontal: 20,
+marginBottom: 20,
+padding: 16,
+borderRadius: 18,
+opacity: 0.8,
+},
+lockedRow: {
+flexDirection: "row",
+alignItems: "center",
+gap: 10,
+},
+lockedText: {
+color: "#A78BFA",
+fontSize: 14,
+fontWeight: "500",
+flex: 1,
+},
 referralCard: {
 backgroundColor: "#1E1838",
 marginHorizontal: 20,

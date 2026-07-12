@@ -90,7 +90,7 @@ if (decoded?.storeId && !decoded?.userId) {
 const storeId = String(decoded.storeId);
 
 const store = await Store.findById(storeId)
-.select("_id agentCode storeName lastActiveAt")
+.select("_id agentCode storeName lastActiveAt ownershipStatus")
 .lean();
 
 if (!store)
@@ -127,11 +127,15 @@ message: sub?.message || "Abonnement requis",
 console.log("subscription engine error", e);
 }
 
+const ownershipStatus = (store as any)?.ownershipStatus || "active";
+const isActualOwner = ownershipStatus === "active";
+
 req.user = {
 id: `owner:${storeId}`,
 userId: `owner:${storeId}`,
 storeId,
-role: "owner",
+role: isActualOwner ? "owner" : "admin",
+ownershipStatus,
 permissions: ["inventory", "sales", "reports", "stock", "orders", "employees"],
 agentCode: safeTrim((store as any).agentCode),
 storeName: safeTrim((store as any).storeName),
@@ -178,7 +182,7 @@ error: "Compte désactivé",
 const storeId = String(user.store);
 
 const store = await Store.findById(storeId)
-.select("_id agentCode storeName lastActiveAt")
+.select("_id agentCode storeName lastActiveAt ownershipStatus")
 .lean();
 
 if (!store)
@@ -220,6 +224,7 @@ id: String(user._id),
 userId: String(user._id),
 storeId,
 role: safeTrim((user as any).role) || "employee",
+ownershipStatus: (store as any)?.ownershipStatus || "active",
 name: safeTrim((user as any)?.name) || undefined,
 permissions:
   (user as any).permissions &&
