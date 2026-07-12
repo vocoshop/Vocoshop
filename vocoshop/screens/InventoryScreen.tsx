@@ -536,33 +536,47 @@ const showTopBar = inventoryCount > 0 || Boolean(sessionIdRef.current);
 return (
     <View style={styles.container}>
 
-      {/* ===== HEADER PRO (COMME StockScreen) ===== */}
+      {/* ===== HEADER ===== */}
       <View style={styles.headerRow}>
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.85}
+          activeOpacity={0.8}
         >
-          <Ionicons name="chevron-back" size={26} color="#fff" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
 
         <View style={{ flex: 1 }}>
           <Text style={styles.header}>Inventaire</Text>
           <Text style={styles.subHeader}>Comptez et gérez votre stock</Text>
         </View>
+
+        {showTopBar && (
+          <View style={styles.sessionBadge}>
+            <View style={styles.sessionDot} />
+            <Text style={styles.sessionBadgeText}>{inventoryCount}</Text>
+          </View>
+        )}
       </View>
 
       {/* ===== SEARCH BAR ===== */}
       {!historyTab && (
       <View style={styles.searchBar}>
-<Ionicons name="search-outline" size={20} color="#AAA" />
+<View style={styles.searchIconWrap}>
+  <Ionicons name="search-outline" size={18} color="#888" />
+</View>
 <TextInput
-style={styles.searchInput}
-placeholder="Rechercher un produit..."
-placeholderTextColor="#777"
-value={search}
-onChangeText={setSearch}
+  style={styles.searchInput}
+  placeholder="Rechercher un produit..."
+  placeholderTextColor="#666"
+  value={search}
+  onChangeText={setSearch}
 />
+{search.length > 0 && (
+  <TouchableOpacity onPress={() => setSearch("")} style={styles.clearBtn}>
+    <Ionicons name="close-circle" size={18} color="#666" />
+  </TouchableOpacity>
+)}
 </View>
       )}
 
@@ -573,7 +587,7 @@ onChangeText={setSearch}
           onPress={() => setHistoryTab(false)}
           activeOpacity={0.8}
         >
-          <Ionicons name="cube-outline" size={16} color={!historyTab ? "#fff" : "#A8A3C2"} />
+          <Ionicons name="cube-outline" size={16} color={!historyTab ? "#fff" : "#666"} />
           <Text style={[styles.tabText, !historyTab && styles.tabTextActive]}>Inventaire</Text>
         </TouchableOpacity>
 
@@ -582,7 +596,7 @@ onChangeText={setSearch}
           onPress={() => setHistoryTab(true)}
           activeOpacity={0.8}
         >
-          <Ionicons name="time-outline" size={16} color={historyTab ? "#fff" : "#A8A3C2"} />
+          <Ionicons name="time-outline" size={16} color={historyTab ? "#fff" : "#666"} />
           <Text style={[styles.tabText, historyTab && styles.tabTextActive]}>Historique</Text>
         </TouchableOpacity>
       </View>
@@ -590,7 +604,13 @@ onChangeText={setSearch}
       {historyTab ? (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 140 }}>
           {historySessions.length === 0 ? (
-            <Text style={{ color: "#A8A3C2", textAlign: "center", marginTop: 40 }}>Aucun historique</Text>
+            <View style={styles.emptyWrap}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="time-outline" size={32} color="#444" />
+              </View>
+              <Text style={styles.emptyTitle}>Aucun historique</Text>
+              <Text style={styles.emptyDesc}>Les inventaires validés apparaîtront ici</Text>
+            </View>
           ) : (
             historySessions.map((s: any, i: number) => (
               <TouchableOpacity
@@ -600,167 +620,195 @@ onChangeText={setSearch}
                 activeOpacity={0.85}
               >
                 <View style={styles.historyCardLeft}>
-                  <Ionicons name="calendar-outline" size={18} color="#A78BFA" />
+                  <View style={styles.historyIcon}>
+                    <Ionicons name="calendar-outline" size={18} color="#A78BFA" />
+                  </View>
                   <View>
-                    <Text style={styles.historyDate}>{new Date(s.createdAt).toLocaleDateString("fr-FR")}</Text>
-                    <Text style={styles.historyCount}>{s.lines?.length ?? s.productCount ?? 0} produit(s)</Text>
+                    <Text style={styles.historyDate}>{new Date(s.createdAt).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</Text>
+                    <Text style={styles.historyCount}>{s.lines?.length ?? s.productCount ?? 0} produit(s) compté(s)</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#777" />
+                <View style={styles.historyArrow}>
+                  <Ionicons name="chevron-forward" size={18} color="#555" />
+                </View>
               </TouchableOpacity>
             ))
           )}
         </ScrollView>
       ) : (
 <>
+
+{/* ===== SESSION ACTIVE BAR ===== */}
 {showTopBar && (
-<View style={styles.topActionRow}>
-<View>
-<Text style={styles.topActionTitle}>Inventaire actif</Text>
-<Text style={styles.topActionSub}>
-{inventoryCount} produit(s) compté(s)
-</Text>
-</View>
-
-<TouchableOpacity
-style={styles.finishBtn}
-onPress={finishInventory}
-activeOpacity={0.85}
->
-<Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
-<Text style={styles.finishText}>Terminer</Text>
-</TouchableOpacity>
+<View style={styles.sessionCard}>
+  <View style={styles.sessionCardLeft}>
+    <View style={styles.sessionIcon}>
+      <Ionicons name="clipboard-outline" size={20} color="#A78BFA" />
+    </View>
+    <View>
+      <Text style={styles.sessionTitle}>Session en cours</Text>
+      <Text style={styles.sessionCount}>{inventoryCount} produit{inventoryCount > 1 ? "s" : ""} compté{inventoryCount > 1 ? "s" : ""}</Text>
+    </View>
+  </View>
+  <TouchableOpacity
+    style={styles.finishBtn}
+    onPress={finishInventory}
+    activeOpacity={0.85}
+  >
+    <Ionicons name="checkmark-circle" size={18} color="#fff" />
+    <Text style={styles.finishText}>Terminer</Text>
+  </TouchableOpacity>
 </View>
 )}
 
+{/* ===== LOADING ===== */}
 {loading && (
-<ActivityIndicator color="#8A4DFF" style={{ marginTop: 10 }} />
+<View style={styles.loadingWrap}>
+  <ActivityIndicator color="#A78BFA" size="small" />
+  <Text style={styles.loadingText}>Chargement...</Text>
+</View>
 )}
 
-{/* ===== LIST ===== */}
+{/* ===== PRODUCTS LIST ===== */}
 <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
 <FlatList
 data={products}
 keyExtractor={(item) => item._id}
-contentContainerStyle={{ paddingBottom: 180 }}
+contentContainerStyle={{ paddingBottom: 180, paddingTop: 4 }}
 windowSize={5}
 initialNumToRender={10}
 maxToRenderPerBatch={10}
 removeClippedSubviews={true}
 refreshControl={
-<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  <RefreshControl
+    refreshing={refreshing}
+    onRefresh={onRefresh}
+    tintColor="#A78BFA"
+    colors={["#A78BFA"]}
+    progressBackgroundColor="#1A152A"
+  />
 }
 renderItem={({ item }) => (
-<TouchableOpacity
-style={styles.productCard}
-activeOpacity={0.85}
-onPress={() => {
-navigation.navigate("AddProduct", {
-product: item,
-fromInventory: true,
-});
-}}
->
-<View style={styles.iconBox}>
-<Ionicons name="cube-outline" size={26} color="#A78BFA" />
-</View>
+  <TouchableOpacity
+    style={styles.productCard}
+    activeOpacity={0.7}
+    onPress={() => {
+      navigation.navigate("AddProduct", {
+        product: item,
+        fromInventory: true,
+      });
+    }}
+  >
+    <View style={styles.productIconWrap}>
+      <Ionicons name="cube-outline" size={24} color="#A78BFA" />
+    </View>
 
-<View style={{ flex: 1 }}>
-<Text style={styles.productName}>{item.name}</Text>
-<Text style={styles.productMeta}>{item.category || "—"}</Text>
-</View>
+    <View style={styles.productInfo}>
+      <Text style={styles.productName}>{item.name}</Text>
+      <View style={styles.productMetaRow}>
+        {item.category ? (
+          <View style={styles.categoryPill}>
+            <Text style={styles.categoryText}>{item.category}</Text>
+          </View>
+        ) : null}
+        <Text style={styles.productStock}>
+          Stock: {item.quantity}
+        </Text>
+      </View>
+    </View>
 
-<View style={styles.itemRight}>
-<Text style={styles.productPrice}>
-{typeof item.price === "number" ? item.price : 0} FCFA
-</Text>
-</View>
-</TouchableOpacity>
+    <View style={styles.productPriceWrap}>
+      <Text style={styles.productPrice}>
+        {typeof item.price === "number" ? item.price.toLocaleString("fr-FR") : "0"} <Text style={{ fontSize: 11, color: "#7A6F9E" }}>FCFA</Text>
+      </Text>
+    </View>
+  </TouchableOpacity>
 )}
 ListEmptyComponent={
-!loading ? (
-<View style={{ marginTop: 30, alignItems: "center" }}>
-<Text style={{ color: "#A8A3C2" }}>Aucun produit trouvé.</Text>
-</View>
-) : null
+  !loading ? (
+    <View style={styles.emptyWrap}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="cube-outline" size={32} color="#444" />
+      </View>
+      <Text style={styles.emptyTitle}>Aucun produit</Text>
+      <Text style={styles.emptyDesc}>Ajoutez des produits pour commencer l'inventaire</Text>
+    </View>
+  ) : null
 }
 />
 </Animated.View>
 
 </>
       )}
-{/* ===== MODAL REPRENDRE SESSION ===== */}
+
+      {/* ===== MODAL REPRENDRE SESSION ===== */}
 <Modal
 visible={showResumeModal}
 transparent
 animationType="fade"
+statusBarTranslucent
 onRequestClose={() => setShowResumeModal(false)}
 >
-<Pressable
-style={styles.modalOverlay}
-onPress={() => setShowResumeModal(false)}
-/>
+<Pressable style={styles.modalOverlay} onPress={() => setShowResumeModal(false)} />
 
-<View style={styles.modalCenter}>
-<View style={styles.modalBox}>
-<View style={styles.modalHeader}>
-<View style={styles.modalIcon}>
-<Ionicons name="clipboard-outline" size={22} color="#A78BFA" />
-</View>
+<View style={styles.modalSheet}>
+  <View style={styles.modalHandle} />
 
-<View style={{ flex: 1 }}>
-<Text style={styles.modalTitle}>Session en cours</Text>
-<Text style={styles.modalText}>
-Tu as déjà compté {inventoryCount} produit(s). Tu veux continuer ?
-</Text>
-</View>
+  <View style={styles.modalIconBig}>
+    <Ionicons name="clipboard-outline" size={28} color="#A78BFA" />
+  </View>
 
-<TouchableOpacity
-style={styles.modalCloseBtn}
-onPress={() => setShowResumeModal(false)}
-activeOpacity={0.8}
->
-<Ionicons name="close" size={18} color="#E5E7EB" />
-</TouchableOpacity>
-</View>
+  <Text style={styles.modalTitle}>Session en cours</Text>
+  <Text style={styles.modalDesc}>
+    Tu as déjà compté <Text style={{ color: "#fff", fontWeight: "700" }}>{inventoryCount} produit{inventoryCount > 1 ? "s" : ""}</Text>. Tu veux reprendre ou annuler ?
+  </Text>
 
-<View style={styles.modalActionsRow}>
-<TouchableOpacity
-style={[styles.modalBtn, styles.modalBtnPrimary]}
-activeOpacity={0.9}
-onPress={() => setShowResumeModal(false)}
->
-<Ionicons name="play-outline" size={18} color="#fff" />
-<Text style={styles.modalBtnText}>Continuer</Text>
-</TouchableOpacity>
+  <View style={styles.modalStats}>
+    <View style={styles.modalStatItem}>
+      <Text style={styles.modalStatValue}>{inventoryCount}</Text>
+      <Text style={styles.modalStatLabel}>Produits comptés</Text>
+    </View>
+    <View style={styles.modalStatDivider} />
+    <View style={styles.modalStatItem}>
+      <Text style={styles.modalStatValue}>{new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</Text>
+      <Text style={styles.modalStatLabel}>Dernière activité</Text>
+    </View>
+  </View>
 
-<TouchableOpacity
-style={[styles.modalBtn, styles.modalBtnDanger]}
-activeOpacity={0.9}
-onPress={async () => {
-const sid = await ensureSessionId();
-Alert.alert(
-"Annuler la session",
-"Tu es sûr de vouloir annuler ? Les comptages en cours seront supprimés.",
-[
-{ text: "Non", style: "cancel" },
-{
-text: "Oui, annuler",
-style: "destructive",
-onPress: async () => { await cancelSession(sid); },
-},
-]
-);
-}}
->
-<Ionicons name="close-circle-outline" size={18} color="#fff" />
-<Text style={styles.modalBtnText}>Annuler</Text>
-</TouchableOpacity>
-</View>
-</View>
+  <TouchableOpacity
+    style={styles.modalBtnPrimary}
+    activeOpacity={0.9}
+    onPress={() => setShowResumeModal(false)}
+  >
+    <Ionicons name="play" size={18} color="#fff" />
+    <Text style={styles.modalBtnText}>Continuer l'inventaire</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.modalBtnSecondary}
+    activeOpacity={0.8}
+    onPress={async () => {
+      const sid = await ensureSessionId();
+      Alert.alert(
+        "Annuler la session",
+        "Tous les comptages en cours seront supprimés.",
+        [
+          { text: "Non", style: "cancel" },
+          {
+            text: "Oui, annuler",
+            style: "destructive",
+            onPress: async () => { await cancelSession(sid); },
+          },
+        ]
+      );
+    }}
+  >
+    <Ionicons name="close-outline" size={18} color="#FF6B6B" />
+    <Text style={styles.modalBtnSecondaryText}>Annuler la session</Text>
+  </TouchableOpacity>
 </View>
 </Modal>
-</View>
+    </View>
   );
 }
 
@@ -775,100 +823,81 @@ paddingTop: 60,
 paddingHorizontal: 20,
 },
 
-modalOverlay: {
-flex: 1,
-backgroundColor: "rgba(0,0,0,0.55)",
-},
-modalCenter: {
-position: "absolute",
-left: 20,
-right: 20,
-top: "35%",
-},
-modalBox: {
-backgroundColor: "#141027",
-padding: 18,
-width: "100%",
-borderRadius: 18,
-borderWidth: 1,
-borderColor: "rgba(255,255,255,0.06)",
-},
-modalHeader: {
+/* Header */
+headerRow: {
 flexDirection: "row",
 alignItems: "center",
-gap: 12,
-marginBottom: 14,
+marginBottom: 8,
 },
-modalIcon: {
-width: 44,
-height: 44,
-borderRadius: 14,
-backgroundColor: "rgba(167,139,250,0.18)",
+backBtn: {
+width: 40,
+height: 40,
+borderRadius: 20,
+backgroundColor: "rgba(255,255,255,0.07)",
 alignItems: "center",
 justifyContent: "center",
+marginRight: 14,
 },
-modalTitle: {
+header: {
 color: "#fff",
-fontSize: 18,
-fontWeight: "900",
+fontSize: 26,
+fontWeight: "800",
+letterSpacing: -0.5,
 },
-modalText: {
-color: "#B9B3D1",
+subHeader: {
+color: "#7A6F9E",
 fontSize: 13,
-marginTop: 4,
+marginTop: 2,
 },
-modalCloseBtn: {
-width: 36,
-height: 36,
-borderRadius: 12,
-alignItems: "center",
-justifyContent: "center",
-backgroundColor: "rgba(255,255,255,0.06)",
-borderWidth: 1,
-borderColor: "rgba(255,255,255,0.10)",
-},
-
-modalActionsRow: {
-flexDirection: "row",
-gap: 10,
-marginTop: 6,
-},
-modalBtn: {
-flex: 1,
-paddingVertical: 12,
-borderRadius: 14,
+sessionBadge: {
 flexDirection: "row",
 alignItems: "center",
-justifyContent: "center",
-gap: 8,
+backgroundColor: "rgba(167,139,250,0.15)",
+paddingHorizontal: 10,
+paddingVertical: 6,
+borderRadius: 20,
+gap: 6,
 },
-modalBtnPrimary: {
-backgroundColor: "#6C63FF",
+sessionDot: {
+width: 8,
+height: 8,
+borderRadius: 4,
+backgroundColor: "#22C55E",
 },
-modalBtnDanger: {
-backgroundColor: "#FF5B5B",
-},
-modalBtnText: {
-color: "#fff",
-fontWeight: "900",
+sessionBadgeText: {
+color: "#A78BFA",
+fontSize: 14,
+fontWeight: "700",
 },
 
-    searchBar: {
-marginTop: 16,
+/* Search */
+searchBar: {
+marginTop: 14,
 flexDirection: "row",
 alignItems: "center",
 backgroundColor: "#1A152A",
-paddingHorizontal: 15,
-paddingVertical: 12,
-borderRadius: 16,
-marginBottom: 12,
+paddingHorizontal: 14,
+paddingVertical: 10,
+borderRadius: 14,
+marginBottom: 10,
+},
+searchIconWrap: {
+width: 28,
+height: 28,
+alignItems: "center",
+justifyContent: "center",
 },
 searchInput: {
 color: "#fff",
 flex: 1,
-marginLeft: 10,
+marginLeft: 8,
+fontSize: 15,
+},
+clearBtn: {
+padding: 4,
 },
 
+/* Tabs */
 tabRow: {
 flexDirection: "row",
 backgroundColor: "#1A152A",
@@ -881,7 +910,7 @@ flex: 1,
 flexDirection: "row",
 alignItems: "center",
 justifyContent: "center",
-paddingVertical: 8,
+paddingVertical: 9,
 gap: 6,
 borderRadius: 10,
 },
@@ -889,7 +918,7 @@ tabActive: {
 backgroundColor: "#6C63FF",
 },
 tabText: {
-color: "#A8A3C2",
+color: "#666",
 fontSize: 13,
 fontWeight: "600",
 },
@@ -898,10 +927,158 @@ color: "#fff",
 fontWeight: "700",
 },
 
+/* Session active card */
+sessionCard: {
+backgroundColor: "#161228",
+borderRadius: 16,
+padding: 16,
+marginBottom: 12,
+flexDirection: "row",
+alignItems: "center",
+justifyContent: "space-between",
+borderWidth: 1,
+borderColor: "rgba(167,139,250,0.12)",
+},
+sessionCardLeft: {
+flexDirection: "row",
+alignItems: "center",
+gap: 12,
+flex: 1,
+},
+sessionIcon: {
+width: 42,
+height: 42,
+borderRadius: 12,
+backgroundColor: "rgba(167,139,250,0.12)",
+alignItems: "center",
+justifyContent: "center",
+},
+sessionTitle: {
+color: "#fff",
+fontSize: 15,
+fontWeight: "700",
+},
+sessionCount: {
+color: "#7A6F9E",
+fontSize: 12,
+marginTop: 2,
+},
+finishBtn: {
+backgroundColor: "#6C63FF",
+paddingVertical: 10,
+paddingHorizontal: 14,
+borderRadius: 12,
+flexDirection: "row",
+alignItems: "center",
+gap: 6,
+},
+finishText: {
+color: "#fff",
+fontWeight: "800",
+fontSize: 14,
+},
+
+/* Loading */
+loadingWrap: {
+flexDirection: "row",
+alignItems: "center",
+justifyContent: "center",
+gap: 8,
+paddingVertical: 12,
+},
+loadingText: {
+color: "#666",
+fontSize: 13,
+},
+
+/* Product card */
+productCard: {
+backgroundColor: "#161228",
+padding: 14,
+borderRadius: 16,
+flexDirection: "row",
+alignItems: "center",
+marginTop: 10,
+},
+productIconWrap: {
+width: 44,
+height: 44,
+borderRadius: 12,
+backgroundColor: "rgba(167,139,250,0.10)",
+alignItems: "center",
+justifyContent: "center",
+marginRight: 14,
+},
+productInfo: {
+flex: 1,
+},
+productName: {
+color: "#fff",
+fontSize: 15,
+fontWeight: "700",
+},
+productMetaRow: {
+flexDirection: "row",
+alignItems: "center",
+gap: 8,
+marginTop: 4,
+},
+categoryPill: {
+backgroundColor: "rgba(167,139,250,0.12)",
+paddingHorizontal: 8,
+paddingVertical: 2,
+borderRadius: 6,
+},
+categoryText: {
+color: "#A78BFA",
+fontSize: 11,
+fontWeight: "600",
+},
+productStock: {
+color: "#666",
+fontSize: 12,
+},
+productPriceWrap: {
+alignItems: "flex-end",
+marginLeft: 10,
+},
+productPrice: {
+color: "#C59CFF",
+fontSize: 15,
+fontWeight: "800",
+},
+
+/* Empty state */
+emptyWrap: {
+alignItems: "center",
+marginTop: 60,
+},
+emptyIcon: {
+width: 64,
+height: 64,
+borderRadius: 32,
+backgroundColor: "rgba(255,255,255,0.04)",
+alignItems: "center",
+justifyContent: "center",
+marginBottom: 16,
+},
+emptyTitle: {
+color: "#fff",
+fontSize: 17,
+fontWeight: "700",
+},
+emptyDesc: {
+color: "#666",
+fontSize: 13,
+marginTop: 6,
+textAlign: "center",
+},
+
+/* History */
 historyCard: {
 backgroundColor: "#161228",
 padding: 16,
-borderRadius: 18,
+borderRadius: 16,
 flexDirection: "row",
 alignItems: "center",
 justifyContent: "space-between",
@@ -912,108 +1089,137 @@ flexDirection: "row",
 alignItems: "center",
 gap: 12,
 },
+historyIcon: {
+width: 40,
+height: 40,
+borderRadius: 12,
+backgroundColor: "rgba(167,139,250,0.10)",
+alignItems: "center",
+justifyContent: "center",
+},
 historyDate: {
 color: "#fff",
 fontSize: 14,
-fontWeight: "700",
+fontWeight: "600",
 },
 historyCount: {
-color: "#A8A3C2",
+color: "#666",
 fontSize: 12,
 marginTop: 2,
+},
+historyArrow: {
+width: 28,
+height: 28,
+borderRadius: 14,
+backgroundColor: "rgba(255,255,255,0.04)",
+alignItems: "center",
+justifyContent: "center",
 },
 
-topActionRow: {
-backgroundColor: "#161228",
+/* Modal */
+modalOverlay: {
+flex: 1,
+backgroundColor: "rgba(0,0,0,0.6)",
+},
+modalSheet: {
+position: "absolute",
+bottom: 0,
+left: 0,
+right: 0,
+backgroundColor: "#141027",
+borderTopLeftRadius: 24,
+borderTopRightRadius: 24,
+paddingHorizontal: 24,
+paddingBottom: 40,
+paddingTop: 12,
+alignItems: "center",
+},
+modalHandle: {
+width: 40,
+height: 4,
+borderRadius: 2,
+backgroundColor: "rgba(255,255,255,0.10)",
+marginBottom: 20,
+},
+modalIconBig: {
+width: 56,
+height: 56,
 borderRadius: 16,
-padding: 14,
-marginBottom: 10,
+backgroundColor: "rgba(167,139,250,0.12)",
+alignItems: "center",
+justifyContent: "center",
+marginBottom: 16,
+},
+modalTitle: {
+color: "#fff",
+fontSize: 20,
+fontWeight: "800",
+},
+modalDesc: {
+color: "#7A6F9E",
+fontSize: 14,
+textAlign: "center",
+marginTop: 8,
+lineHeight: 20,
+paddingHorizontal: 10,
+},
+modalStats: {
 flexDirection: "row",
 alignItems: "center",
-justifyContent: "space-between",
+backgroundColor: "rgba(255,255,255,0.04)",
+borderRadius: 14,
+paddingVertical: 14,
+paddingHorizontal: 24,
+marginTop: 20,
+marginBottom: 24,
+width: "100%",
 },
-topActionTitle: {
+modalStatItem: {
+flex: 1,
+alignItems: "center",
+},
+modalStatValue: {
 color: "#fff",
-fontWeight: "900",
-fontSize: 15,
+fontSize: 20,
+fontWeight: "800",
 },
-topActionSub: {
-color: "#A8A3C2",
-marginTop: 2,
-fontSize: 12,
+modalStatLabel: {
+color: "#666",
+fontSize: 11,
+marginTop: 4,
 },
-finishBtn: {
-backgroundColor: "#8A4DFF",
-paddingVertical: 10,
-paddingHorizontal: 12,
+modalStatDivider: {
+width: 1,
+height: 32,
+backgroundColor: "rgba(255,255,255,0.06)",
+},
+modalBtnPrimary: {
+backgroundColor: "#6C63FF",
+paddingVertical: 16,
+borderRadius: 14,
+flexDirection: "row",
+alignItems: "center",
+justifyContent: "center",
+gap: 8,
+width: "100%",
+marginBottom: 10,
+},
+modalBtnText: {
+color: "#fff",
+fontSize: 16,
+fontWeight: "800",
+},
+modalBtnSecondary: {
+paddingVertical: 12,
 borderRadius: 12,
 flexDirection: "row",
 alignItems: "center",
+justifyContent: "center",
 gap: 6,
 },
-finishText: {
-color: "white",
-fontWeight: "900",
-},
-
-productCard: {
-backgroundColor: "#161228",
-padding: 16,
-borderRadius: 18,
-flexDirection: "row",
-alignItems: "center",
-marginTop: 12,
-},
-iconBox: {
-width: 52,
-height: 52,
-borderRadius: 14,
-backgroundColor: "#1E1838",
-alignItems: "center",
-justifyContent: "center",
-marginRight: 14,
-},
-productName: {
-color: "#fff",
-fontSize: 16,
-fontWeight: "900",
-},
-productMeta: {
-color: "#A8A3C2",
-marginTop: 4,
-fontSize: 12,
-},
-itemRight: {
-alignItems: "flex-end",
-marginLeft: 10,
-},
-productPrice: {
-color: "#C59CFF",
+modalBtnSecondaryText: {
+color: "#FF6B6B",
 fontSize: 14,
-      fontWeight: "900",
-    },
-    headerRow: {
-flexDirection: "row",
-alignItems: "center",
-marginBottom: 10,
+fontWeight: "600",
 },
-backBtn: {
-width: 42,
-height: 42,
-borderRadius: 21,
-backgroundColor: "rgba(255,255,255,0.06)",
-alignItems: "center",
-justifyContent: "center",
-marginRight: 15,
-},
-header: {
-color: "#fff",
-fontSize: 26,
-fontWeight: "800",
-},
-subHeader: {
-color: "#B3AEC7",
-fontSize: 15,
-marginTop: 4,
-},
-  });
+});
