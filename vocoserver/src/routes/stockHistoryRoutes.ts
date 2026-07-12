@@ -8,7 +8,8 @@ listStockHistory,
 historyBySession,
 historyByProduct,
 listAppliedInventorySessions,
-getAppliedInventoryDetail
+getAppliedInventoryDetail,
+listAllStockOperations,
 } from "../controllers/stockHistoryController";
 
 const router = Router();
@@ -24,6 +25,7 @@ router.use(requirePermission("inventory"));
 router.get("/", listStockHistory);
 router.get("/by-session/:sessionId", historyBySession);
 router.get("/product/:productId", historyByProduct);
+router.get("/all", listAllStockOperations);
 router.get("/sessions", listAppliedInventorySessions);
 router.get("/session/:sessionId", getAppliedInventoryDetail);
 
