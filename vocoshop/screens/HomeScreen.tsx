@@ -1,4 +1,4 @@
-import React, { useState, useContext, useCallback, useMemo, useEffect, useRef } from "react";
+import React, { useState, useContext, useCallback, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";

@@ -228,7 +228,7 @@ activeOpacity={0.85}
 <View style={styles.card}>
 <Text style={styles.bigName}>{supplier.name}</Text>
 
-{/* {!!supplier.city && <Text style={styles.line}>Ville: {supplier.city}</Text>} */}
+{!!supplier.city && <Text style={styles.line}>Ville: {supplier.city}</Text>}
 {!!supplier.address && <Text style={styles.line}>Adresse: {supplier.address}</Text>}
 {!!supplier.email && <Text style={styles.line}>Email: {supplier.email}</Text>}
 

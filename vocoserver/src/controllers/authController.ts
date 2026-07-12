@@ -188,6 +188,7 @@ isOnboarded: typeof (store as any).isOnboarded === "boolean"
 : !!(store.storeName && String(store.storeName).trim().length > 0),
 phoneVerified: store.phoneVerified || false,
 subscriptionActive: store.subscriptionActive || false,
+ownershipStatus: (store as any).ownershipStatus ?? "active",
 });
 });
 

@@ -288,23 +288,6 @@ const stop = initOfflineBootstrap();
 return () => stop?.();
 }, []);
 
-/**
-* 🧪 DEV TEST (optionnel) : force offline 10 secondes au boot
-*/
-useEffect(() => {
-const DEV_FORCE_OFFLINE = false;
-
-if (!DEV_FORCE_OFFLINE) return;
-
-setForceOffline(true);
-
-const t = setTimeout(() => {
-setForceOffline(null);
-}, 10000);
-
-return () => clearTimeout(t);
-}, []);
-
 // ✅ Boot async (init engines + read token/onboarded) pendant le splash
 useEffect(() => {
 let mounted = true;

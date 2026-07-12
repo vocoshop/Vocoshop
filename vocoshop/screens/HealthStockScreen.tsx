@@ -10,8 +10,6 @@ TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { EXPIRING_DAYS } from "../src/api/constants/stock";
-
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
 
