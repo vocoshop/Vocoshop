@@ -205,7 +205,7 @@ export class OcrService {
             unitPrice,
             purchasePriceAtSale: product.purchasePrice ?? 0,
             totalAmount,
-            businessDate: getBusinessDate(),
+            businessDate: scan.businessDate || getBusinessDate(),
             isVoiced: false,
             isReverted: false,
           });
@@ -221,7 +221,7 @@ export class OcrService {
     await scan.save();
 
     // Ajouter les ventes OCR au bilan existant
-    const bDate = getBusinessDate();
+    const bDate = scan.businessDate || getBusinessDate();
     if (createdSales.length > 0) {
       const saleLines = createdSales.map((s: any) => ({
         productId: s.productId,
