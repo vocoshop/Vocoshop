@@ -87,6 +87,22 @@ sellPrice !== undefined
 ? Number(price)
 : 0;
 
+// 🔍 Vérifier si un produit avec le même nom existe déjà
+const trimmedName = String(name).trim();
+const slug = trimmedName.toLowerCase().replace(/\s+/g, " ");
+const existingProduct = await Product.findOne({
+storeId,
+name: { $regex: new RegExp(`^${trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") },
+});
+if (existingProduct) {
+// Incrémenter le stock du produit existant
+existingProduct.quantity = Number(existingProduct.quantity || 0) + (Number(quantity) || 0);
+if (finalSellPrice > 0) existingProduct.sellPrice = finalSellPrice;
+if (purchasePrice) existingProduct.purchasePrice = Number(purchasePrice);
+await existingProduct.save();
+return res.status(200).json(existingProduct);
+}
+
 // ✅ accepte plusieurs noms possibles venant du front
 const expRaw =
 req.body?.expirationDate ??

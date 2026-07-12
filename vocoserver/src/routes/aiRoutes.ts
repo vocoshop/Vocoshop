@@ -333,11 +333,24 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
           continue;
         }
 
-        // Check if product already exists (by name)
-        const existing = await Product.findOne({
+        // Check if product already exists (by name — exact puis flexible)
+        const cleanName = item.name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        let existing = await Product.findOne({
           storeId,
-          name: { $regex: new RegExp(`^${item.name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") },
+          name: { $regex: new RegExp(`^${cleanName}$`, "i") },
         });
+
+        // 🔄 Fallback flexible : tous les mots doivent être présents
+        if (!existing) {
+          const words = cleanName.split(/\s+/).filter(Boolean);
+          if (words.length > 1) {
+            const andPattern = words.map((w: string) => `(?=.*${w})`).join("");
+            existing = await Product.findOne({
+              storeId,
+              name: { $regex: new RegExp(andPattern, "i") },
+            });
+          }
+        }
 
         let product;
         const qty = Math.max(1, parseInt(item.quantity) || 1);
