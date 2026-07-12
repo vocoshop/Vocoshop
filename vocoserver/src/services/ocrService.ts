@@ -5,7 +5,7 @@ import Product from "../models/Product";
 import Sale from "../models/Sales";
 import DailyReport from "../models/DailyReport";
 import { preprocessForVision, analyzeImageQuality } from "./imagePreprocess";
-import { isValidObjectId } from "../utils/helpers";
+import { isValidObjectId, getBusinessDate } from "../utils/helpers";
 
 interface OcrEngineResult {
   rawText: string;
@@ -163,6 +163,7 @@ export class OcrService {
     const errors: string[] = [];
     let importedCount = 0;
     let unmatchedCount = 0;
+    const createdSales: any[] = [];
 
     for (const line of scan.lines) {
       if (line.confidence < this.MIN_CONFIDENCE) {
@@ -196,7 +197,7 @@ export class OcrService {
         if (line.type === "sale") {
           const unitPrice = line.unitPrice ?? product.sellPrice ?? 0;
           const totalAmount = line.total ?? (line.quantity * unitPrice);
-          await Sale.create({
+          const sale = await Sale.create({
             storeId,
             productId: line.productId,
             productName: line.productName || product.name,
@@ -204,10 +205,11 @@ export class OcrService {
             unitPrice,
             purchasePriceAtSale: product.purchasePrice ?? 0,
             totalAmount,
-            businessDate: scan.businessDate || new Date().toISOString().split("T")[0],
+            businessDate: getBusinessDate(),
             isVoiced: false,
             isReverted: false,
           });
+          createdSales.push(sale.toObject());
         }
         importedCount++;
       } catch {
@@ -218,14 +220,10 @@ export class OcrService {
     scan.status = "imported";
     await scan.save();
 
-    // Recalculer le bilan pour cette date
-    const bDate = scan.businessDate || new Date().toISOString().split("T")[0];
-    const allSales = await Sale.find({ storeId, businessDate: bDate }).lean();
-    if (allSales.length > 0) {
-      const totalRevenue = (allSales as any[]).reduce((sum: number, s: any) => sum + (s.totalAmount || 0), 0);
-      const cogs = (allSales as any[]).reduce((sum: number, s: any) => sum + (s.purchasePriceAtSale || 0) * (s.quantity || 0), 0);
-      const gp = totalRevenue - cogs;
-      const lines = (allSales as any[]).map((s: any) => ({
+    // Ajouter les ventes OCR au bilan existant
+    const bDate = getBusinessDate();
+    if (createdSales.length > 0) {
+      const saleLines = createdSales.map((s: any) => ({
         productId: s.productId,
         productName: s.productName,
         quantity: s.quantity,
@@ -234,18 +232,22 @@ export class OcrService {
         totalAmount: s.totalAmount,
         lineProfit: ((s.unitPrice || 0) - (s.purchasePriceAtSale || 0)) * (s.quantity || 0),
       }));
+      const ocrRev = createdSales.reduce((sum: number, s: any) => sum + (s.totalAmount || 0), 0);
+      const ocrCogs = createdSales.reduce((sum: number, s: any) => sum + (s.purchasePriceAtSale || 0) * (s.quantity || 0), 0);
+      const ocrGp = ocrRev - ocrCogs;
       await DailyReport.findOneAndUpdate(
         { storeId, date: bDate },
         {
-          $set: {
-            storeId, date: bDate,
-            totalSales: allSales.length,
-            totalRevenue, cogs, grossProfit: gp, netProfit: gp,
-            marginPercent: totalRevenue > 0 ? Math.round((gp / totalRevenue) * 100) : 0,
-            sales: lines,
+          $inc: {
+            totalSales: importedCount,
+            totalRevenue: ocrRev,
+            cogs: ocrCogs,
+            grossProfit: ocrGp,
+            netProfit: ocrGp,
           },
+          $push: { sales: { $each: saleLines } },
         },
-        { upsert: true }
+        { upsert: true, setDefaultsOnInsert: true }
       );
     }
 
