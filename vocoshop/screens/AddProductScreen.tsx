@@ -391,7 +391,7 @@ return (
 style={{ flex: 1 }}
 behavior={Platform.OS === "ios" ? "padding" : undefined}
 >
-<ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
 {/* BACK */}
 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
 <Ionicons name="chevron-back" size={26} color="#fff" />
@@ -491,22 +491,24 @@ onChangeText={setQuantity}
 ⚠️ Session non prête. Réessaie dans quelques secondes.
 </Text>
 )}
-</ScrollView>
+      </ScrollView>
 
-{/* BOUTON SAVE */}
-<TouchableOpacity
-style={[styles.saveBtn, !canSave && { opacity: 0.5 }]}
-onPress={saveProduct}
-disabled={!canSave}
->
-{loading ? (
-<ActivityIndicator color="#fff" />
-) : (
-<Text style={styles.saveText}>Enregistrer</Text>
-)}
-</TouchableOpacity>
+      {/* FIXED FOOTER */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.saveBtn, !canSave && { opacity: 0.5 }]}
+          onPress={saveProduct}
+          disabled={!canSave}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveText}>Enregistrer</Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
-{/* MODAL SCANNER */}
+      {/* MODAL SCANNER */}
 <Modal visible={scanVisible} animationType="slide">
 <CameraView
 style={{ flex: 1 }}
@@ -575,18 +577,24 @@ color: "#A8A3C2",
 marginTop: -6,
 marginBottom: 18,
 },
-saveBtn: {
-backgroundColor: "#8A4DFF",
-paddingVertical: 18,
-alignItems: "center",
-borderRadius: 14,
-marginBottom: 24,
-},
-saveText: {
-color: "#fff",
-fontSize: 18,
-fontWeight: "700",
-},
+  saveBtn: {
+    backgroundColor: "#8A4DFF",
+    paddingVertical: 18,
+    alignItems: "center",
+    borderRadius: 14,
+  },
+  saveText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  footer: {
+    paddingBottom: 30,
+    paddingTop: 14,
+    backgroundColor: "rgba(10,6,23,0.96)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
 scanBtn: {
 justifyContent: "center",
 },

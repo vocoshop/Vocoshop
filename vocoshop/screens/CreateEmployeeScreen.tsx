@@ -204,7 +204,7 @@ return (
 <View style={{ width: 26 }} />
 </View>
 
-<ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 30 }}>
 <View style={styles.card}>
 <Text style={styles.cardTitle}>Informations</Text>
 
@@ -252,29 +252,32 @@ style={styles.input}
 <Switch value={permissions.orders} onValueChange={() => toggle("orders")} />
 </View>
 
-<View style={styles.permRow}>
-<Text style={styles.permText}>Gérer les employés</Text>
-<Switch value={permissions.employees} onValueChange={() => toggle("employees")} />
-</View>
+          <View style={styles.permRow}>
+            <Text style={styles.permText}>Gérer les employés</Text>
+            <Switch value={permissions.employees} onValueChange={() => toggle("employees")} />
+          </View>
+        </View>
+      </ScrollView>
 
-<TouchableOpacity
-style={[styles.btn, saving ? { opacity: 0.75 } : null]}
-onPress={onSave}
-activeOpacity={0.9}
-disabled={saving}
->
-{saving ? (
-<View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-<ActivityIndicator color="#fff" />
-<Text style={styles.btnText}>Création...</Text>
-</View>
-) : (
-<Text style={styles.btnText}>Créer</Text>
-)}
-</TouchableOpacity>
-</View>
-</ScrollView>
-</View>
+      {/* FIXED FOOTER */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.btn, saving ? { opacity: 0.75 } : null]}
+          onPress={onSave}
+          activeOpacity={0.9}
+          disabled={saving}
+        >
+          {saving ? (
+            <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+              <ActivityIndicator color="#fff" />
+              <Text style={styles.btnText}>Création...</Text>
+            </View>
+          ) : (
+            <Text style={styles.btnText}>Créer</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
 );
 }
 
@@ -338,5 +341,13 @@ borderRadius: 14,
 alignItems: "center",
 justifyContent: "center",
 },
-btnText: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  btnText: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    paddingTop: 14,
+    backgroundColor: "rgba(10,6,23,0.96)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
 });
