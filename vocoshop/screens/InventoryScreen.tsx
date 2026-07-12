@@ -521,21 +521,30 @@ Chargement de la boutique...
 );
 }
 
+const [historyTab, setHistoryTab] = useState(false);
 const showTopBar = inventoryCount > 0;
 
 return (
     <View style={styles.container}>
 
-      {/* ===== HEADER ===== */}
+      {/* ===== HEADER PRO (COMME StockScreen) ===== */}
       <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.85}
+        >
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inventaire</Text>
-        <View style={{ width: 26 }} />
+
+        <View style={{ flex: 1 }}>
+          <Text style={styles.header}>Inventaire</Text>
+          <Text style={styles.subHeader}>Comptez et gérez votre stock</Text>
+        </View>
       </View>
 
       {/* ===== SEARCH BAR ===== */}
+      {!historyTab && (
       <View style={styles.searchBar}>
 <Ionicons name="search-outline" size={20} color="#AAA" />
 <TextInput
@@ -546,29 +555,56 @@ value={search}
 onChangeText={setSearch}
 />
 </View>
-
-      {/* ===== HISTORIQUE (LIGNE HORIZONTALE) ===== */}
-      {historySessions.length > 0 && (
-        <View style={styles.historyRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {historySessions.slice(0, 10).map((s: any, i: number) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.historyChip}
-                onPress={() => navigation.navigate("AppliedInventoryDetail", { sessionId: s._id })}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="time-outline" size={14} color="#A78BFA" />
-                <Text style={styles.historyChipText}>
-                  {new Date(s.appliedAt || s.createdAt).toLocaleDateString()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
       )}
 
-      {/* ===== TOP ACTION BAR ===== */}
+      {/* ===== TAB INVENTAIRE / HISTORIQUE ===== */}
+      <View style={styles.tabRow}>
+        <TouchableOpacity
+          style={[styles.tabBtn, !historyTab && styles.tabActive]}
+          onPress={() => setHistoryTab(false)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="cube-outline" size={16} color={!historyTab ? "#fff" : "#A8A3C2"} />
+          <Text style={[styles.tabText, !historyTab && styles.tabTextActive]}>Inventaire</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabBtn, historyTab && styles.tabActive]}
+          onPress={() => setHistoryTab(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="time-outline" size={16} color={historyTab ? "#fff" : "#A8A3C2"} />
+          <Text style={[styles.tabText, historyTab && styles.tabTextActive]}>Historique</Text>
+        </TouchableOpacity>
+      </View>
+
+      {historyTab ? (
+        /* ===== HISTORIQUE ===== */
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 140 }}>
+          {historySessions.length === 0 ? (
+            <Text style={{ color: "#A8A3C2", textAlign: "center", marginTop: 40 }}>Aucun historique</Text>
+          ) : (
+            historySessions.map((s: any, i: number) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.historyCard}
+                onPress={() => navigation.navigate("InventorySessionDetail", { sessionId: s._id })}
+                activeOpacity={0.85}
+              >
+                <View style={styles.historyCardLeft}>
+                  <Ionicons name="calendar-outline" size={18} color="#A78BFA" />
+                  <View>
+                    <Text style={styles.historyDate}>{new Date(s.createdAt).toLocaleDateString("fr-FR")}</Text>
+                    <Text style={styles.historyCount}>{s.lines?.length ?? s.productCount ?? 0} produit(s)</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#777" />
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      ) : (
+        /* ===== INVENTAIRE ===== */
 {showTopBar && (
 <View style={styles.topActionRow}>
 <View>
@@ -643,6 +679,7 @@ ListEmptyComponent={
 />
 </Animated.View>
 
+      )}
 {/* ===== MODAL REPRENDRE SESSION ===== */}
 <Modal
 visible={showResumeModal}
@@ -725,7 +762,7 @@ const styles = StyleSheet.create({
 container: {
 flex: 1,
 backgroundColor: "#0A0617",
-paddingTop: 20,
+paddingTop: 60,
 paddingHorizontal: 20,
 },
 
@@ -807,8 +844,8 @@ color: "#fff",
 fontWeight: "900",
 },
 
-searchBar: {
-marginTop: 60,
+    searchBar: {
+marginTop: 16,
 flexDirection: "row",
 alignItems: "center",
 backgroundColor: "#1A152A",
@@ -821,6 +858,60 @@ searchInput: {
 color: "#fff",
 flex: 1,
 marginLeft: 10,
+},
+
+tabRow: {
+flexDirection: "row",
+backgroundColor: "#1A152A",
+borderRadius: 12,
+padding: 3,
+marginBottom: 12,
+},
+tabBtn: {
+flex: 1,
+flexDirection: "row",
+alignItems: "center",
+justifyContent: "center",
+paddingVertical: 8,
+gap: 6,
+borderRadius: 10,
+},
+tabActive: {
+backgroundColor: "#6C63FF",
+},
+tabText: {
+color: "#A8A3C2",
+fontSize: 13,
+fontWeight: "600",
+},
+tabTextActive: {
+color: "#fff",
+fontWeight: "700",
+},
+
+historyCard: {
+backgroundColor: "#161228",
+padding: 16,
+borderRadius: 18,
+flexDirection: "row",
+alignItems: "center",
+justifyContent: "space-between",
+marginBottom: 10,
+},
+historyCardLeft: {
+flexDirection: "row",
+alignItems: "center",
+gap: 12,
+},
+historyDate: {
+color: "#fff",
+fontSize: 14,
+fontWeight: "700",
+},
+historyCount: {
+color: "#A8A3C2",
+fontSize: 12,
+marginTop: 2,
 },
 
 topActionRow: {
@@ -893,52 +984,27 @@ fontSize: 14,
       fontWeight: "900",
     },
     headerRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-      paddingTop: 50,
-      paddingBottom: 8,
-    },
-    backBtn: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: "#1E1838",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    headerTitle: {
-      color: "#fff",
-      fontSize: 20,
-      fontWeight: "900",
-      flex: 1,
-      textAlign: "center",
-    },
-    swipeHint: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    historyRow: {
-      marginBottom: 12,
-      paddingLeft: 2,
-    },
-    historyChip: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: "#1E1838",
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 16,
-      marginRight: 8,
-      gap: 6,
-    },
-    historyChipText: {
-      color: "#C6C0DD",
-      fontSize: 12,
-      fontWeight: "600",
-    },
+flexDirection: "row",
+alignItems: "center",
+marginBottom: 10,
+},
+backBtn: {
+width: 42,
+height: 42,
+borderRadius: 21,
+backgroundColor: "rgba(255,255,255,0.06)",
+alignItems: "center",
+justifyContent: "center",
+marginRight: 15,
+},
+header: {
+color: "#fff",
+fontSize: 26,
+fontWeight: "800",
+},
+subHeader: {
+color: "#B3AEC7",
+fontSize: 15,
+marginTop: 4,
+},
   });
