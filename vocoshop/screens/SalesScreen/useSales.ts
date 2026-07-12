@@ -4,8 +4,10 @@ useMemo,
 useState,
 useContext,
 useCallback,
+useRef,
 } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import API from "../../src/api/api";
 import { AuthContext } from "../../src/api/context/AuthContext";
@@ -241,6 +243,26 @@ FINALIZE SALE (ONLINE + OFFLINE PRO)
 ===================================================== */
 const [selling, setSelling] = useState(false);
 const [completedSales, setCompletedSales] = useState(0);
+const [dayActive, setDayActive] = useState(false);
+
+const DAY_ACTIVE_KEY = `dayActive_${storeId}`;
+
+useEffect(() => {
+AsyncStorage.getItem(DAY_ACTIVE_KEY).then((val) => {
+if (val === "true") setDayActive(true);
+});
+}, [DAY_ACTIVE_KEY]);
+
+const incCompletedSales = useCallback(() => {
+setCompletedSales((c) => {
+const next = c + 1;
+if (!dayActive) {
+setDayActive(true);
+AsyncStorage.setItem(DAY_ACTIVE_KEY, "true");
+}
+return next;
+});
+}, [dayActive, DAY_ACTIVE_KEY]);
 
 const finalizeSale = async (): Promise<"success" | "error" | "offline"> => {
 if (!cart.length) return "error";
@@ -265,13 +287,13 @@ try {
   if (result.mode === "offline") {
     applyOptimisticStock();
     setCart([]);
-    setCompletedSales((c) => c + 1);
+    incCompletedSales();
     setSelling(false);
     return "offline";
   }
 
   setCart([]);
-  setCompletedSales((c) => c + 1);
+  incCompletedSales();
   loadProducts();
   setSelling(false);
   return "success";
@@ -321,6 +343,12 @@ const quickSell = async (product: Product) => {
 /* =====================================================
 RETURN
 ===================================================== */
+const resetDayOpen = useCallback(() => {
+setDayActive(false);
+setCompletedSales(0);
+AsyncStorage.removeItem(DAY_ACTIVE_KEY);
+}, [DAY_ACTIVE_KEY]);
+
 return {
   loading,
   products,
@@ -330,6 +358,8 @@ return {
   cartTotal,
   selling,
   completedSales,
+  dayActive,
+  resetDayOpen,
 
   applySearch,
   addToCart,

@@ -32,6 +32,8 @@ cart,
 cartTotal,
   selling,
   completedSales,
+  dayActive,
+  resetDayOpen,
 applySearch,
 addToCart,
   increaseQty,
@@ -42,6 +44,11 @@ finalizeSale,
 } = useSales();
 
 const { dayModal, dayLoading, daySummary, closeDay, setDayModal } = useCloseDay();
+
+const handleCloseModal = () => {
+setDayModal(false);
+resetDayOpen();
+};
 
 const [qty, setQty] = useState("1");
 const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -131,7 +138,7 @@ style={styles.search}
 )}
 
 {/* ================= CLOSE DAY ================= */}
-{completedSales > 0 && (
+{dayActive && (
 <TouchableOpacity
 style={styles.endDayBtn}
 onPress={closeDay}
@@ -326,7 +333,7 @@ autoFocus
 <View style={styles.modal}>
 {/* Header modal bilan */}
 <View style={styles.modalHeaderRow}>
-<TouchableOpacity onPress={() => setDayModal(false)}>
+<TouchableOpacity onPress={handleCloseModal}>
 <Ionicons name="chevron-back" size={26} color="#fff" />
 </TouchableOpacity>
 <Text style={styles.modalHeaderTitle}>Bilan du jour</Text>
@@ -344,7 +351,7 @@ Total : {daySummary.totalRevenue} FCFA
 <Text style={styles.summaryText}>Aucune vente</Text>
 )}
 
-<TouchableOpacity onPress={() => setDayModal(false)}>
+<TouchableOpacity onPress={handleCloseModal}>
 <Text style={styles.link}>Fermer</Text>
 </TouchableOpacity>
 </View>
