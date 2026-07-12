@@ -14,8 +14,6 @@ TouchableOpacity,
 ScrollView,
 Share,
 Alert,
-Modal,
-TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -51,8 +49,6 @@ const [city, setCity] = useState("—");
 const [agentCode, setAgentCode] = useState("—");
 const [storeOwnerPhone, setStoreOwnerPhone] = useState("");
 const [isOnboarded, setIsOnboarded] = useState<boolean>(true);
-const [ownerPhoneModal, setOwnerPhoneModal] = useState(false);
-const [ownerPhoneInput, setOwnerPhoneInput] = useState("");
 
 // ✅ Owner uniquement (propriétaire réel ayant accepté)
 const isOwner = useMemo(() => {
@@ -221,20 +217,6 @@ const parts = v.split(" ").filter(Boolean).slice(0, 2);
 const ini = parts.map((w) => w[0]?.toUpperCase()).join("");
 return ini || "MB";
 }, [shopName]);
-
-const saveOwnerPhone = useCallback(async () => {
-const v = ownerPhoneInput.trim();
-if (!v) return;
-try {
-const h = { Authorization: token ? `Bearer ${token}` : "" };
-await updateStoreOnboarding({ storeName: shopName, ownerPhone: v }, h);
-setStoreOwnerPhone(v);
-setOwnerPhoneModal(false);
-Alert.alert("Enregistré", "Numéro du propriétaire mis à jour.");
-} catch (e: any) {
-Alert.alert("Erreur", e?.response?.data?.error || "Impossible d'enregistrer.");
-}
-}, [ownerPhoneInput, token, shopName]);
 
 return (
 <View style={styles.container}>
@@ -489,25 +471,6 @@ subtitle="Modifier vos infos"
 onPress={() => navigation.navigate("PersonalInfo")}
 />
 
-{isOwner ? (
-<ProfileItem
-icon="phone-portrait-outline"
-title="Téléphone du propriétaire"
-subtitle={storeOwnerPhone || "Non défini — appuie pour définir"}
-onPress={() => {
-setOwnerPhoneInput(storeOwnerPhone || "");
-setOwnerPhoneModal(true);
-}}
-/>
-) : isTempAdmin ? (
-<View style={styles.lockedCard}>
-<View style={styles.lockedRow}>
-<Ionicons name="lock-closed-outline" size={18} color="#A78BFA" />
-<Text style={styles.lockedText}>Téléphone propriétaire réservé</Text>
-</View>
-</View>
-) : null}
-
 <>
 <ProfileItem
 icon="bar-chart-outline"
@@ -556,39 +519,6 @@ activeOpacity={0.85}
 </TouchableOpacity>
 </ScrollView>
 
-<Modal visible={ownerPhoneModal} transparent animationType="fade">
-<View style={styles.modalOverlay}>
-<View style={styles.modalContent}>
-<Text style={styles.modalTitle}>Propriétaire</Text>
-<Text style={styles.modalSubtitle}>
-Numéro du boss (celui qui lie les boutiques)
-</Text>
-<TextInput
-style={styles.modalInput}
-value={ownerPhoneInput}
-onChangeText={setOwnerPhoneInput}
-placeholder="+242 06 123 45 67"
-placeholderTextColor="rgba(255,255,255,0.35)"
-keyboardType="phone-pad"
-autoFocus
-/>
-<View style={styles.modalButtons}>
-<TouchableOpacity
-style={styles.modalBtnCancel}
-onPress={() => setOwnerPhoneModal(false)}
->
-<Text style={styles.modalBtnCancelText}>Annuler</Text>
-</TouchableOpacity>
-<TouchableOpacity
-style={styles.modalBtnSave}
-onPress={saveOwnerPhone}
->
-<Text style={styles.modalBtnSaveText}>Enregistrer</Text>
-</TouchableOpacity>
-</View>
-</View>
-</View>
-</Modal>
 </View>
 );
 }
@@ -828,37 +758,5 @@ top: 12,
 right: 12,
 },
 
-modalOverlay: {
-flex: 1,
-backgroundColor: "rgba(0,0,0,0.7)",
-justifyContent: "center",
-alignItems: "center",
-},
-modalContent: {
-backgroundColor: "#18122B",
-marginHorizontal: 40,
-padding: 24,
-borderRadius: 18,
-width: "85%",
-},
-modalTitle: { color: "#fff", fontWeight: "900", fontSize: 18, marginBottom: 4 },
-modalSubtitle: { color: "#A8A3C2", fontSize: 13, marginBottom: 16 },
-modalInput: {
-backgroundColor: "#241C39",
-color: "#fff",
-fontSize: 16,
-padding: 14,
-borderRadius: 12,
-marginBottom: 20,
-},
-modalButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 12 },
-modalBtnCancel: { paddingVertical: 10, paddingHorizontal: 16 },
-modalBtnCancelText: { color: "#A8A3C2", fontWeight: "600" },
-modalBtnSave: {
-backgroundColor: "#5B3DF5",
-paddingVertical: 10,
-paddingHorizontal: 20,
-borderRadius: 10,
-},
-modalBtnSaveText: { color: "#fff", fontWeight: "700" },
+
 });
