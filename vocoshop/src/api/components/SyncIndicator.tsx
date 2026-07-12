@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Animated, TouchableOpacity } from "react-native
 import { Ionicons } from "@expo/vector-icons";
 import { onSyncState } from "../offline/syncEngine";
 import { getFailedJobsUI, retryAllFailedJobs, clearAllFailedJobs, forceSync } from "../offline/syncEngine";
+import { clearQueue } from "../offline/queue";
 
 export default function SyncIndicator() {
   const [syncing, setSyncing] = useState(false);
@@ -12,6 +13,7 @@ export default function SyncIndicator() {
   const [pendingCount, setPendingCount] = useState(0);
   const [showFailed, setShowFailed] = useState(false);
   const [failedJobs, setFailedJobs] = useState<any[]>([]);
+  const [showPending, setShowPending] = useState(false);
 
   const fade = useRef(new Animated.Value(0)).current;
 
@@ -59,6 +61,49 @@ export default function SyncIndicator() {
   HIDE IF NOTHING
   ===================================================== */
   if (!syncing && queueSize === 0 && failedCount === 0) return null;
+
+  /* =====================================================
+  PENDING JOBS PANEL
+  ===================================================== */
+  if (showPending) {
+    return (
+      <View style={styles.failedPanel}>
+        <View style={styles.failedHeader}>
+          <View style={styles.failedTitle}>
+            <Ionicons name="time" size={16} color="#9CA3AF" />
+            <Text style={styles.failedTitleText}>Actions en attente</Text>
+            <Text style={[styles.failedCount, { backgroundColor: "#9CA3AF" }]}>{pendingCount}</Text>
+          </View>
+          <TouchableOpacity onPress={() => setShowPending(false)}>
+            <Ionicons name="close" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.emptyText}>Ces actions n'ont pas pu être synchronisées.</Text>
+        <View style={styles.failedActions}>
+          <TouchableOpacity
+            style={styles.failedBtn}
+            onPress={async () => {
+              await forceSync();
+              setShowPending(false);
+            }}
+          >
+            <Ionicons name="refresh" size={14} color="#22C55E" />
+            <Text style={styles.failedBtnText}>Forcer sync</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.failedBtn, styles.failedBtnDanger]}
+            onPress={async () => {
+              await clearQueue();
+              setShowPending(false);
+            }}
+          >
+            <Ionicons name="trash" size={14} color="#EF4444" />
+            <Text style={[styles.failedBtnText, { color: "#EF4444" }]}>Vider la file</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   /* =====================================================
   FAILED JOBS PANEL
@@ -144,12 +189,12 @@ export default function SyncIndicator() {
           </Text>
         </TouchableOpacity>
       ) : (
-        <>
+        <TouchableOpacity style={styles.failedBadge} onPress={() => setShowPending(true)}>
           <Ionicons name="cloud-done-outline" size={14} color="#9CA3AF" />
           <Text style={styles.text}>
             En attente ({pendingCount})
           </Text>
-        </>
+        </TouchableOpacity>
       )}
     </Animated.View>
   );

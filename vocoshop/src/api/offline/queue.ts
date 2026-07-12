@@ -372,6 +372,10 @@ export async function getQueueSize(): Promise<number> {
   }
 }
 
+export async function clearQueue(): Promise<void> {
+  await saveQueue([]);
+}
+
 /* =====================================================
 INTERNAL — URL parsing
 ===================================================== */
