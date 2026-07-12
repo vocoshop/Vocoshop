@@ -711,16 +711,7 @@ renderItem={({ item }) => (
             <Text style={styles.categoryText}>{item.category}</Text>
           </View>
         ) : null}
-        <Text style={styles.productStock}>
-          Stock: {item.quantity}
-        </Text>
       </View>
-    </View>
-
-    <View style={styles.productPriceWrap}>
-      <Text style={styles.productPrice}>
-        {typeof item.price === "number" ? item.price.toLocaleString("fr-FR") : "0"} <Text style={{ fontSize: 11, color: "#7A6F9E" }}>FCFA</Text>
-      </Text>
     </View>
   </TouchableOpacity>
 )}
@@ -1033,19 +1024,6 @@ categoryText: {
 color: "#A78BFA",
 fontSize: 11,
 fontWeight: "600",
-},
-productStock: {
-color: "#666",
-fontSize: 12,
-},
-productPriceWrap: {
-alignItems: "flex-end",
-marginLeft: 10,
-},
-productPrice: {
-color: "#C59CFF",
-fontSize: 15,
-fontWeight: "800",
 },
 
 /* Empty state */
