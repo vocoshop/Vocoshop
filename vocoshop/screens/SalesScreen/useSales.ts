@@ -29,6 +29,13 @@ qty: number;
 total: number;
 }
 
+export interface CarnetItem {
+productId: string;
+productName: string;
+sellPrice: number;
+qty: number;
+}
+
 /* ================= HOOK ================= */
 export default function useSales() {
 const { token, storeId } = useContext(AuthContext);
@@ -366,27 +373,92 @@ const quickSell = async (product: Product) => {
 };
 
 /* =====================================================
+CARNET (saisie cahier)
+===================================================== */
+const [carnet, setCarnet] = useState<CarnetItem[]>([]);
+
+const carnetTotal = useMemo(
+() => carnet.reduce((s, c) => s + c.qty * c.sellPrice, 0),
+[carnet]
+);
+
+const setCarnetQty = useCallback((product: Product, qty: number) => {
+setCarnet((prev) => {
+if (qty <= 0) return prev.filter((c) => c.productId !== product._id);
+const exists = prev.find((c) => c.productId === product._id);
+if (exists) return prev.map((c) => c.productId === product._id ? { ...c, qty } : c);
+return [...prev, { productId: product._id, productName: product.name, sellPrice: product.sellPrice, qty }];
+});
+}, []);
+
+const submitCarnet = useCallback(async (): Promise<boolean> => {
+const items = carnet.filter((c) => c.qty > 0);
+if (!items.length) return false;
+
+const payload = {
+items: items.map((c) => ({
+productId: c.productId,
+quantity: c.qty,
+})),
+};
+
+try {
+const result = await runOrQueue({
+title: "Carnet",
+method: "POST",
+url: "/sales/cart",
+body: payload,
+headers,
+});
+
+if (result.mode === "offline") {
+items.forEach((c) => {
+setProducts((prev) =>
+prev.map((p) =>
+p._id === c.productId
+? { ...p, quantity: Math.max(0, p.quantity - c.qty) }
+: p
+)
+);
+});
+}
+
+setCarnet([]);
+loadProducts();
+return true;
+} catch (err) {
+console.log("❌ submitCarnet:", err);
+return false;
+}
+}, [carnet, headers, loadProducts]);
+
+/* =====================================================
 RETURN
 ===================================================== */
 return {
-  loading,
-  products,
-  filtered,
-  search,
-  cart,
-  cartTotal,
-  selling,
-  completedSales,
-  dayActive,
-  resetDayOpen,
+loading,
+products,
+filtered,
+search,
+cart,
+cartTotal,
+selling,
+completedSales,
+dayActive,
+resetDayOpen,
+carnet,
+carnetTotal,
+setCarnetQty,
+submitCarnet,
+clearCarnet: () => setCarnet([]),
 
-  applySearch,
-  addToCart,
-  increaseQty,
-  decreaseQty,
-  removeFromCart,
-  setItemQty,
-  finalizeSale,
-  quickSell,
+applySearch,
+addToCart,
+increaseQty,
+decreaseQty,
+removeFromCart,
+setItemQty,
+finalizeSale,
+quickSell,
 };
 }

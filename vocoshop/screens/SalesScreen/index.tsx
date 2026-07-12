@@ -34,6 +34,11 @@ cartTotal,
   completedSales,
   dayActive,
   resetDayOpen,
+  carnet,
+  carnetTotal,
+  setCarnetQty,
+  submitCarnet,
+  clearCarnet,
 applySearch,
 addToCart,
   increaseQty,
@@ -56,6 +61,7 @@ const [cartModal, setCartModal] = useState(false);
 const [editingQty, setEditingQty] = useState<string | null>(null);
 const [editingQtyValue, setEditingQtyValue] = useState("");
 const [saleMsg, setSaleMsg] = useState<{ type: "success" | "offline" | "error"; text: string } | null>(null);
+const [carnetModal, setCarnetModal] = useState(false);
 
 const handleFinalize = async () => {
 const res = await finalizeSale();
@@ -139,6 +145,14 @@ style={styles.search}
 
 {/* ================= CLOSE DAY ================= */}
 {dayActive && (
+<View style={{ flexDirection: "row", gap: 10, marginHorizontal: 20, marginBottom: 12 }}>
+<TouchableOpacity
+style={styles.carnetBtn}
+onPress={() => setCarnetModal(true)}
+>
+<Ionicons name="book-outline" size={18} color="#fff" />
+<Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>Carnet</Text>
+</TouchableOpacity>
 <TouchableOpacity
 style={styles.endDayBtn}
 onPress={closeDay}
@@ -148,6 +162,7 @@ disabled={dayLoading}
 {dayLoading ? "Clôture..." : "Terminer ma journée"}
 </Text>
 </TouchableOpacity>
+</View>
 )}
 
   {/* ================= PRODUCTS (FlatList virtualisé) ================= */}
@@ -235,6 +250,86 @@ setSelectedProduct(null);
 <Text style={styles.link}>Annuler</Text>
 </TouchableOpacity>
 </View>
+</View>
+</Modal>
+
+{/* ================= CARNET MODAL ================= */}
+<Modal visible={carnetModal} animationType="slide">
+<View style={styles.modal}>
+<View style={styles.modalHeaderRow}>
+<TouchableOpacity onPress={() => setCarnetModal(false)}>
+<Ionicons name="chevron-back" size={26} color="#fff" />
+</TouchableOpacity>
+<Text style={styles.modalHeaderTitle}>Carnet</Text>
+<View style={{ width: 26 }} />
+</View>
+
+<Text style={{ color: "#aaa", fontSize: 13, marginBottom: 16 }}>
+Entre les quantités depuis ton cahier, puis valide.
+</Text>
+
+<ScrollView style={{ flex: 1 }}>
+{filtered.map((product) => {
+const ci = carnet.find((c) => c.productId === product._id);
+const q = ci?.qty ?? 0;
+return (
+<View key={product._id} style={styles.carnetRow}>
+<View style={{ flex: 1 }}>
+<Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>{product.name}</Text>
+<Text style={{ color: "#999", fontSize: 12 }}>
+{product.sellPrice} FCFA · Stock {product.quantity}
+</Text>
+</View>
+<View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+<TouchableOpacity
+style={styles.carnetQtyBtn}
+onPress={() => setCarnetQty(product, Math.max(0, q - 1))}
+>
+<Ionicons name="remove" size={18} color="#fff" />
+</TouchableOpacity>
+<Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", width: 30, textAlign: "center" }}>
+{q}
+</Text>
+<TouchableOpacity
+style={styles.carnetQtyBtn}
+onPress={() => setCarnetQty(product, q + 1)}
+>
+<Ionicons name="add" size={18} color="#fff" />
+</TouchableOpacity>
+</View>
+</View>
+);
+})}
+</ScrollView>
+
+{carnet.length > 0 && (
+<View style={{ paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2D2547" }}>
+<Text style={{ color: "#fff", fontSize: 16, fontWeight: "700", textAlign: "center", marginBottom: 12 }}>
+Total carnet : {carnetTotal} FCFA
+</Text>
+<View style={{ flexDirection: "row", gap: 10 }}>
+<TouchableOpacity
+style={[styles.primaryBtn, { flex: 1, backgroundColor: "#333" }]}
+onPress={() => { clearCarnet(); }}
+>
+<Text style={styles.btnText}>Vider</Text>
+</TouchableOpacity>
+<TouchableOpacity
+style={[styles.primaryBtn, { flex: 2 }]}
+onPress={async () => {
+const ok = await submitCarnet();
+if (ok) {
+setSaleMsg({ type: "success", text: "Carnet ajouté au journal" });
+setTimeout(() => setSaleMsg(null), 2000);
+setCarnetModal(false);
+}
+}}
+>
+<Text style={styles.btnText}>Ajouter au journal</Text>
+</TouchableOpacity>
+</View>
+</View>
+)}
 </View>
 </Modal>
 
@@ -401,8 +496,37 @@ endDayBtn: {
 backgroundColor: "#7C3AED",
 padding: 14,
 borderRadius: 10,
+flex: 1,
 alignItems: "center",
-marginBottom: 16,
+},
+endDayBtnText: {
+color: "#fff",
+fontWeight: "700",
+},
+
+carnetBtn: {
+backgroundColor: "#2D2547",
+padding: 14,
+borderRadius: 10,
+flexDirection: "row",
+alignItems: "center",
+gap: 6,
+},
+carnetRow: {
+flexDirection: "row",
+alignItems: "center",
+backgroundColor: "#161228",
+padding: 12,
+borderRadius: 10,
+marginBottom: 10,
+},
+carnetQtyBtn: {
+backgroundColor: "#2D2547",
+width: 36,
+height: 36,
+borderRadius: 18,
+alignItems: "center",
+justifyContent: "center",
 },
 endDayBtnText: {
 color: "#fff",
