@@ -175,26 +175,40 @@ autoCapitalize="none"
 {/* LOADING */}
 {loading && <ActivityIndicator size="large" color="#8A4DFF" />}
 
-{/* SI AUCUN PRODUIT */}
-{!loading && products.length === 0 ? (
-<View style={styles.emptyWrap}>
-<Ionicons name="cube-outline" size={40} color="#666" />
-<Text style={styles.emptyText}>Aucun produit trouvé</Text>
+      {/* SI AUCUN PRODUIT */}
+      {!loading && products.length === 0 ? (
+        <View style={styles.emptyWrap}>
+          <Ionicons name="cube-outline" size={40} color="#666" />
+          <Text style={styles.emptyText}>Aucun produit trouvé</Text>
 
-      </View>
-) : (
-<FlatList
-data={products}
-keyExtractor={(item) => item._id}
-renderItem={renderItem}
-keyboardShouldPersistTaps="handled"
-contentContainerStyle={{ paddingBottom: 120 }}
-refreshControl={
-<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8A4DFF" />
-}
-/>
-)}
+          <TouchableOpacity
+            style={[styles.addNewBtn, { marginTop: 20 }]}
+            onPress={() => navigation.navigate("CreateProduct", { mode: "stock" })}
+          >
+            <Ionicons name="add-circle" size={20} color="#fff" />
+            <Text style={styles.addNewText}>Créer un nouveau produit</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item._id}
+          renderItem={renderItem}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8A4DFF" />
+          }
+        />
+      )}
 
+      {/* FLOATING + BUTTON */}
+      <TouchableOpacity
+        style={styles.floatingBtn}
+        onPress={() => navigation.navigate("CreateProduct", { mode: "stock" })}
+      >
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
     </View>
 );
 }

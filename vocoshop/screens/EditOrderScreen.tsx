@@ -198,7 +198,7 @@ Statut :{" "}
 </Text>
 </Text>
 
-<ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
 {/* NOTE */}
 <View style={styles.block}>
 <Text style={styles.blockTitle}>📝 Note</Text>
@@ -287,17 +287,20 @@ order.items.map((it, idx) => (
 ) : (
 <Text style={styles.empty}>Aucun article pour l’instant.</Text>
 )}
-</View>
+      </View>
 
-{/* ENVOI */}
-{isDraft && (
-<TouchableOpacity style={styles.sendBtn} onPress={finalizeSend}>
-<Ionicons name="paper-plane-outline" size={18} color="#fff" />
-<Text style={styles.sendBtnText}>Envoyer la commande</Text>
-</TouchableOpacity>
-)}
-</ScrollView>
-</View>
+      </ScrollView>
+
+      {/* FIXED FOOTER */}
+      {isDraft && (
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.sendBtn} onPress={finalizeSend}>
+            <Ionicons name="paper-plane-outline" size={18} color="#fff" />
+            <Text style={styles.sendBtnText}>Envoyer la commande</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
 );
 }
 
@@ -392,15 +395,21 @@ itemMeta: { color: "#A8A3C2", marginTop: 2 },
 
 empty: { color: "#A8A3C2" },
 
-sendBtn: {
-marginTop: 6,
-backgroundColor: "#7C3AED",
-paddingVertical: 14,
-borderRadius: 12,
-flexDirection: "row",
-justifyContent: "center",
-alignItems: "center",
-gap: 8,
-},
-sendBtnText: { color: "#fff", fontWeight: "900" },
+  sendBtn: {
+    backgroundColor: "#7C3AED",
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  sendBtnText: { color: "#fff", fontWeight: "900" },
+  footer: {
+    paddingBottom: 30,
+    paddingTop: 14,
+    backgroundColor: "rgba(10,6,23,0.96)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
 });

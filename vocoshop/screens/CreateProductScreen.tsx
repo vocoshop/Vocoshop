@@ -35,33 +35,22 @@ const navigation = useNavigation<any>();
 const route = useRoute<any>();
 const { token } = useContext(AuthContext);
 
-// ✅ optionnel : on sait d’où on vient (stock / inventaire etc.)
 const mode: "stock" | "inventory" | undefined = route?.params?.mode;
 
 const [name, setName] = useState("");
 const [category, setCategory] = useState("");
-
-// ✅ Prix de vente (sellPrice)
 const [sellPrice, setSellPrice] = useState("");
-
-// ✅ Prix d’achat (purchasePrice) — optionnel pour V1
 const [purchasePrice, setPurchasePrice] = useState("");
-
 const [initialStock, setInitialStock] = useState("");
 const [alertLevel, setAlertLevel] = useState("");
 const [barcode, setBarcode] = useState("");
-
-// ✅ Date d’expiration (YYYY-MM-DD) — optionnel
 const [expirationDate, setExpirationDate] = useState("");
-
 const [loading, setLoading] = useState(false);
-
-// Photo
 const [imageUri, setImageUri] = useState<string | null>(null);
 
 const pickImage = async () => {
 const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-if (!perm.granted) return Alert.alert("Permission refusée", "Accès à la galerie requis.");
+if (!perm.granted) return Alert.alert("Permission refusee", "Acces a la galerie requis.");
 const result = await ImagePicker.launchImageLibraryAsync({
 mediaTypes: ["images"],
 quality: 0.7,
@@ -73,7 +62,7 @@ if (!result.canceled) setImageUri(result.assets[0].uri);
 
 const takePhoto = async () => {
 const perm = await ImagePicker.requestCameraPermissionsAsync();
-if (!perm.granted) return Alert.alert("Permission refusée", "Accès à la caméra requis.");
+if (!perm.granted) return Alert.alert("Permission refusee", "Acces a la camera requis.");
 const result = await ImagePicker.launchCameraAsync({
 quality: 0.7,
 allowsEditing: true,
@@ -82,7 +71,6 @@ aspect: [1, 1],
 if (!result.canceled) setImageUri(result.assets[0].uri);
 };
 
-// Scanner
 const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 const [scanVisible, setScanVisible] = useState(false);
 const [isScanning, setIsScanning] = useState(true);
@@ -91,7 +79,7 @@ const openScanner = async () => {
   if (!cameraPermission?.granted) {
     const perm = await requestCameraPermission();
     if (!perm.granted) {
-      return Alert.alert("Permission refusée", "Active la caméra dans les réglages.");
+      return Alert.alert("Permission refusee", "Active la camera dans les reglages.");
     }
   }
   setIsScanning(true);
@@ -110,12 +98,6 @@ if (!token) {
 return Alert.alert("Erreur", "Session invalide. Reconnectez-vous.");
 }
 
-// ✅ si un jour tu appelles cet écran depuis INVENTAIRE, on peut bloquer ici
-// (pour l’instant on autorise quand même, mais tu peux activer ce bloc si tu veux)
-// if (mode === "inventory") {
-// return Alert.alert("Erreur", "Ce mode inventaire fonctionne sur un produit existant.");
-// }
-
 if (!name.trim() || !sellPrice.trim() || !initialStock.trim()) {
 return Alert.alert("Erreur", "Veuillez remplir tous les champs obligatoires.");
 }
@@ -133,22 +115,20 @@ return Alert.alert("Erreur", "Stock initial invalide.");
 }
 
 if (Number.isNaN(a) || a < 0) {
-return Alert.alert("Erreur", "Seuil d’alerte invalide.");
+return Alert.alert("Erreur", "Seuil d'alerte invalide.");
 }
 
-// ✅ achat optionnel
 const ppRaw = purchasePrice.trim();
 const pp = ppRaw === "" ? 0 : Number(ppRaw);
 if (ppRaw !== "" && (Number.isNaN(pp) || pp < 0)) {
 return Alert.alert("Erreur", "Prix d'achat invalide.");
 }
 
-// ✅ expiration optionnelle -> tableau expirationDates
 const exp = expirationDate.trim();
 if (exp !== "" && !isValidYYYYMMDD(exp)) {
 return Alert.alert(
 "Erreur",
-"Date d’expiration invalide. Format : YYYY-MM-DD (ex: 2026-01-31)"
+"Date d'expiration invalide. Format : YYYY-MM-DD (ex: 2026-01-31)"
 );
 }
 
@@ -182,10 +162,10 @@ Authorization: `Bearer ${token}`,
 },
 });
 
-Alert.alert("Succès", "Produit ajouté au stock.");
+Alert.alert("Succes", "Produit ajoute au stock.");
 navigation.goBack();
 } catch (err: any) {
-console.log("❌ Create product error:", err?.response?.data || err);
+console.log("Create product error:", err?.response?.data || err);
 Alert.alert("Erreur", err?.response?.data?.error || "Une erreur est survenue.");
 } finally {
 setLoading(false);
@@ -194,7 +174,7 @@ setLoading(false);
 
 return (
 <View style={styles.container}>
-<ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+<ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 50 }}>
 {/* BACK */}
 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
 <Ionicons name="chevron-back" size={26} color="#fff" />
@@ -212,8 +192,8 @@ value={name}
 onChangeText={setName}
 />
 
-{/* CATÉGORIE */}
-<Text style={styles.label}>Catégorie</Text>
+{/* CATEGORIE */}
+<Text style={styles.label}>Categorie</Text>
 <TextInput
 style={styles.input}
 placeholder="Ex: Boissons, Snacks..."
@@ -233,7 +213,7 @@ value={sellPrice}
 onChangeText={setSellPrice}
 />
 
-{/* PRIX D’ACHAT (OPTIONNEL) */}
+{/* PRIX D'ACHAT (OPTIONNEL) */}
 <Text style={styles.label}>Prix d'achat (optionnel)</Text>
 <TextInput
 style={styles.input}
@@ -255,8 +235,8 @@ value={initialStock}
 onChangeText={setInitialStock}
 />
 
-{/* DATE D’EXPIRATION */}
-<Text style={styles.label}>Date d’expiration (optionnel)</Text>
+{/* DATE D'EXPIRATION */}
+<Text style={styles.label}>Date d'expiration (optionnel)</Text>
 <TextInput
 style={styles.input}
 placeholder="YYYY-MM-DD (ex: 2026-01-31)"
@@ -267,7 +247,7 @@ autoCapitalize="none"
 />
 
 {/* SEUIL */}
-<Text style={styles.label}>Seuil d’alerte</Text>
+<Text style={styles.label}>Seuil d'alerte</Text>
 <TextInput
 style={styles.input}
 keyboardType="numeric"
@@ -280,17 +260,18 @@ onChangeText={setAlertLevel}
 {/* BARCODE */}
 <Text style={styles.label}>Code-barres (optionnel)</Text>
 <TouchableOpacity style={[styles.input, styles.scanBtn]} onPress={openScanner}>
-  <Text style={{ color: barcode ? "#C6C0DD" : "#777" }}>
-    {barcode ? `Code scanné : ${barcode}` : "Scanner le code-barres"}
-  </Text>
+<Text style={{ color: barcode ? "#C6C0DD" : "#777" }}>
+{barcode ? `Code scanne : ${barcode}` : "Scanner le code-barres"}
+</Text>
 </TouchableOpacity>
 <TextInput
-  style={[styles.input, { marginTop: -10 }]}
-  placeholder="Ou taper manuellement"
-  placeholderTextColor="#777"
-  value={barcode}
-  onChangeText={setBarcode}
+style={[styles.input, { marginTop: -10 }]}
+placeholder="Ou taper manuellement"
+placeholderTextColor="#777"
+value={barcode}
+onChangeText={setBarcode}
 />
+
 {/* PHOTO */}
 <Text style={styles.label}>Photo (optionnel)</Text>
 <TouchableOpacity style={styles.photoPicker} onPress={pickImage}>
@@ -310,7 +291,8 @@ onChangeText={setAlertLevel}
 )}
 </ScrollView>
 
-{/* SAVE */}
+{/* FIXED FOOTER */}
+<View style={styles.footer}>
 <TouchableOpacity
 style={[styles.saveBtn, loading ? { opacity: 0.7 } : null]}
 onPress={saveNewProduct}
@@ -322,16 +304,17 @@ disabled={loading}
 <Text style={styles.saveText}>Enregistrer</Text>
 )}
 </TouchableOpacity>
+</View>
 
 {/* MODAL SCANNER */}
 <Modal visible={scanVisible} animationType="slide">
 <CameraView
-  style={{ flex: 1 }}
-  facing="back"
-  onBarcodeScanned={isScanning ? handleBarcodeScanned : undefined}
+style={{ flex: 1 }}
+facing="back"
+onBarcodeScanned={isScanning ? handleBarcodeScanned : undefined}
 />
 <TouchableOpacity style={styles.closeScanner} onPress={() => { setIsScanning(false); setScanVisible(false); }}>
-  <Text style={{ color: "#fff", fontSize: 18 }}>Fermer</Text>
+<Text style={{ color: "#fff", fontSize: 18 }}>Fermer</Text>
 </TouchableOpacity>
 </Modal>
 </View>
@@ -343,7 +326,6 @@ container: {
 flex: 1,
 backgroundColor: "#0A0617",
 paddingTop: 55,
-paddingHorizontal: 20,
 },
 backBtn: {
 width: 42,
@@ -379,12 +361,19 @@ backgroundColor: "#8A4DFF",
 paddingVertical: 18,
 alignItems: "center",
 borderRadius: 14,
-marginBottom: 30,
 },
 saveText: {
 color: "#fff",
 fontSize: 18,
 fontWeight: "700",
+},
+footer: {
+paddingBottom: 30,
+paddingTop: 14,
+backgroundColor: "rgba(10,6,23,0.96)",
+borderTopWidth: 1,
+borderTopColor: "rgba(255,255,255,0.06)",
+paddingHorizontal: 20,
 },
 scanBtn: {
 justifyContent: "center",

@@ -146,7 +146,7 @@ return (
 <View style={{ width: 26 }} />
 </View>
 
-<ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
 <View style={styles.block}>
 <Text style={styles.label}>Nom *</Text>
 <TextInput
@@ -226,18 +226,21 @@ multiline
             <Text style={styles.productsBtnText}>Produits fournis</Text>
             <Ionicons name="chevron-forward" size={16} color="#6B7280" />
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.saveBtn, { opacity: saving ? 0.7 : 1 }]}
-            onPress={onSave}
-            disabled={saving}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.saveText}>{saving ? "Enregistrement..." : "Enregistrer"}</Text>
-          </TouchableOpacity>
         </View>
-</ScrollView>
-</View>
+      </ScrollView>
+
+      {/* FIXED FOOTER */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.saveBtn, { opacity: saving ? 0.7 : 1 }]}
+          onPress={onSave}
+          disabled={saving}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.saveText}>{saving ? "Enregistrement..." : "Enregistrer"}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
 );
 }
 
@@ -274,12 +277,18 @@ padding: 12,
 },
 productsBtnText: { color: "#A78BFA", fontWeight: "700", fontSize: 13, flex: 1 },
 
-saveBtn: {
-marginTop: 12,
-backgroundColor: "#7C3AED",
-borderRadius: 12,
-paddingVertical: 14,
-alignItems: "center",
-},
-saveText: { color: "#fff", fontWeight: "900" },
+  saveBtn: {
+    backgroundColor: "#7C3AED",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  saveText: { color: "#fff", fontWeight: "900" },
+  footer: {
+    paddingBottom: 30,
+    paddingTop: 14,
+    backgroundColor: "rgba(10,6,23,0.96)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
 });

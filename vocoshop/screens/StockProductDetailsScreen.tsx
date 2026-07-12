@@ -8,6 +8,7 @@ TouchableOpacity,
 TextInput,
 Alert,
 ActivityIndicator,
+ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API from "../src/api/api";
@@ -222,84 +223,92 @@ setLoading(false);
 
 const offlineNow = isOffline();
 
-return (
-<View style={styles.container}>
-{/* HEADER */}
-<View style={styles.headerRow}>
-<TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-<Ionicons name="chevron-back" size={26} color="#fff" />
-</TouchableOpacity>
+  return (
+    <View style={styles.container}>
+      {/* HEADER */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={26} color="#fff" />
+        </TouchableOpacity>
 
-<Text style={styles.title} numberOfLines={1}>
-{displayedProduct.name}
-</Text>
-</View>
+        <Text style={styles.title} numberOfLines={1}>
+          {displayedProduct.name}
+        </Text>
+      </View>
 
-{/* OFFLINE BANNER */}
-{offlineNow && (
-<View style={styles.offlineBanner}>
-<Ionicons name="cloud-offline-outline" size={18} color="#FACC15" />
-<Text style={styles.offlineText}>Mode hors-ligne : les actions seront synchronisées</Text>
-</View>
-)}
+      {/* OFFLINE BANNER */}
+      {offlineNow && (
+        <View style={styles.offlineBanner}>
+          <Ionicons name="cloud-offline-outline" size={18} color="#FACC15" />
+          <Text style={styles.offlineText}>Mode hors-ligne : les actions seront synchronisees</Text>
+        </View>
+      )}
 
-{/* Loading */}
-{loading && (
-<ActivityIndicator size="small" color="#8A4DFF" style={{ marginBottom: 16 }} />
-)}
+      {/* Loading */}
+      {loading && (
+        <ActivityIndicator size="small" color="#8A4DFF" style={{ marginBottom: 16 }} />
+      )}
 
-{/* Infos produit */}
-<Text style={styles.label}>Catégorie</Text>
-<Text style={styles.value}>{displayedProduct.category || "Non définie"}</Text>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* Infos produit */}
+        <Text style={styles.label}>Categorie</Text>
+        <Text style={styles.value}>{displayedProduct.category || "Non definie"}</Text>
 
-<Text style={styles.label}>Stock actuel</Text>
-<Text style={styles.value}>{currentStock}</Text>
+        <Text style={styles.label}>Stock actuel</Text>
+        <Text style={styles.value}>{currentStock}</Text>
 
-{/* Expiration */}
-<Text style={styles.label}>Prochaine date d’expiration</Text>
-<Text style={styles.value}>{formatDateFR(nearestExpiry)}</Text>
+        {/* Expiration */}
+        <Text style={styles.label}>Prochaine date d'expiration</Text>
+        <Text style={styles.value}>{formatDateFR(nearestExpiry)}</Text>
 
-<Text style={styles.label}>Nombre de dates enregistrées</Text>
-<Text style={styles.value}>
-{Array.isArray(displayedProduct.expirationDates) ? displayedProduct.expirationDates.length : 0}
-</Text>
+        <Text style={styles.label}>Nombre de dates enregistrees</Text>
+        <Text style={styles.value}>
+          {Array.isArray(displayedProduct.expirationDates) ? displayedProduct.expirationDates.length : 0}
+        </Text>
 
-{/* Ajouter du stock */}
-<Text style={[styles.label, { marginTop: 22 }]}>Ajouter du stock</Text>
-<TextInput
-placeholder="Ex: 10"
-placeholderTextColor="#777"
-keyboardType="numeric"
-style={styles.input}
-value={quantity}
-onChangeText={setQuantity}
-/>
+        {/* Ajouter du stock */}
+        <Text style={[styles.label, { marginTop: 22 }]}>Ajouter du stock</Text>
+        <TextInput
+          placeholder="Ex: 10"
+          placeholderTextColor="#777"
+          keyboardType="numeric"
+          style={styles.input}
+          value={quantity}
+          onChangeText={setQuantity}
+        />
 
-{/* Date d'expiration */}
-<Text style={[styles.label, { marginTop: 12 }]}>Date d’expiration (optionnel)</Text>
-<TextInput
-placeholder="YYYY-MM-DD (ex: 2026-01-31)"
-placeholderTextColor="#777"
-style={styles.input}
-value={expirationDate}
-onChangeText={setExpirationDate}
-autoCapitalize="none"
-/>
+        {/* Date d'expiration */}
+        <Text style={[styles.label, { marginTop: 12 }]}>Date d'expiration (optionnel)</Text>
+        <TextInput
+          placeholder="YYYY-MM-DD (ex: 2026-01-31)"
+          placeholderTextColor="#777"
+          style={styles.input}
+          value={expirationDate}
+          onChangeText={setExpirationDate}
+          autoCapitalize="none"
+        />
+      </ScrollView>
 
-<TouchableOpacity
-style={[styles.btn, loading ? { opacity: 0.7 } : null]}
-onPress={submitAddStock}
-disabled={loading}
->
-<Text style={styles.btnText}>{loading ? "Enregistrement..." : "Enregistrer"}</Text>
-</TouchableOpacity>
-</View>
-);
+      {/* FIXED FOOTER */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.btn, loading ? { opacity: 0.7 } : null]}
+          onPress={submitAddStock}
+          disabled={loading}
+        >
+          <Text style={styles.btnText}>{loading ? "Enregistrement..." : "Enregistrer"}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-container: { flex: 1, backgroundColor: "#0A0617", padding: 20, paddingTop: 60 },
-headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  container: { flex: 1, backgroundColor: "#0A0617", padding: 20, paddingTop: 60 },
+  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
 backBtn: {
 width: 42,
 height: 42,
@@ -334,12 +343,18 @@ borderRadius: 10,
 color: "#fff",
 marginTop: 8,
 },
-btn: {
-backgroundColor: "#8A4DFF",
-padding: 15,
-borderRadius: 10,
-marginTop: 26,
-alignItems: "center",
-},
-btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  btn: {
+    backgroundColor: "#8A4DFF",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  footer: {
+    paddingBottom: 30,
+    paddingTop: 14,
+    backgroundColor: "rgba(10,6,23,0.96)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
 });
