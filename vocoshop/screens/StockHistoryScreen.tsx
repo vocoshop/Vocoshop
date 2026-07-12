@@ -162,9 +162,6 @@ marginTop: 30,
 fontSize: 15,
 textAlign: "center",
 },
-group: {
-marginBottom: 12,
-},
 groupHeader: {
 backgroundColor: "#18122B",
 padding: 16,
@@ -172,6 +169,7 @@ borderRadius: 14,
 flexDirection: "row",
 alignItems: "center",
 justifyContent: "space-between",
+marginBottom: 10,
 },
 groupHeaderLeft: {
 flexDirection: "row",
