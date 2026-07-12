@@ -195,7 +195,10 @@ export default function OcrValidationScreen() {
     setSaving(true);
     setShowDatePicker(false);
     try {
-      const dateStr = date.toLocaleDateString("fr-CA");
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      const dateStr = `${y}-${m}-${d}`;
       await API.post(`/ocr/validate/${scan._id}`, {
         lines,
         feedback: { validatedAt: new Date().toISOString() },
