@@ -111,11 +111,11 @@ marginBottom: 16,
 },
 card: {
 backgroundColor: "#18122B",
-padding: 14,
+padding: 16,
 borderRadius: 14,
 flexDirection: "row",
 alignItems: "center",
-marginBottom: 10,
+marginBottom: 12,
 },
 iconWrap: {
 width: 42,

@@ -163,11 +163,11 @@ fontSize: 15,
 textAlign: "center",
 },
 group: {
-marginBottom: 10,
+marginBottom: 12,
 },
 groupHeader: {
 backgroundColor: "#18122B",
-padding: 14,
+padding: 16,
 borderRadius: 14,
 flexDirection: "row",
 alignItems: "center",
