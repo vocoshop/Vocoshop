@@ -65,11 +65,6 @@ Authorization: `Bearer ${token}`,
 [token]
 );
 
-// ✅ point d'entrée unique vers CreateProduct
-const goCreateProduct = useCallback(() => {
-navigation.navigate("CreateProduct", { mode: "stock" });
-}, [navigation]);
-
 // -----------------------------
 // CHARGER PRODUITS
 // -----------------------------
@@ -186,11 +181,7 @@ autoCapitalize="none"
 <Ionicons name="cube-outline" size={40} color="#666" />
 <Text style={styles.emptyText}>Aucun produit trouvé</Text>
 
-<TouchableOpacity style={styles.addNewBtn} onPress={goCreateProduct}>
-<Ionicons name="add" size={22} color="#fff" />
-<Text style={styles.addNewText}>Ajouter un produit</Text>
-</TouchableOpacity>
-</View>
+      </View>
 ) : (
 <FlatList
 data={products}
@@ -204,11 +195,7 @@ refreshControl={
 />
 )}
 
-{/* BOUTON FLOTTANT AJOUT PRODUIT */}
-<TouchableOpacity style={styles.floatingBtn} onPress={goCreateProduct}>
-<Ionicons name="add" size={30} color="#fff" />
-</TouchableOpacity>
-</View>
+    </View>
 );
 }
 
