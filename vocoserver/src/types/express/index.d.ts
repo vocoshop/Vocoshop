@@ -23,6 +23,7 @@ declare namespace Express {
     storeName?: string;
     name?: string;
     phone?: string;
+    ownershipStatus?: string;
   }
 
   interface AgentUser {

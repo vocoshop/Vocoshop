@@ -103,7 +103,7 @@ const authCode = generateAuthCode(6);
 const authCodeHash = await bcrypt.hash(authCode, 10);
 
 if (process.env.NODE_ENV === "development") {
-  console.log("🔐 Auth code generated (DEV) | code =", code);
+  // auth code log supprimé (sécurité)
 }
 
 const agent = await Agent.create({

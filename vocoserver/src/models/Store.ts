@@ -61,6 +61,8 @@ loginCount: number;
 
 isOnboarded: boolean;
 
+ownershipStatus: string;
+
 createdAt?: Date;
 updatedAt?: Date;
 }
