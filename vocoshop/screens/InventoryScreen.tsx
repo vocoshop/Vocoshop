@@ -579,7 +579,6 @@ onChangeText={setSearch}
       </View>
 
       {historyTab ? (
-        /* ===== HISTORIQUE ===== */
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 140 }}>
           {historySessions.length === 0 ? (
             <Text style={{ color: "#A8A3C2", textAlign: "center", marginTop: 40 }}>Aucun historique</Text>
@@ -604,7 +603,7 @@ onChangeText={setSearch}
           )}
         </ScrollView>
       ) : (
-        /* ===== INVENTAIRE ===== */
+<>
 {showTopBar && (
 <View style={styles.topActionRow}>
 <View>
@@ -679,6 +678,7 @@ ListEmptyComponent={
 />
 </Animated.View>
 
+</>
       )}
 {/* ===== MODAL REPRENDRE SESSION ===== */}
 <Modal
