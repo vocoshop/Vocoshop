@@ -9,8 +9,8 @@
     "newArchEnabled": false,
     "scheme": "vocoshop",
     "splash": {
-      "image": "./assets/adaptive-icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#0A0617"
     },
 

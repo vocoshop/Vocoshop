@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   bgBase: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#05060F",
+    backgroundColor: "#0A0617",
   },
   bgTint: {
     ...StyleSheet.absoluteFillObject,

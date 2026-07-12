@@ -120,6 +120,10 @@ import OfflineBanner from "./src/api/components/OfflineBanner";
 import SyncIndicator from "./src/api/components/SyncIndicator";
 import ErrorBoundary from "./src/api/components/ErrorBoundary";
 import SplashScreen from "./screens/SplashScreen";
+import * as ExpoSplashScreen from "expo-splash-screen";
+
+// Garder le splash natif visible jusqu'à ce que l'app soit prête
+ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 import InvoiceListScreen from "./screens/invoiceListScreen";
 import InvoiceDetailScreen from "./screens/InvoiceDetailScreen";
 
@@ -303,9 +307,16 @@ return () => { mounted = false; };
 /**
  * ✅ 3 — APP NORMALE
  */
-if (showSplash) {
-return <SplashScreen onFinish={() => setShowSplash(false)} />;
-}
+  if (showSplash) {
+    return (
+      <SplashScreen
+        onFinish={async () => {
+          setShowSplash(false);
+          await ExpoSplashScreen.hideAsync();
+        }}
+      />
+    );
+  }
 
 return (
 <ErrorBoundary>
