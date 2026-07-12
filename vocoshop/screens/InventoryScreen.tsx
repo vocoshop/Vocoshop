@@ -522,7 +522,7 @@ Chargement de la boutique...
 }
 
 const [historyTab, setHistoryTab] = useState(false);
-const showTopBar = inventoryCount > 0;
+const showTopBar = inventoryCount > 0 || Boolean(sessionIdRef.current);
 
 return (
     <View style={styles.container}>
