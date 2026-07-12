@@ -75,6 +75,7 @@ import InventorySessionDetailScreen from "./screens/InventorySessionDetailScreen
 import ConsolidatedInventoryScreen from "./screens/ConsolidatedInventoryScreen";
 import InventoryAnalysisScreen from "./screens/InventoryAnalysisScreen";
 import StockHistoryScreen from "./screens/StockHistoryScreen";
+import StockDayDetailScreen from "./screens/StockDayDetailScreen";
 import FinishInventoryScreen from "./screens/FinishInventoryScreen";
 import AppliedInventoryDetailScreen from "./screens/AppliedInventoryDetailScreen";
 
@@ -388,6 +389,7 @@ component={SubscriptionBlockedScreen}
 {/* 🕘 HISTORIQUE */}
 <Stack.Screen name="History" component={HistoryScreen} />
 <Stack.Screen name="StockHistory" component={StockHistoryScreen} />
+<Stack.Screen name="StockDayDetail" component={StockDayDetailScreen} />
 
 {/* 👤 PROFIL */}
 <Stack.Screen name="Profile" component={ProfileScreen} />

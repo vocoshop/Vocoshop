@@ -19,7 +19,6 @@ const { token, storeId } = useContext(AuthContext);
 
 const [list, setList] = useState<any[]>([]);
 const [loading, setLoading] = useState(true);
-const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
 const load = useCallback(async () => {
 try {
@@ -55,8 +54,8 @@ return db - da;
 });
 }, [list]);
 
-const toggleDate = (dateKey: string) => {
-setExpandedDate((prev) => (prev === dateKey ? null : dateKey));
+const toggleDate = (dateKey: string, items: any[]) => {
+navigation.navigate("StockDayDetail", { date: dateKey, items });
 };
 
 const renderIcon = (type: string) => {
@@ -106,81 +105,30 @@ Toutes les opérations : inventaires, ajouts et retraits
 ) : groups.length === 0 ? (
 <Text style={styles.empty}>Aucune opération pour le moment.</Text>
 ) : (
-<ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
-{groups.map(([dateKey, items]) => {
-const isOpen = expandedDate === dateKey;
-const totalOps = items.length;
-return (
-<View key={dateKey} style={styles.group}>
-<TouchableOpacity
-style={styles.groupHeader}
-activeOpacity={0.8}
-onPress={() => toggleDate(dateKey)}
->
-<View style={styles.groupHeaderLeft}>
-<View style={styles.dateBadge}>
-<Text style={styles.dateBadgeText}>{totalOps}</Text>
-</View>
-<View style={{ flex: 1 }}>
-<Text style={styles.groupDate}>{dateKey}</Text>
-<Text style={styles.groupSummary}>{getSummary(items)}</Text>
-</View>
-</View>
-<Ionicons
-name={isOpen ? "chevron-up" : "chevron-down"}
-size={20}
-color="#888"
-/>
-</TouchableOpacity>
-
-{isOpen && (
-<View style={styles.groupBody}>
-{items.map((item: any, idx: number) => {
-const isInventory = item.type === "inventory";
-const timeStr = item.date
-? new Date(item.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-: "";
-return (
-<TouchableOpacity
-key={`${item.id}-${idx}`}
-style={styles.detailRow}
-onPress={() => {
-if (isInventory) {
-navigation.navigate("AppliedInventoryDetail", {
-sessionId: item.id,
-});
-}
-}}
-activeOpacity={isInventory ? 0.7 : 1}
->
-<View style={styles.detailIcon}>{renderIcon(item.type)}</View>
-<View style={{ flex: 1 }}>
-<Text style={styles.detailTitle}>{item.label}</Text>
-<Text style={styles.detailTime}>{timeStr}</Text>
-{isInventory && (
-<Text style={styles.detailSub}>{item.modifiedProducts} produit(s) modifié(s)</Text>
-)}
-{item.type === "addition" && (
-<Text style={styles.detailProduct}>
-<Text style={styles.qtyAdded}>+{item.quantity}</Text> {item.productName}
-</Text>
-)}
-{item.type === "withdrawal" && (
-<Text style={styles.detailProduct}>
-<Text style={styles.qtyRemoved}>-{item.quantity}</Text> {item.productName}
-</Text>
-)}
-</View>
-{isInventory && <Ionicons name="chevron-forward" size={18} color="#666" />}
-</TouchableOpacity>
-);
-})}
-</View>
-)}
-</View>
-);
-})}
-</ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+        {groups.map(([dateKey, items]) => {
+          const totalOps = items.length;
+          return (
+            <TouchableOpacity
+              key={dateKey}
+              style={styles.groupHeader}
+              activeOpacity={0.8}
+              onPress={() => toggleDate(dateKey, items)}
+            >
+              <View style={styles.groupHeaderLeft}>
+                <View style={styles.dateBadge}>
+                  <Text style={styles.dateBadgeText}>{totalOps}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.groupDate}>{dateKey}</Text>
+                  <Text style={styles.groupSummary}>{getSummary(items)}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 )}
 </View>
 );
@@ -253,57 +201,5 @@ groupSummary: {
 color: "#888",
 fontSize: 12,
 marginTop: 2,
-},
-groupBody: {
-backgroundColor: "#18122B",
-borderBottomLeftRadius: 14,
-borderBottomRightRadius: 14,
-paddingHorizontal: 14,
-paddingBottom: 6,
-marginTop: -6,
-},
-detailRow: {
-flexDirection: "row",
-alignItems: "center",
-paddingVertical: 10,
-borderTopWidth: 1,
-borderTopColor: "rgba(255,255,255,0.04)",
-},
-detailIcon: {
-width: 32,
-height: 32,
-borderRadius: 8,
-backgroundColor: "rgba(255,255,255,0.04)",
-alignItems: "center",
-justifyContent: "center",
-marginRight: 12,
-},
-detailTitle: {
-color: "#fff",
-fontSize: 13,
-fontWeight: "600",
-},
-detailTime: {
-color: "#666",
-fontSize: 11,
-marginTop: 1,
-},
-detailSub: {
-color: "#A8A3C2",
-fontSize: 11,
-marginTop: 1,
-},
-detailProduct: {
-color: "#C6C0DD",
-fontSize: 12,
-marginTop: 2,
-},
-qtyAdded: {
-color: "#4ADE80",
-fontWeight: "700",
-},
-qtyRemoved: {
-color: "#F87171",
-fontWeight: "700",
 },
 });
