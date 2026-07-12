@@ -243,41 +243,49 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
             content:
               "Tu es un assistant de gestion de stock pour boutique africaine. " +
               "Analyse la/les photo(s) de produits. " +
-              "Réponds UNIQUEMENT avec un JSON valide, sans préambule, sans texte autour, sans balises markdown.\n\n" +
+              "Reponds UNIQUEMENT avec un JSON valide, sans preambule, sans texte autour, sans balises markdown.\n\n" +
               "Format JSON attendu:\n" +
               `{\n` +
               `  "products": [\n` +
-              `    { "name": "Nom du produit avec taille", "category": "Catégorie", "unit": "pièce", "estimatedQuantity": 1, "suggestedExpirationDate": "", "suggestedSellPrice": 0, "suggestedPurchasePrice": 0 }\n` +
+              `    { "name": "Marque Produit avec taille", "category": "Categorie", "brand": "Marque", "unit": "piece", "estimatedQuantity": 1, "suggestedExpirationDate": "", "suggestedSellPrice": 0, "suggestedPurchasePrice": 0 }\n` +
               `  ]\n` +
               `}\n\n` +
-              "RÈGLE ABSOLUE — DISTINGUER LES FORMATS/TAILLES:\n" +
-              "Le MÊME produit vendu en DIFFÉRENTES TAILLES/VOLUMES/POIDS doit être listé comme des produits SÉPARÉS avec des noms DIFFÉRENTS.\n" +
+              "REGLE ABSOLUE — LA MARQUE FAIT PARTIE DU NOM:\n" +
+              "Deux memes produits avec la MEME taille/poids mais de MARQUES DIFFERENTES sont des produits DIFFERENTS.\n" +
+              "Le nom DOIT inclure la marque quand elle est visible.\n" +
+              "Exemples:\n" +
+              "  CORRECT: \"Lait Candia 1L\" et \"Lait Lactel 1L\" (memes format, marques differentes)\n" +
+              "  CORRECT: \"Sucre Dania 1kg\" et \"Sucre Saint-Louis 1kg\"\n" +
+              "  CORRECT: \"Eau Pure Vie 1.5L\" et \"Eau Olgane 1.5L\"\n" +
+              "  CORRECT: \"Farine La Colombe 1kg\" et \"Farine Les Moulins 1kg\"\n" +
+              "  FAUX: \"Lait 1L\" et \"Lait 1L\" (marques non specifiees = confusion)\n\n" +
+              "REGLE ABSOLUE — DISTINGUER LES FORMATS/TAILLES:\n" +
+              "Le MEME produit vendu en DIFFERENTES TAILLES/VOLUMES/POIDS doit etre liste comme des produits SEPARES avec des noms DIFFERENTS.\n" +
               "Exemples concrets:\n" +
-              "  ❌ FAUX: \"Huile\" → deux entrées identiques\n" +
-              "  ✅ CORRECT: \"Huile 50cl\" et \"Huile 1L\" (deux noms différents !)\n" +
-              "  ❌ FAUX: \"Riz\"\n" +
-              "  ✅ CORRECT: \"Riz 1kg\" et \"Riz 5kg\" et \"Riz 25kg\"\n" +
-              "  ❌ FAUX: \"Savon\"\n" +
-              "  ✅ CORRECT: \"Savon 200g\" et \"Savon 400g\"\n" +
-              "  ❌ FAUX: \"Eau minérale\"\n" +
-              "  ✅ CORRECT: \"Eau minérale 50cl\" et \"Eau minérale 1.5L\"\n\n" +
-              "Règles:\n" +
-              "- Le champ 'name' DOIT TOUJOURS inclure le volume/poids/taille SI visible sur l'emballage. Jamais de nom générique seul.\n" +
-              "- Même si le format n'est pas écrit, déduis-le de la forme de l'emballage (bouteille 50cl vs 1L, sachet 500g vs 1kg)\n" +
-              "- Catégorie en français (ex: Boisson, Épicerie, Laitière, Hygiène, Quincaillerie, etc.)\n" +
-              "- unit = l'unité de vente: pièce, litre, kg, sachet, carton, bouteille, sac, rouleau, paquet, boîte, pot, galon, tasse, portion\n" +
-              "- estimatedQuantity = la quantité estimée visible sur la photo (ex: 1 bouteille = 1, un pack de 6 = 6, un carton de 12 = 12, un lot de 20 savons = 20)\n" +
-              "- suggestedExpirationDate = date d'expiration si visible sur l'emballage (format YYYY-MM-DD ou YYYY-MM, sinon chaîne vide)\n" +
-              "- suggestedSellPrice = prix de vente estimé en FCFA (0 si inconnu)\n" +
-              "- suggestedPurchasePrice = prix d'achat estimé en FCFA (0 si inconnu)\n" +
-              "- Si aucune photo ne montre de produit identifiable, réponds { \"products\": [] }",
+              "  CORRECT: \"Huile Aya 50cl\" et \"Huile Aya 1L\" (deux noms differents !)\n" +
+              "  CORRECT: \"Riz Sodex 1kg\" et \"Riz Sodex 5kg\" et \"Riz Sodex 25kg\"\n" +
+              "  CORRECT: \"Savon Super 200g\" et \"Savon Super 400g\"\n" +
+              "  CORRECT: \"Eau Pure Vie 50cl\" et \"Eau Pure Vie 1.5L\"\n" +
+              "  FAUX: \"Eau\" ou \"Lait\" ou \"Riz\" (trop generique)\n\n" +
+              "Regles:\n" +
+              "- Le champ 'name' DOIT TOUJOURS inclure: [Marque] + [Produit] + [Taille/Volume/Poids] si visibles sur l'emballage\n" +
+              "- Le champ 'brand' = le nom de la marque si visible (ex: \"Candia\", \"Coca-Cola\", \"Dania\"), sinon chaine vide\n" +
+              "- Si la marque n'est PAS visible, mets juste \"Produit + Taille\" (ex: \"Riz parfume 1kg\")\n" +
+              "- Meme si le format n'est pas ecrit, deduis-le de la forme de l'emballage (bouteille 50cl vs 1L, sachet 500g vs 1kg)\n" +
+              "- Categorie en francais (ex: Boisson, Epicerie, Laitiere, Hygiene, Quincaillerie, etc.)\n" +
+              "- unit = l'unite de vente: piece, litre, kg, sachet, carton, bouteille, sac, rouleau, paquet, boite, pot, galon, tasse, portion\n" +
+              "- estimatedQuantity = la quantite estimee visible sur la photo (ex: 1 bouteille = 1, un pack de 6 = 6, un carton de 12 = 12, un lot de 20 savons = 20)\n" +
+              "- suggestedExpirationDate = date d'expiration si visible sur l'emballage (format YYYY-MM-DD ou YYYY-MM, sinon chaine vide)\n" +
+              "- suggestedSellPrice = prix de vente estime en FCFA (0 si inconnu)\n" +
+              "- suggestedPurchasePrice = prix d'achat estime en FCFA (0 si inconnu)\n" +
+              "- Si aucune photo ne montre de produit identifiable, reponds { \"products\": [] }",
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Identifie tous les produits visibles sur ces photos. ATTENTION: si un même produit existe en plusieurs tailles/volumes (50cl vs 1L, 1kg vs 5kg, etc.), liste-les comme des produits SÉPARÉS avec des noms DIFFÉRENTS incluant la taille.",
+                text: "Identifie tous les produits visibles sur ces photos. ATTENTION: si un meme produit existe en plusieurs tailles/volumes (50cl vs 1L, 1kg vs 5kg, etc.), liste-les comme des produits SEPARES avec des noms DIFFERENTS incluant la taille. Si la marque est visible (Candia, Lactel, Dania...), inclus-la dans le nom et le champ brand.",
               },
               ...imageParts,
             ],
