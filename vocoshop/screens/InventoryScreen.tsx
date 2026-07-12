@@ -20,14 +20,14 @@ TextInput,
 Animated,
 RefreshControl,
 Pressable,
+ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRoute, useFocusEffect } from "@react-navigation/native";
+import { useRoute, useFocusEffect, useNavigation } from "@react-navigation/native";
 
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
-import BottomInventoryBar from "../components/BottomInventoryBar";
 
 /* --------------------------
 TYPES
@@ -78,6 +78,7 @@ const [loading, setLoading] = useState(false);
 const [refreshing, setRefreshing] = useState(false);
 
 const [showResumeModal, setShowResumeModal] = useState(false);
+const [historySessions, setHistorySessions] = useState<any[]>([]);
 
 // Anti spam modal (ne pas re-pop le même modal)
 const lastModalSessionRef = useRef<string | null>(null);
@@ -96,6 +97,7 @@ const skipNextResumeModalRef = useRef(false);
 
 // Fade animation
 const fadeAnim = useRef(new Animated.Value(0)).current;
+const scrollRef = useRef<ScrollView>(null);
 
 const canCallApi = useMemo(() => Boolean(token && storeId), [token, storeId]);
 
@@ -488,6 +490,19 @@ refreshSessionState,
 ])
 );
 
+// Charger historique inventaire
+const loadHistory = useCallback(async () => {
+  if (!token || !storeId) return;
+  try {
+    const res = await API.get("/inventory/sessions", { params: { storeId, limit: 20 } });
+    setHistorySessions(res.data?.sessions ?? res.data ?? []);
+  } catch { setHistorySessions([]); }
+}, [token, storeId]);
+
+useEffect(() => { loadHistory(); }, [loadHistory]);
+
+useFocusEffect(useCallback(() => { loadHistory(); }, [loadHistory]));
+
 /* ---------------------------------------------------------
 UI guards
 ---------------------------------------------------------- */
@@ -508,11 +523,22 @@ Chargement de la boutique...
 }
 
 const showTopBar = inventoryCount > 0;
+const dimensionsWidth = require("react-native").Dimensions.get("window").width;
 
 return (
-<View style={styles.container}>
+    <View style={styles.container}>
 
-{/* ===== MODAL REPRISE (2 boutons) ===== */}
+      {/* ===== HEADER ===== */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={26} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Inventaire</Text>
+        <TouchableOpacity style={styles.swipeHint} onPress={() => scrollRef.current?.scrollToEnd({ animated: true })}>
+          <Ionicons name="time-outline" size={22} color="#A78BFA" />
+        </TouchableOpacity>
+      </View>
+
 <Modal
 visible={showResumeModal}
 transparent
@@ -594,8 +620,18 @@ await cancelSession(sid);
 </View>
 </Modal>
 
-{/* ===== SEARCH ===== */}
-<View style={styles.searchBar}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        style={{ flex: 1 }}
+      >
+        {/* ===== PAGE 1 : INVENTAIRE ===== */}
+        <View style={{ width: dimensionsWidth }}>
+          <View style={styles.pageContent}>
+      {/* ===== SEARCH ===== */}
+      <View style={styles.searchBar}>
 <Ionicons name="search-outline" size={20} color="#AAA" />
 <TextInput
 style={styles.searchInput}
@@ -684,15 +720,45 @@ ListEmptyComponent={
 />
 </Animated.View>
 
-{/* ===== BOTTOM BAR ===== */}
-<BottomInventoryBar
-onHome={() => navigation.navigate("Home")}
-onAdd={() => navigation.navigate("AddProduct")}
-onVoice={() => {}}
-onHistory={() => navigation.navigate("History", { storeId })}
-/>
-</View>
-);
+        </View>
+          </View>
+
+        {/* ===== PAGE 2 : HISTORIQUE ===== */}
+        <View style={{ width: dimensionsWidth }}>
+          <View style={styles.pageContent}>
+            <Text style={styles.historyTitle}>Historique inventaire</Text>
+            {historySessions.length === 0 ? (
+              <Text style={{ color: "#666", textAlign: "center", marginTop: 40 }}>
+                Aucun historique
+              </Text>
+            ) : (
+              <FlatList
+                data={historySessions}
+                keyExtractor={(item) => item._id}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.historyCard}
+                    onPress={() => navigation.navigate("InventorySessionDetail", { sessionId: item._id })}
+                  >
+                    <View>
+                      <Text style={styles.historyDate}>
+                        {new Date(item.createdAt).toLocaleDateString("fr-FR")}
+                      </Text>
+                      <Text style={styles.historyCount}>
+                        {item.productCount ?? item.products?.length ?? 0} produit(s)
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="#777" />
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
 }
 
 /* --------------------------
@@ -867,6 +933,66 @@ marginLeft: 10,
 productPrice: {
 color: "#C59CFF",
 fontSize: 14,
-fontWeight: "900",
-},
-});
+      fontWeight: "900",
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingTop: 50,
+      paddingBottom: 8,
+    },
+    backBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "#1E1838",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerTitle: {
+      color: "#fff",
+      fontSize: 20,
+      fontWeight: "900",
+      flex: 1,
+      textAlign: "center",
+    },
+    swipeHint: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pageContent: {
+      paddingHorizontal: 16,
+      flex: 1,
+    },
+    historyTitle: {
+      color: "#fff",
+      fontSize: 18,
+      fontWeight: "900",
+      marginBottom: 16,
+      marginTop: 20,
+    },
+    historyCard: {
+      backgroundColor: "#161228",
+      padding: 16,
+      borderRadius: 18,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 10,
+    },
+    historyDate: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    historyCount: {
+      color: "#A8A3C2",
+      fontSize: 12,
+      marginTop: 2,
+    },
+  });
