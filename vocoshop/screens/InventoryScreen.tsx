@@ -97,7 +97,6 @@ const skipNextResumeModalRef = useRef(false);
 
 // Fade animation
 const fadeAnim = useRef(new Animated.Value(0)).current;
-const scrollRef = useRef<ScrollView>(null);
 
 const canCallApi = useMemo(() => Boolean(token && storeId), [token, storeId]);
 
@@ -523,7 +522,6 @@ Chargement de la boutique...
 }
 
 const showTopBar = inventoryCount > 0;
-const dimensionsWidth = require("react-native").Dimensions.get("window").width;
 
 return (
     <View style={styles.container}>
@@ -534,103 +532,10 @@ return (
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Inventaire</Text>
-        <TouchableOpacity style={styles.swipeHint} onPress={() => scrollRef.current?.scrollToEnd({ animated: true })}>
-          <Ionicons name="time-outline" size={22} color="#A78BFA" />
-        </TouchableOpacity>
+        <View style={{ width: 26 }} />
       </View>
 
-<Modal
-visible={showResumeModal}
-transparent
-animationType="fade"
-onRequestClose={() => setShowResumeModal(false)}
->
-<Pressable
-style={styles.modalOverlay}
-onPress={() => setShowResumeModal(false)}
-/>
-
-<View style={styles.modalCenter}>
-<View style={styles.modalBox}>
-<View style={styles.modalHeader}>
-<View style={styles.modalIcon}>
-<Ionicons
-name="clipboard-outline"
-size={22}
-color="#A78BFA"
-/>
-</View>
-
-<View style={{ flex: 1 }}>
-<Text style={styles.modalTitle}>Session en cours</Text>
-<Text style={styles.modalText}>
-Tu as déjà compté {inventoryCount} produit(s). Tu veux
-continuer ?
-</Text>
-</View>
-
-<TouchableOpacity
-style={styles.modalCloseBtn}
-onPress={() => setShowResumeModal(false)}
-activeOpacity={0.8}
->
-<Ionicons name="close" size={18} color="#E5E7EB" />
-</TouchableOpacity>
-</View>
-
-<View style={styles.modalActionsRow}>
-{/* CONTINUER = rester ici */}
-<TouchableOpacity
-style={[styles.modalBtn, styles.modalBtnPrimary]}
-activeOpacity={0.9}
-onPress={() => setShowResumeModal(false)}
->
-<Ionicons name="play-outline" size={18} color="#fff" />
-<Text style={styles.modalBtnText}>Continuer</Text>
-</TouchableOpacity>
-
-{/* ANNULER = confirmation + discard */}
-<TouchableOpacity
-style={[styles.modalBtn, styles.modalBtnDanger]}
-activeOpacity={0.9}
-onPress={async () => {
-const sid = await ensureSessionId();
-
-Alert.alert(
-"Annuler la session",
-"Tu es sûr de vouloir annuler ? Les comptages en cours seront supprimés.",
-[
-{ text: "Non", style: "cancel" },
-{
-text: "Oui, annuler",
-style: "destructive",
-onPress: async () => {
-await cancelSession(sid);
-},
-},
-]
-);
-}}
->
-<Ionicons name="close-circle-outline" size={18} color="#fff" />
-<Text style={styles.modalBtnText}>Annuler</Text>
-</TouchableOpacity>
-</View>
-</View>
-</View>
-</Modal>
-
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        style={{ flex: 1 }}
-      >
-        {/* ===== PAGE 1 : INVENTAIRE ===== */}
-        <View style={{ width: dimensionsWidth }}>
-          <View style={styles.pageContent}>
-      {/* ===== SEARCH ===== */}
+      {/* ===== SEARCH BAR ===== */}
       <View style={styles.searchBar}>
 <Ionicons name="search-outline" size={20} color="#AAA" />
 <TextInput
@@ -640,12 +545,30 @@ placeholderTextColor="#777"
 value={search}
 onChangeText={setSearch}
 />
-<TouchableOpacity activeOpacity={0.8} onPress={() => {}}>
-<Ionicons name="mic-outline" size={21} color="#A78BFA" />
-</TouchableOpacity>
 </View>
 
-{/* ===== TOP ACTION BAR ===== */}
+      {/* ===== HISTORIQUE (LIGNE HORIZONTALE) ===== */}
+      {historySessions.length > 0 && (
+        <View style={styles.historyRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {historySessions.slice(0, 10).map((s: any, i: number) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.historyChip}
+                onPress={() => navigation.navigate("AppliedInventoryDetail", { sessionId: s._id })}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="time-outline" size={14} color="#A78BFA" />
+                <Text style={styles.historyChipText}>
+                  {new Date(s.appliedAt || s.createdAt).toLocaleDateString()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* ===== TOP ACTION BAR ===== */}
 {showTopBar && (
 <View style={styles.topActionRow}>
 <View>
@@ -720,44 +643,78 @@ ListEmptyComponent={
 />
 </Animated.View>
 
-        </View>
-          </View>
+{/* ===== MODAL REPRENDRE SESSION ===== */}
+<Modal
+visible={showResumeModal}
+transparent
+animationType="fade"
+onRequestClose={() => setShowResumeModal(false)}
+>
+<Pressable
+style={styles.modalOverlay}
+onPress={() => setShowResumeModal(false)}
+/>
 
-        {/* ===== PAGE 2 : HISTORIQUE ===== */}
-        <View style={{ width: dimensionsWidth }}>
-          <View style={styles.pageContent}>
-            <Text style={styles.historyTitle}>Historique inventaire</Text>
-            {historySessions.length === 0 ? (
-              <Text style={{ color: "#666", textAlign: "center", marginTop: 40 }}>
-                Aucun historique
-              </Text>
-            ) : (
-              <FlatList
-                data={historySessions}
-                keyExtractor={(item) => item._id}
-                contentContainerStyle={{ paddingBottom: 40 }}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.historyCard}
-                    onPress={() => navigation.navigate("InventorySessionDetail", { sessionId: item._id })}
-                  >
-                    <View>
-                      <Text style={styles.historyDate}>
-                        {new Date(item.createdAt).toLocaleDateString("fr-FR")}
-                      </Text>
-                      <Text style={styles.historyCount}>
-                        {item.productCount ?? item.products?.length ?? 0} produit(s)
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color="#777" />
-                  </TouchableOpacity>
-                )}
-              />
-            )}
-          </View>
-        </View>
-      </ScrollView>
-    </View>
+<View style={styles.modalCenter}>
+<View style={styles.modalBox}>
+<View style={styles.modalHeader}>
+<View style={styles.modalIcon}>
+<Ionicons name="clipboard-outline" size={22} color="#A78BFA" />
+</View>
+
+<View style={{ flex: 1 }}>
+<Text style={styles.modalTitle}>Session en cours</Text>
+<Text style={styles.modalText}>
+Tu as déjà compté {inventoryCount} produit(s). Tu veux continuer ?
+</Text>
+</View>
+
+<TouchableOpacity
+style={styles.modalCloseBtn}
+onPress={() => setShowResumeModal(false)}
+activeOpacity={0.8}
+>
+<Ionicons name="close" size={18} color="#E5E7EB" />
+</TouchableOpacity>
+</View>
+
+<View style={styles.modalActionsRow}>
+<TouchableOpacity
+style={[styles.modalBtn, styles.modalBtnPrimary]}
+activeOpacity={0.9}
+onPress={() => setShowResumeModal(false)}
+>
+<Ionicons name="play-outline" size={18} color="#fff" />
+<Text style={styles.modalBtnText}>Continuer</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+style={[styles.modalBtn, styles.modalBtnDanger]}
+activeOpacity={0.9}
+onPress={async () => {
+const sid = await ensureSessionId();
+Alert.alert(
+"Annuler la session",
+"Tu es sûr de vouloir annuler ? Les comptages en cours seront supprimés.",
+[
+{ text: "Non", style: "cancel" },
+{
+text: "Oui, annuler",
+style: "destructive",
+onPress: async () => { await cancelSession(sid); },
+},
+]
+);
+}}
+>
+<Ionicons name="close-circle-outline" size={18} color="#fff" />
+<Text style={styles.modalBtnText}>Annuler</Text>
+</TouchableOpacity>
+</View>
+</View>
+</View>
+</Modal>
+</View>
   );
 }
 
@@ -965,34 +922,23 @@ fontSize: 14,
       alignItems: "center",
       justifyContent: "center",
     },
-    pageContent: {
-      paddingHorizontal: 16,
-      flex: 1,
+    historyRow: {
+      marginBottom: 12,
+      paddingLeft: 2,
     },
-    historyTitle: {
-      color: "#fff",
-      fontSize: 18,
-      fontWeight: "900",
-      marginBottom: 16,
-      marginTop: 20,
-    },
-    historyCard: {
-      backgroundColor: "#161228",
-      padding: 16,
-      borderRadius: 18,
+    historyChip: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 10,
+      backgroundColor: "#1E1838",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      marginRight: 8,
+      gap: 6,
     },
-    historyDate: {
-      color: "#fff",
-      fontSize: 14,
-      fontWeight: "700",
-    },
-    historyCount: {
-      color: "#A8A3C2",
+    historyChipText: {
+      color: "#C6C0DD",
       fontSize: 12,
-      marginTop: 2,
+      fontWeight: "600",
     },
   });
