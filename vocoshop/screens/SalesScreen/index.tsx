@@ -411,24 +411,20 @@ color: "#fff",
 marginBottom: 12,
 },
 
-endDayBtn: {
-backgroundColor: "#7C3AED",
-padding: 14,
-borderRadius: 10,
-flex: 1,
-alignItems: "center",
-},
-endDayBtnText: {
-color: "#fff",
-fontWeight: "700",
-},
-
+  endDayBtn: {
+    backgroundColor: "#7C3AED",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
   endDayBtnText: {
-color: "#fff",
-fontWeight: "700",
-},
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
 
-productRow: {
+  productRow: {
 backgroundColor: "#161228",
 padding: 14,
 borderRadius: 10,

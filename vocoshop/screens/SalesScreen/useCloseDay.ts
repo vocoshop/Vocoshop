@@ -64,6 +64,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
       ).join("");
 
       const grossProfit = report.grossProfit;
+      const reportRef = report._id ? report._id.slice(-6).toUpperCase() : "";
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -83,12 +84,17 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     th.center { text-align: center; }
     .total-row td { font-weight: 700; padding: 10px 8px; border-top: 2px solid #1a1a2e; font-size: 14px; }
     .footer { margin-top: 32px; text-align: center; color: #aaa; font-size: 11px; }
+    .ref { color: #888; font-size: 10px; text-align: right; margin-bottom: 8px; }
+    .marketing { margin-top: 28px; padding: 16px; background: #7C3AED; color: #fff; border-radius: 12px; text-align: center; }
+    .marketing h3 { margin: 0 0 6px 0; font-size: 15px; }
+    .marketing p { margin: 0; font-size: 12px; opacity: 0.9; line-height: 1.5; }
   </style>
 </head>
 <body>
+  <div class="ref">Réf : ${reportRef}</div>
   <h1>Bilan Journalier</h1>
   <div class="date">${report.date || new Date().toISOString().split("T")[0]}</div>
-  <div class="date" style="margin-top:-12px;color:#888;">Clôturé par : ${employeeName}</div>
+  <div class="date" style="margin-top:-12px;color:#888;">Cloture par : ${employeeName}</div>
 
   <div class="summary">
     <div class="card">
@@ -101,7 +107,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     </div>
     ${grossProfit != null ? `
     <div class="card">
-      <div class="card-label">Bénéfice</div>
+      <div class="card-label">Benefice</div>
       <div class="card-value green">${Math.round(grossProfit).toLocaleString("fr-FR")} FCFA</div>
     </div>` : ""}
   </div>
@@ -109,7 +115,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
   <table>
     <tr>
       <th>Produit</th>
-      <th class="center">Qté</th>
+      <th class="center">Qte</th>
       <th class="right">Prix unit.</th>
       <th class="right">Total</th>
     </tr>
@@ -120,7 +126,12 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     </tr>
   </table>
 
-  <div class="footer">Généré par Vocoshop</div>
+  <div class="marketing">
+    <h3>VocoShop - Vendez, Gerer, Grandissez</h3>
+    <p>Suivez toute votre activite en temps reel avec l'application VocoShop, disponible sur le Play Store.</p>
+  </div>
+
+  <div class="footer">Rapport genere automatiquement par Vocoshop. Ce document est inalterable sur le serveur.</div>
 </body>
 </html>`;
 
@@ -254,14 +265,9 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
         sales: Array.isArray(report.sales) ? report.sales : [],
       });
 
-      // ✅ Partage du bilan
-      const userRole = data?.userRole || "";
-      if (userRole === "owner") {
-        shareBilanText(report);
-      } else {
-        const userName = data?.userName || "";
-        shareBilanPdf(report, userName);
-      }
+      // ✅ Partage du bilan en PDF pour tout le monde
+      const userName = data?.userName || "";
+      shareBilanPdf(report, userName);
 
     } catch (err: any) {
       console.log("❌ closeDay error:", err?.response?.data || err);
@@ -270,7 +276,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     } finally {
       setDayLoading(false);
     }
-  }, [headers, shareBilanPdf, shareBilanText]);
+  }, [headers, shareBilanPdf]);
 
 /* =====================================================
 RETURN
