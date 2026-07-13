@@ -5,7 +5,7 @@ import Product from "../models/Product";
 import Sale from "../models/Sales";
 import DailyReport from "../models/DailyReport";
 import InventoryHistory from "../models/InventoryHistory";
-import { preprocessForVision, analyzeImageQuality } from "./imagePreprocess";
+import { preprocessForVision, preprocessForVisionBinary, analyzeImageQuality } from "./imagePreprocess";
 import { isValidObjectId, getBusinessDate } from "../utils/helpers";
 
 interface OcrEngineResult {
@@ -316,6 +316,19 @@ export class OcrService {
         const preprocessed = await preprocessForVision(imageBase64);
         const base64Clean = preprocessed.buffer.toString("base64");
         const result = await this.runOpenaiVision(base64Clean, openaiKey, preprocessed.mimeType, typeLabel);
+
+        // Retry avec binarisation si texte vide ou faible confiance
+        if ((!result.rawText.trim() || result.confidence < 60) && imageBase64.length > 1000) {
+          try {
+            const binary = await preprocessForVisionBinary(imageBase64);
+            const binaryB64 = binary.buffer.toString("base64");
+            const retry = await this.runOpenaiVision(binaryB64, openaiKey, binary.mimeType, typeLabel);
+            if (retry.rawText.trim()) return retry;
+          } catch (e) {
+            // ignore retry failure
+          }
+        }
+
         return result;
       } catch (err) {
         console.error("OpenAI Vision failed, falling back:", (err as Error).message);
@@ -392,7 +405,14 @@ export class OcrService {
               "7. Les quantités précédées de 'x' signifient multiplication : 2x500 = 2 unités à 500.\n" +
               "8. Si tu ne vois pas de texte, réponds une chaîne vide.\n" +
               "9. NE JAMAIS ajouter de commentaires entre parenthèses ou de annotations.\n" +
-              "10. Les tirets, croix (x), et puces sont des séparateurs de colonnes, pas du texte.",
+              "10. Les tirets, croix (x), et puces sont des séparateurs de colonnes, pas du texte.\n\n" +
+              "CONSEILS POUR L'ÉCRITURE MANUSCRITE :\n" +
+              "- Si une lettre est ambiguë (ex: l/1, o/0, s/5, z/2, u/v), choisis la plus probable selon le contexte.\n" +
+              "- Les nombres sont souvent écrits avec des chiffres détachés (ex: \"2 0\" = \"20\", \"1 5 0 0\" = \"1500\").\n" +
+              "- Un symbole '=' ou ':' suivi d'un nombre indique une quantité ou un prix : \"Sucre = 20\" signifie \"20 unités de Sucre\".\n" +
+              "- Les traits d'union et slash (/, -) sont des séparateurs de colonnes manuscrits.\n" +
+              "- Si l'écriture est très cursive ou déformée, essaie de reconnaître les mots par leur forme globale.\n" +
+              "- Les accents sont souvent omis dans l'écriture manuscrite (ex: \"cafe\" = \"café\"). Ne les ajoute PAS.",
           },
           {
             role: "user",

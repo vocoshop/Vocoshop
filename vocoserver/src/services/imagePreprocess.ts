@@ -96,6 +96,41 @@ export async function preprocessForVision(
 }
 
 /**
+ * Version binarisée pour réessayer quand la version couleur échoue
+ */
+export async function preprocessForVisionBinary(
+  imageBase64: string
+): Promise<PreprocessResult> {
+  const raw = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+  const input = Buffer.from(raw, "base64");
+
+  const meta = await sharp(input).metadata();
+  const w = meta.width || 0;
+  const h = meta.height || 0;
+
+  let pipeline = sharp(input);
+
+  if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
+    pipeline = pipeline.resize({
+      width: w > h ? MAX_DIMENSION : undefined,
+      height: h >= w ? MAX_DIMENSION : undefined,
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  }
+
+  // Binarisation agressive pour écriture manuscrite
+  pipeline = pipeline.grayscale();
+  pipeline = pipeline.normalize();
+  pipeline = pipeline.sharpen({ sigma: 1.5, m1: 1.0, m2: 0.5 });
+  pipeline = pipeline.threshold(128);
+
+  const processed = await pipeline.png({ quality: 95 }).toBuffer();
+
+  return { buffer: processed, mimeType: "image/png" };
+}
+
+/**
  * Analyse la qualité d'image avant envoi
  */
 export async function analyzeImageQuality(

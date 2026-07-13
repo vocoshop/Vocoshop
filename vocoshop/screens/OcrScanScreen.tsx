@@ -71,7 +71,7 @@ export default function OcrScanScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: 0.7,
+        quality: 1.0,
       });
       setCompressing(true);
 
