@@ -115,8 +115,10 @@ selectedStoreName: store.storeName,
                   activeOpacity={0.85}
                 >
                   <View style={styles.cardLeft}>
-                    <View style={styles.cardIcon}>
-                      <Ionicons name="business-outline" size={22} color="#6C63FF" />
+                    <View style={styles.cardAvatar}>
+                      <Text style={styles.cardAvatarText}>
+                        {(store.storeName || "B")[0].toUpperCase()}
+                      </Text>
                     </View>
                     <View style={styles.cardInfo}>
                       <Text style={styles.cardName}>{store.storeName || "Boutique sans nom"}</Text>
@@ -237,13 +239,18 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 14,
   },
-  cardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "rgba(108,99,255,0.12)",
+  cardAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#6C63FF",
     alignItems: "center",
     justifyContent: "center",
+  },
+  cardAvatarText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
   },
   cardInfo: {
     flex: 1,

@@ -201,19 +201,20 @@ if (!store) return next(new NotFoundError("Boutique introuvable"));
 
 const ownerPhone = store.ownerPhone || store.phone;
 
-const stores = await Store.find({ ownerPhone })
-  .select("_id storeName phone city")
-  .lean();
+  const stores = await Store.find({ ownerPhone })
+    .select("_id storeName phone city passwordHash")
+    .lean();
 
-return res.json({
-  multipleStores: stores.length > 1,
-  stores: stores.map((s) => ({
-    _id: s._id,
-    storeName: s.storeName,
-    phone: s.phone,
-    city: s.city,
-  })),
-});
+  return res.json({
+    multipleStores: stores.length > 1,
+    stores: stores.map((s) => ({
+      _id: s._id,
+      storeName: s.storeName,
+      phone: s.phone,
+      city: s.city,
+      hasPassword: !!s.passwordHash,
+    })),
+  });
 });
 
 export const autoLogin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {

@@ -48,7 +48,11 @@ const [paidReferrals, setPaidReferrals] = useState(0);
 const [city, setCity] = useState("—");
 const [agentCode, setAgentCode] = useState("—");
 const [storeOwnerPhone, setStoreOwnerPhone] = useState("");
-const [isOnboarded, setIsOnboarded] = useState<boolean>(true);
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(true);
+
+  const [hasMultipleStores, setHasMultipleStores] = useState(false);
+  const [ownerStores, setOwnerStores] = useState<any[]>([]);
+  const [loadingStores, setLoadingStores] = useState(false);
 
 // ✅ Owner uniquement (propriétaire réel ayant accepté)
 const isOwner = useMemo(() => {
@@ -120,9 +124,26 @@ if (saved === "0") setNotifEnabled(false);
 if (saved === "1") setNotifEnabled(true);
 } catch (e) {}
 })();
-}, []);
+  }, []);
 
-// ✅ Charger profil boutique
+  // ✅ Vérifier si l'utilisateur a plusieurs boutiques
+  useEffect(() => {
+    if (!token || !isOwner) return;
+    (async () => {
+      try {
+        setLoadingStores(true);
+        const { data } = await API.get<{ multipleStores: boolean; stores: any[] }>("/auth/owner-stores");
+        if (data.multipleStores && data.stores?.length > 1) {
+          setHasMultipleStores(true);
+          setOwnerStores(data.stores);
+        }
+      } catch (_) {} finally {
+        setLoadingStores(false);
+      }
+    })();
+  }, [token, isOwner]);
+
+  // ✅ Charger profil boutique
 useFocusEffect(
 useCallback(() => {
 loadStoreProfile();
@@ -143,53 +164,17 @@ await Share.share({
 message: `Rejoins Vocoshop avec mon code de parrainage : ${referralCode}`,
 });
 } catch (e) {}
-};
+  };
 
-const onLogout = useCallback(() => {
-  (async () => {
-    try {
-      const { data } = await API.get<{ multipleStores: boolean }>("/auth/owner-stores");
-      if (data.multipleStores) {
-        Alert.alert(
-          "Se déconnecter",
-          "Tu possèdes plusieurs boutiques. Que veux-tu faire ?",
-          [
-            { text: "Annuler", style: "cancel" },
-            {
-              text: "Changer de profil",
-              onPress: async () => {
-                await logout();
-                navigation.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: "Login",
-                      params: {
-                        preselectedPhone: user?.phone,
-                        selectedStoreName: "Sélectionne une boutique",
-                      },
-                    },
-                  ],
-                });
-              },
-            },
-            {
-              text: "Se déconnecter",
-              style: "destructive",
-              onPress: async () => {
-                await logout();
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "Login" }],
-                });
-              },
-            },
-          ]
-        );
-        return;
-      }
-    } catch (_) {}
-    // Fallback simple
+  const onSwitchStore = useCallback(() => {
+    if (!hasMultipleStores || ownerStores.length === 0) return;
+    navigation.navigate("StorePicker", {
+      stores: ownerStores,
+      ownerPhone: user?.phone || "",
+    });
+  }, [hasMultipleStores, ownerStores, navigation, user?.phone]);
+
+  const onLogout = useCallback(() => {
     Alert.alert("Se déconnecter", "Es-tu sûr de vouloir te déconnecter ?", [
       { text: "Annuler", style: "cancel" },
       {
@@ -207,8 +192,7 @@ const onLogout = useCallback(() => {
         },
       },
     ]);
-  })();
-}, [logout, navigation, user?.phone]);
+  }, [logout, navigation]);
 
 const initials = useMemo(() => {
 
@@ -508,7 +492,25 @@ onPress={() => navigation.navigate("Funding")}
 />
 </>
 
-{/* ===== DÉCONNEXION ===== */}
+      {/* ===== CHANGER DE BOUTIQUE (multi-store uniquement) ===== */}
+      {hasMultipleStores && (
+        <TouchableOpacity
+          style={styles.switchStoreButton}
+          onPress={onSwitchStore}
+          activeOpacity={0.85}
+        >
+          <View style={styles.switchStoreIcon}>
+            <Ionicons name="storefront-outline" size={22} color="#6C63FF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.switchStoreText}>Changer de boutique</Text>
+            <Text style={styles.switchStoreSub}>{ownerStores.length} boutiques disponibles</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#666" />
+        </TouchableOpacity>
+      )}
+
+      {/* ===== DÉCONNEXION ===== */}
 <TouchableOpacity
 style={styles.logoutButton}
 onPress={onLogout}
@@ -744,9 +746,32 @@ justifyContent: "center",
 gap: 8,
 },
 
-logoutText: { color: "#FF6B6B", fontWeight: "700" },
+  logoutText: { color: "#FF6B6B", fontWeight: "700" },
 
-addStoreBtn: {
+  switchStoreButton: {
+    marginTop: 12,
+    marginHorizontal: 20,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "rgba(108,99,255,0.10)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "rgba(108,99,255,0.18)",
+  },
+  switchStoreIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(108,99,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  switchStoreText: { color: "#C4B5FD", fontWeight: "700", fontSize: 15 },
+  switchStoreSub: { color: "#777", fontSize: 12, marginTop: 2 },
+
+  addStoreBtn: {
 width: 36,
 height: 36,
 borderRadius: 18,
