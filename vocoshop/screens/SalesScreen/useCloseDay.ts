@@ -135,7 +135,26 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 </body>
 </html>`;
 
+      const rev = Math.round(report.totalRevenue).toLocaleString("fr-FR");
+      const profit = grossProfit != null ? Math.round(grossProfit).toLocaleString("fr-FR") : "0";
+      const date = new Date(report.date).toLocaleDateString("fr");
+
+      const message =
+        `Bonjour,\n\n` +
+        `Voici le bilan de votre boutique pour le ${date} :\n` +
+        `💰 Chiffre d'affaires : ${rev} FCFA\n` +
+        `🛒 Ventes : ${report.totalSales}\n` +
+        `📈 Bénéfice : ${profit} FCFA\n` +
+        `Réf : ${reportRef}\n\n` +
+        `📲 Suivez toute votre activité en temps réel avec VocoShop sur le Play Store.\n` +
+        `VocoShop : Vendez, Gérez, Grandissez.`;
+
       const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
+
+      // Partager le message texte d'abord (les deux plateformes)
+      await Share.share({ message });
+
+      // Puis partager le PDF
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
         await Sharing.shareAsync(uri, {
@@ -147,28 +166,6 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     } catch (e) {
       console.log("❌ shareBilanPdf error:", e);
     }
-  }, []);
-
-  const shareBilanText = useCallback(async (report: TodaySummary) => {
-    const rev = (report.totalRevenue ?? 0).toLocaleString("fr");
-    const profit = (report.grossProfit ?? 0).toLocaleString("fr");
-    const date = new Date(report.date).toLocaleDateString("fr");
-    const ref = report._id ? report._id.slice(-6).toUpperCase() : "";
-
-    const msg =
-      `Bonjour,\n\n` +
-      `Voici le bilan de votre boutique pour le ${date} :\n` +
-      `💰 Chiffre d'affaires : ${rev} FCFA\n` +
-      `🛒 Nombre de ventes : ${report.totalSales}\n` +
-      `📈 Bénéfice net : ${profit} FCFA\n\n` +
-      `Réf : ${ref}\n` +
-      `Ce rapport est généré automatiquement par VocoShop et ne peut être modifié sur le serveur.\n\n` +
-      `📲 Suivez toute votre activité en temps réel avec l'application VocoShop, disponible sur le Play Store.\n` +
-      `👉 VocoShop : Vendez, Gérez, Grandissez.`;
-
-    try {
-      await Share.share({ message: msg });
-    } catch (_) {}
   }, []);
 
   /* =====================================================
