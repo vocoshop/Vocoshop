@@ -151,17 +151,20 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 
       const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
 
-      // Partager le message texte d'abord (les deux plateformes)
-      await Share.share({ message });
-
-      // Puis partager le PDF
       const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
+
+      if (Platform.OS === "ios") {
+        // iOS : message + PDF en un seul partage
+        await Share.share({ message, url: uri });
+      } else if (canShare) {
+        // Android : PDF avec message en titre de partage
         await Sharing.shareAsync(uri, {
           mimeType: "application/pdf",
-          dialogTitle: "Partager le bilan journalier",
+          dialogTitle: message,
           UTI: "com.adobe.pdf",
         });
+      } else {
+        await Share.share({ message });
       }
     } catch (e) {
       console.log("❌ shareBilanPdf error:", e);
