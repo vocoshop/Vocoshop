@@ -9,18 +9,29 @@ import { normalizePhone } from "../utils/phone";
 
 export const checkPhone = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
-const phone = normalizePhone(req.body?.phone);
-if (!phone) return next(new ValidationError("Numero requis"));
+  const phone = normalizePhone(req.body?.phone);
+  if (!phone) return next(new ValidationError("Numero requis"));
 
-// 1) Find direct store match (login phone)
-const directStore = await Store.findOne({ phone })
-  .select("passwordHash phoneVerified subscriptionActive ownerPhone storeName city")
-  .lean();
+  // Normalisation du 0 après code pays (ex: +2420612... → +242612...)
+  // Certains numéros sont stockés avec le 0, d'autres sans
+  const phoneAlt = phone.startsWith("+")
+    ? phone.replace(/^(\+\d{1,3})0/, "$1")
+    : phone;
+  const phoneOr = phone !== phoneAlt ? [phone, phoneAlt] : [phone];
 
-// 2) Find stores by ownerPhone (the phone number alone might be the owner's personal phone)
-const ownedStores = await Store.find({ ownerPhone: phone })
-  .select("phone passwordHash phoneVerified subscriptionActive storeName city")
-  .lean();
+  // 1) Find direct store match (login phone)
+  const directStore = await Store.findOne({
+    phone: { $in: phoneOr },
+  })
+    .select("passwordHash phoneVerified subscriptionActive ownerPhone storeName city")
+    .lean();
+
+  // 2) Find stores by ownerPhone (the phone number alone might be the owner's personal phone)
+  const ownedStores = await Store.find({
+    ownerPhone: { $in: phoneOr },
+  })
+    .select("phone passwordHash phoneVerified subscriptionActive storeName city")
+    .lean();
 
 // 3) Merge — deduplicate by _id
 const storeMap = new Map<string, any>();
