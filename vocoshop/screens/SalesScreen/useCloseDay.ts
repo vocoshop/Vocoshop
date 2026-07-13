@@ -137,13 +137,20 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 </html>`;
 
       const date = new Date(report.date).toLocaleDateString("fr");
+      const revFormatted = Math.round(report.totalRevenue).toLocaleString("fr-FR");
+      const profitFormatted = grossProfit != null ? Math.round(grossProfit).toLocaleString("fr-FR") : "0";
 
       const message =
-        `Bonjour ${name}, ` +
-        `voici le bilan de ${storeName || "votre boutique"} pour le ${date}.\n\n` +
-        `📲 Retrouvez tous vos rapports et suivez votre activité en temps réel ` +
-        `avec l'application VocoShop, disponible sur le Play Store.\n` +
-        `👉 VocoShop : Vendez, Gérez, Grandissez.`;
+        `📊 Rapport journalier VocoShop\n\n` +
+        `Bonjour ${name.toUpperCase()},\n\n` +
+        `La journee de la boutique ${storeName || "votre boutique"} est maintenant cloturee.\n\n` +
+        `📅 Date : ${date}\n` +
+        `💰 Chiffre d'affaires : ${revFormatted} FCFA\n` +
+        `🛒 Ventes : ${report.totalSales}\n` +
+        `📈 Benefice : ${profitFormatted} FCFA\n\n` +
+        `📎 Le rapport detaille est disponible dans le PDF ci-joint.\n\n` +
+        `Merci de votre confiance.\n\n` +
+        `👉 VocoShop — Vendez. Gerer. Grandissez.`;
 
       const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
 
