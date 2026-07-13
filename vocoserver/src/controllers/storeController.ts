@@ -80,14 +80,19 @@ store.agentCode = cleanAgentCode;
 ⭐⭐⭐ FIX ULTRA PRO V12 ⭐⭐⭐
 ENREGISTRER referralCodeUsed UNE SEULE FOIS
 ===================================================== */
-if (
-!store.referralCodeUsed && // 🔒 lock permanent
-cleanReferralCode &&
-cleanReferralCode !== store.referralCode // éviter auto-parrainage
-) {
-store.referralCodeUsed = cleanReferralCode;
-console.log("🎯 referralCodeUsed enregistré:", cleanReferralCode);
-}
+    if (
+      !store.referralCodeUsed && // 🔒 lock permanent
+      cleanReferralCode &&
+      cleanReferralCode !== store.referralCode // éviter auto-parrainage
+    ) {
+      // Vérifier que le code existe
+      const sponsor = await Store.findOne({
+        $or: [{ referralCode: cleanReferralCode }, { shopId: cleanReferralCode }],
+      }).select("_id").lean();
+      if (sponsor) {
+        store.referralCodeUsed = cleanReferralCode;
+      }
+    }
 
 /* =====================================================
 ONBOARDING DONE

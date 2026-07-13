@@ -158,12 +158,16 @@ await AsyncStorage.setItem(NOTIF_KEY, next ? "1" : "0");
 } catch (e) {}
 };
 
-const onShareCode = async () => {
-try {
-await Share.share({
-message: `Rejoins Vocoshop avec mon code de parrainage : ${referralCode}`,
-});
-} catch (e) {}
+  const onShareCode = async () => {
+    try {
+      await Share.share({
+        message:
+          `📢 Rejoins-moi sur VocoShop !\n\n` +
+          `Utilise mon code de parrainage *${referralCode}* lors de ton inscription et beneficie d'un mois d'essai gratuit.\n\n` +
+          `📲 Telecharge l'app ici : https://vocoshop.onrender.com/download\n\n` +
+          `👉 VocoShop — Vendez. Gerer. Grandissez.`,
+      });
+    } catch (e) {}
   };
 
   const onLogout = useCallback(() => {

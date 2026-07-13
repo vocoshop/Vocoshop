@@ -95,11 +95,18 @@ const phoneNorm = normalizePhone(phone);
 if (!phoneNorm) return next(new ValidationError("Numero requis"));
 
 const exists = await Store.findOne({ phone: phoneNorm }).select("_id").lean();
-if (exists) return next(new ValidationError("Ce numero est deja utilise"));
+  if (exists) return next(new ValidationError("Ce numero est deja utilise"));
 
-const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcrypt.hash(password, 10);
 
-const referralSafe = typeof referralCodeUsed === "string" ? referralCodeUsed.trim() : "";
+  const referralSafe = typeof referralCodeUsed === "string" ? referralCodeUsed.trim() : "";
+  // Valider que le code parrainage existe
+  if (referralSafe) {
+    const sponsor = await Store.findOne({
+      $or: [{ referralCode: referralSafe }, { shopId: referralSafe }],
+    }).select("_id").lean();
+    if (!sponsor) return next(new ValidationError("Code de parrainage invalide"));
+  }
 const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
 const ownershipStatus = isOwner === false ? "pending_invite" : "active";
