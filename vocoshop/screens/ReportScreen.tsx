@@ -14,11 +14,14 @@ StyleSheet,
 TouchableOpacity,
 ScrollView,
 ActivityIndicator,
-Animated,
-RefreshControl,
+  Animated,
+  RefreshControl,
+  Share,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import * as Clipboard from "expo-clipboard";
 
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
@@ -78,7 +81,9 @@ const [refreshing, setRefreshing] = useState(false);
 // pagination
 const [page, setPage] = useState(1);
 const [hasMore, setHasMore] = useState(false);
-const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
 const headers = useMemo(
 () => ({
@@ -88,7 +93,30 @@ Authorization: token ? `Bearer ${token}` : "",
 [token, storeId]
 );
 
-const canLoad = !!token && !!storeId;
+  const canLoad = !!token && !!storeId;
+
+  const generateShareLink = useCallback(async () => {
+    if (!canLoad) return;
+    setShareLoading(true);
+    try {
+      const { data } = await API.post("/report/share/month", {}, { headers });
+      const url = (data as any)?.url || "";
+      setShareUrl(url);
+      if (url) {
+        Share.share({
+          message:
+            `📊 Rapport d'activité VocoShop\n\n` +
+            `Consultez le bilan complet de notre boutique avec tous les chiffres et graphiques :\n\n` +
+            `${url}\n\n` +
+            `👉 VocoShop — Vendez. Gérez. Grandissez.`,
+        });
+      }
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.response?.data?.error || "Impossible de générer le lien.");
+    } finally {
+      setShareLoading(false);
+    }
+  }, [canLoad, headers]);
 
 /* =====================================================
 HELPERS
@@ -384,12 +412,21 @@ return (
 <Ionicons name="chevron-back" size={26} color="#fff" />
 </TouchableOpacity>
 
-<Text style={styles.title}>Bilan & rapports</Text>
+        <Text style={styles.title}>Bilan & rapports</Text>
 
-<TouchableOpacity onPress={() => loadData()}>
-<Ionicons name="refresh" size={22} color="#A8A3C2" />
-</TouchableOpacity>
-</View>
+        <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
+          <TouchableOpacity onPress={generateShareLink} disabled={shareLoading}>
+            {shareLoading ? (
+              <ActivityIndicator size="small" color="#A78BFA" />
+            ) : (
+              <Ionicons name="share-outline" size={22} color="#A78BFA" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => loadData()}>
+            <Ionicons name="refresh" size={22} color="#A8A3C2" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
 <Text style={styles.subtitle}>
 Vue claire de votre activité et de la valeur de votre boutique.
