@@ -1,5 +1,5 @@
 import { useState, useMemo, useContext, useCallback } from "react";
-import { Alert } from "react-native";
+import { Alert, Share, Platform } from "react-native";
 
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -137,6 +137,25 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     }
   }, []);
 
+  const shareBilanText = useCallback(async (report: TodaySummary) => {
+    const rev = (report.totalRevenue ?? 0).toLocaleString("fr");
+    const profit = (report.grossProfit ?? 0).toLocaleString("fr");
+    const date = new Date(report.date).toLocaleDateString("fr");
+
+    const msg =
+      `Bonjour,\n\n` +
+      `Voici le bilan de votre boutique pour le ${date} :\n` +
+      `💰 Chiffre d'affaires : ${rev} FCFA\n` +
+      `🛒 Ventes : ${report.totalSales}\n` +
+      `📈 Bénéfice : ${profit} FCFA\n\n` +
+      `Suivez tout en temps réel avec l'application VocoShop, disponible sur le Play Store.\n` +
+      `👉 VocoShop : Vendez, Gérez, Grandissez.`;
+
+    try {
+      await Share.share({ message: msg });
+    } catch (_) {}
+  }, []);
+
   /* =====================================================
   CLOSE DAY — VERSION PRO STABLE
   ===================================================== */
@@ -230,10 +249,12 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
         sales: Array.isArray(report.sales) ? report.sales : [],
       });
 
-      // ✅ Partage du bilan en PDF (sauf si c'est le propriétaire)
-      const userName = data?.userName || "";
+      // ✅ Partage du bilan
       const userRole = data?.userRole || "";
-      if (userRole !== "owner") {
+      if (userRole === "owner") {
+        shareBilanText(report);
+      } else {
+        const userName = data?.userName || "";
         shareBilanPdf(report, userName);
       }
 
@@ -244,7 +265,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     } finally {
       setDayLoading(false);
     }
-  }, [headers, shareBilanPdf]);
+  }, [headers, shareBilanPdf, shareBilanText]);
 
 /* =====================================================
 RETURN

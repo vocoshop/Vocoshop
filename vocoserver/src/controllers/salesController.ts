@@ -8,7 +8,6 @@ import { getStoreId } from "../utils/storeId";
 import { getBusinessDate, safeNum as n, isValidObjectId } from "../utils/helpers";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { ValidationError, NotFoundError } from "../utils/AppError";
-import { sendSMS } from "../services/smsService";
 
 /* =====================================================
 HELPERS
@@ -319,20 +318,6 @@ lineProfit: l.lineProfit,
 await Sale.deleteMany({ storeId, businessDate: date });
 
   await touchStoreActivity(storeId);
-
-  // ✅ Envoyer le bilan au propriétaire
-  try {
-    const store = await Store.findById(storeId).select("ownerPhone phone storeName").lean();
-    const ownerPhone = store?.ownerPhone || store?.phone;
-    if (ownerPhone && grossProfit != null) {
-      const msg = `${store?.storeName || "Boutique"} - Bilan ${date}\n` +
-        `CA: ${totalRevenue.toLocaleString("fr")} FCFA\n` +
-        `Ventes: ${totalSales}\n` +
-        `Benefice: ${grossProfit.toLocaleString("fr")} FCFA\n` +
-        `Vocoshop`;
-      sendSMS(ownerPhone, msg).catch(() => {});
-    }
-  } catch (_) {}
 
   return res.json({ message: "Journée clôturée (profit réel calculé)", report, userName: req.user?.name || "", userRole: req.user?.role || "" });
 });
