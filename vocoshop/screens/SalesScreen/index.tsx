@@ -1,5 +1,5 @@
 // screens/SalesScreen.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
 View,
 Text,
@@ -15,6 +15,7 @@ Alert,
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
+import API from "../../src/api/api";
 import useSales, { Product } from "./useSales";
 import useCloseDay from "./useCloseDay";
 
@@ -56,6 +57,19 @@ const [cartModal, setCartModal] = useState(false);
 const [editingQty, setEditingQty] = useState<string | null>(null);
 const [editingQtyValue, setEditingQtyValue] = useState("");
   const [saleMsg, setSaleMsg] = useState<{ type: "success" | "offline" | "error"; text: string } | null>(null);
+  const [hasSalesToday, setHasSalesToday] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await API.get("/sales/today");
+        const items = Array.isArray(data) ? data : data?.sales || [];
+        if (items.length > 0) {
+          setHasSalesToday(true);
+        }
+      } catch (e) {}
+    })();
+  }, []);
 
   const handleFinalize = async () => {
 const res = await finalizeSale();
@@ -137,20 +151,18 @@ style={styles.search}
 </View>
 )}
 
-{/* ================= CLOSE DAY ================= */}
-        {dayActive && (
-          <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 20, marginBottom: 12 }}>
-            <TouchableOpacity
-              style={styles.endDayBtn}
-              onPress={closeDay}
-              disabled={dayLoading}
-            >
-              <Text style={styles.endDayBtnText}>
-                {dayLoading ? "Clôture..." : "Terminer ma journée"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      {/* ================= CLOSE DAY ================= */}
+      {dayActive && (hasSalesToday || completedSales > 0) && (
+        <TouchableOpacity
+          style={styles.endDayBtn}
+          onPress={closeDay}
+          disabled={dayLoading}
+        >
+          <Text style={styles.endDayBtnText}>
+            {dayLoading ? "Clôture..." : "Terminer ma journée"}
+          </Text>
+        </TouchableOpacity>
+      )}
 
   {/* ================= PRODUCTS (FlatList virtualisé) ================= */}
   <FlatList
