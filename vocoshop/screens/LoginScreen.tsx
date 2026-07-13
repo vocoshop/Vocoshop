@@ -111,7 +111,7 @@ const continueWithPhone = async () => {
   if (loading) return;
   const cleanPhone = buildFullPhone();
   if (!cleanPhone || cleanPhone.length < 8) {
-    Alert.alert("", t("login.error.invalid_phone"));
+    Alert.alert("", "Numéro de téléphone invalide");
     return;
   }
   try {
@@ -213,10 +213,10 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.phoneCustomInput}
 />
 </View>
-<Text style={styles.infoText}>{t("login.phone.info")}</Text>
+                <Text style={styles.infoText}>Un code sera envoyé à ce numéro</Text>
 {!!errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} onPress={continueWithPhone} disabled={loading}>
-{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t("login.btn.continue")}</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Continuer</Text>}
 </TouchableOpacity>
 </>
 
