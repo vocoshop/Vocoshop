@@ -22,7 +22,10 @@ export const sendSMS = async (phone: string, message: string): Promise<boolean> 
 
   // Route Congo-Brazzaville (+242) via Africala (connexions directes MTN/Airtel Congo)
   if (formatted.startsWith("+242")) {
-    return sendSMSAfricala(formatted, message);
+    const ok = await sendSMSAfricala(formatted, message);
+    if (ok) return true;
+    // Fallback Vonage si Africala échoue
+    return sendSMSVonage(formatted, message);
   }
 
   // Fallback Vonage pour les autres numéros
