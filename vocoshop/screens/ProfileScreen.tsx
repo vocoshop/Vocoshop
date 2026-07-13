@@ -166,33 +166,47 @@ message: `Rejoins Vocoshop avec mon code de parrainage : ${referralCode}`,
 } catch (e) {}
   };
 
-  const onSwitchStore = useCallback(() => {
-    if (!hasMultipleStores || ownerStores.length === 0) return;
-    navigation.navigate("StorePicker", {
-      stores: ownerStores,
-      ownerPhone: user?.phone || "",
-    });
-  }, [hasMultipleStores, ownerStores, navigation, user?.phone]);
-
   const onLogout = useCallback(() => {
+    if (hasMultipleStores && ownerStores.length > 0) {
+      Alert.alert(
+        "Se déconnecter",
+        "Tu possèdes plusieurs boutiques. Que veux-tu faire ?",
+        [
+          { text: "Annuler", style: "cancel" },
+          {
+            text: "Changer de boutique",
+            onPress: () => {
+              navigation.navigate("StorePicker", {
+                stores: ownerStores,
+                ownerPhone: user?.phone || "",
+              });
+            },
+          },
+          {
+            text: "Se déconnecter",
+            style: "destructive",
+            onPress: async () => {
+              await logout();
+              navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     Alert.alert("Se déconnecter", "Es-tu sûr de vouloir te déconnecter ?", [
       { text: "Annuler", style: "cancel" },
       {
         text: "Se déconnecter",
         style: "destructive",
         onPress: async () => {
-          try {
-            await logout();
-          } finally {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Login" }],
-            });
-          }
+          await logout();
+          navigation.reset({ index: 0, routes: [{ name: "Login" }] });
         },
       },
     ]);
-  }, [logout, navigation]);
+  }, [logout, navigation, hasMultipleStores, ownerStores, user?.phone]);
 
 const initials = useMemo(() => {
 
@@ -491,24 +505,6 @@ subtitle="Développez votre activité grâce à vos données"
 onPress={() => navigation.navigate("Funding")}
 />
 </>
-
-      {/* ===== CHANGER DE BOUTIQUE (multi-store uniquement) ===== */}
-      {hasMultipleStores && (
-        <TouchableOpacity
-          style={styles.switchStoreButton}
-          onPress={onSwitchStore}
-          activeOpacity={0.85}
-        >
-          <View style={styles.switchStoreIcon}>
-            <Ionicons name="storefront-outline" size={22} color="#6C63FF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.switchStoreText}>Changer de boutique</Text>
-            <Text style={styles.switchStoreSub}>{ownerStores.length} boutiques disponibles</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#666" />
-        </TouchableOpacity>
-      )}
 
       {/* ===== DÉCONNEXION ===== */}
 <TouchableOpacity
