@@ -4,6 +4,7 @@ import ProductAlias from "../models/ProductAlias";
 import Product from "../models/Product";
 import Sale from "../models/Sales";
 import DailyReport from "../models/DailyReport";
+import InventoryHistory from "../models/InventoryHistory";
 import { preprocessForVision, analyzeImageQuality } from "./imagePreprocess";
 import { isValidObjectId, getBusinessDate } from "../utils/helpers";
 
@@ -211,6 +212,15 @@ export class OcrService {
           });
           createdSales.push(sale.toObject());
         }
+
+        // ✅ Historique du stock pour toutes les opérations
+        await InventoryHistory.create({
+          storeId,
+          productId: line.productId,
+          type: line.type === "sale" ? "withdrawal" : "addition",
+          quantity: line.quantity,
+        });
+
         importedCount++;
       } catch {
         errors.push(`Erreur mise à jour stock: "${line.text}"`);
