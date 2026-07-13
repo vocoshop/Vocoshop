@@ -81,8 +81,16 @@ const [editingQtyValue, setEditingQtyValue] = useState("");
           await AsyncStorage.removeItem("voco_auto_closed");
           Alert.alert(
             "Journée clôturée",
-            "La journée d'hier a été clôturée automatiquement.\nPensez à envoyer le bilan au propriétaire.",
-            [{ text: "OK" }]
+            "La journée d'hier a été clôturée automatiquement.\nVoulez-vous envoyer le bilan au propriétaire ?",
+            [
+              { text: "Plus tard" },
+              {
+                text: "Voir le bilan",
+                onPress: () => {
+                  navigation.navigate("Report");
+                },
+              },
+            ]
           );
         }
       } catch (_) {}
