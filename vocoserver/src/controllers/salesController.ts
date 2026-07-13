@@ -176,17 +176,31 @@ message: "Vente vocale annulée avec succès",
 VENTES DU JOUR (AVANT CLÔTURE)
 ===================================================== */
 export const getTodaySales = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-const storeId = getStoreId(req);
-if (!storeId) return next(new ValidationError("storeId manquant"));
+  const storeId = getStoreId(req);
+  if (!storeId) return next(new ValidationError("storeId manquant"));
 
-const date = getBusinessDate();
+  const date = getBusinessDate();
 
-const sales: any[] = await Sale.find({ storeId, businessDate: date }).lean();
-const totalRevenue = sales.reduce((sum, s) => sum + n(s.totalAmount), 0);
+  let sales: any[] = await Sale.find({ storeId, businessDate: date }).lean();
 
-return res.json({
-date,
-totalSales: sales.length,
+  // Si pas de vente aujourd'hui, chercher le jour le plus récent
+  if (!sales.length) {
+    const lastPending = await Sale.findOne({ storeId })
+      .sort({ businessDate: -1 })
+      .select("businessDate")
+      .lean();
+    const fallbackDate = (lastPending as any)?.businessDate;
+    if (fallbackDate && fallbackDate !== date) {
+      sales = await Sale.find({ storeId, businessDate: fallbackDate }).lean();
+    }
+  }
+
+  const totalRevenue = sales.reduce((sum, s) => sum + n(s.totalAmount), 0);
+  const effectiveDate = sales[0]?.businessDate || date;
+
+  return res.json({
+    date: effectiveDate,
+    totalSales: sales.length,
 totalRevenue,
 sales,
 });
@@ -202,14 +216,30 @@ if (!storeId) return next(new ValidationError("storeId manquant"));
 
   const date = getBusinessDate();
 
-  // 1) ventes en attente (du jour)
-const newSales: any[] = await Sale.find({ storeId, businessDate: date }).lean();
-if (!newSales.length) {
-return next(new ValidationError("Aucune nouvelle vente à clôturer"));
-}
+  // 1) ventes en attente (du jour — ou jour le plus récent si pas de vente aujourd'hui)
+  let newSales: any[] = await Sale.find({ storeId, businessDate: date }).lean();
 
-// 2) bilan existant (si déjà clôturé)
-const existing: any = await DailyReport.findOne({ storeId, date }).lean();
+  if (!newSales.length) {
+    // Chercher le jour le plus récent avec des ventes en attente
+    const lastPending = await Sale.findOne({ storeId })
+      .sort({ businessDate: -1 })
+      .select("businessDate")
+      .lean();
+    const fallbackDate = (lastPending as any)?.businessDate;
+    if (fallbackDate && fallbackDate !== date) {
+      newSales = await Sale.find({ storeId, businessDate: fallbackDate }).lean();
+    }
+  }
+
+  if (!newSales.length) {
+    return next(new ValidationError("Aucune nouvelle vente à clôturer"));
+  }
+
+  // Utiliser la date des ventes trouvées (pas forcément getBusinessDate)
+  const effectiveDate = newSales[0]?.businessDate || date;
+
+  // 2) bilan existant (si déjà clôturé)
+  const existing: any = await DailyReport.findOne({ storeId, date: effectiveDate }).lean();
 
 // 3) merge lignes produits (clé = productId + unitPrice + purchasePrice)
 type Line = {
@@ -290,32 +320,32 @@ const netProfit = grossProfit; // plus tard: - charges
 const previousTickets = n(existing?.totalSales);
 const totalSales = previousTickets + newSales.length;
 
-// 5) upsert DailyReport (fields finance)
-const report = await DailyReport.findOneAndUpdate(
-{ storeId, date },
-{
-storeId,
-date,
-totalSales,
-totalRevenue,
-cogs,
-grossProfit,
-netProfit,
-sales: mergedSales.map((l) => ({
-productId: l.productId,
-productName: l.productName,
-quantity: l.quantity,
-unitPrice: l.unitPrice,
-purchasePrice: l.purchasePrice,
-totalAmount: l.totalAmount,
-lineProfit: l.lineProfit,
-})),
-},
-{ upsert: true, new: true }
-).lean();
+  // 5) upsert DailyReport (fields finance)
+  const report = await DailyReport.findOneAndUpdate(
+    { storeId, date: effectiveDate },
+    {
+      storeId,
+      date: effectiveDate,
+      totalSales,
+      totalRevenue,
+      cogs,
+      grossProfit,
+      netProfit,
+      sales: mergedSales.map((l) => ({
+        productId: l.productId,
+        productName: l.productName,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        purchasePrice: l.purchasePrice,
+        totalAmount: l.totalAmount,
+        lineProfit: l.lineProfit,
+      })),
+    },
+    { upsert: true, new: true }
+  ).lean();
 
-// 6) supprimer ventes “en attente”
-await Sale.deleteMany({ storeId, businessDate: date });
+  // 6) supprimer ventes "en attente"
+  await Sale.deleteMany({ storeId, businessDate: effectiveDate });
 
   await touchStoreActivity(storeId);
 
