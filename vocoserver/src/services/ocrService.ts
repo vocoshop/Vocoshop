@@ -674,27 +674,40 @@ export class OcrService {
   }
 
   private extractQuantity(line: string): number | undefined {
-    const patterns = [
-      // 1. Nombre + unité : "5 kg", "3 pce", "12 sac"
-      /(\d+)\s*(kg|g|l|ml|unité|pce|pc|carton|sac|sachet|bouteille|bte|boîte|x|fois)/i,
-      // 2. Nombre au début de la ligne : "20 Coca Cola"
-      /^(\d+)\s+(?!\d)/m,
-      // 3. Multiplication : "2x500", "2 x 500"
-      /(\d+)\s*(x|×)\s*\d+/,
-      // 4. Format "texte = 20" ou "texte : 20" ou "texte - 20" en fin de ligne
-      /[=:>-]\s*(\d+)\s*$/,
-      // 5. Format "texte = 20" ou "texte : 20" n'importe où
-      /[=:>-]\s*(\d+)/,
-      // 6. Nombre en fin de ligne sans indicateur monétaire : "bonbon 20" (pas "bonbon 500F")
-      /^[^\d]+?\b(\d+)\s*$/,
+    // Priorité 1 : séparateurs explicites (= : - >) — le plus fiable
+    const explicitPatterns = [
+      /[=:>-]\s*(\d+)\s*$/,      // "bonbon = 20", "bonbon : 20"
+      /[=:>-]\s*(\d+)/,            // "bonbon = 20" n'importe où
     ];
-    for (const pat of patterns) {
+    for (const pat of explicitPatterns) {
       const m = line.match(pat);
       if (m) {
         const val = parseInt(m[1], 10);
         if (val > 0 && val < 10000) return val;
       }
     }
+
+    // Priorité 2 : formats standards
+    const standardPatterns = [
+      /(\d+)\s*(kg|g|l|ml|unité|pce|pc|carton|sac|sachet|bouteille|bte|boîte|x|fois)/i,
+      /(\d+)\s*(x|×)\s*\d+/,
+      /^(\d+)\s+(?!\d)/m,
+    ];
+    for (const pat of standardPatterns) {
+      const m = line.match(pat);
+      if (m) {
+        const val = parseInt(m[1], 10);
+        if (val > 0 && val < 10000) return val;
+      }
+    }
+
+    // Priorité 3 : nombre seul en fin de ligne (ambigu, dernier recours)
+    const fallbackMatch = line.match(/^[^\d]+?\b(\d+)\s*$/);
+    if (fallbackMatch) {
+      const val = parseInt(fallbackMatch[1], 10);
+      if (val > 0 && val < 10000) return val;
+    }
+
     return undefined;
   }
 
