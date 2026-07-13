@@ -423,13 +423,11 @@ tintColor="#A8A3C2"
 }
 >
 {/* VALEUR BOUTIQUE */}
-<View style={styles.shopValueCard}>
-<Text style={styles.shopValueLabel}>Valeur estimée de votre boutique</Text>
-<Text style={styles.shopValue}>{money(shopValue)}</Text>
-{potentialProfit > 0 && (
-<Text style={styles.shopProfit}>Bénéfice estimé : {money(potentialProfit)}</Text>
-)}
-</View>
+          <View style={styles.shopValueCard}>
+            <Text style={styles.shopValueLabel}>Valeur estimée de votre boutique</Text>
+            <Text style={styles.shopValue}>{money(shopValue)}</Text>
+            <Text style={styles.shopProfit}>Bénéfice estimé : {money(potentialProfit)}</Text>
+          </View>
 
 {/* BILAN DU JOUR */}
 <View style={styles.block}>
