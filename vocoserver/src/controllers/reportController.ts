@@ -18,7 +18,7 @@ import { asyncHandler } from "../middleware/asyncHandler";
 import { ValidationError, NotFoundError } from "../utils/AppError";
 
 /* =======================================================
-UTILS (béton)
+UTILS (bÃ©ton)
 ===================================================== */
 function isISODate(s: any): s is string {
   return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -84,7 +84,7 @@ export function computeDataHash(data: {
 }
 
 /* =======================================================
-PDF BUILDER (béton)
+PDF BUILDER (bÃ©ton)
 ====================================================== */
 function buildSharedReportPdf(params: {
   month: string;
@@ -116,7 +116,7 @@ function buildSharedReportPdf(params: {
     size: "A4",
     margin: 40,
     info: {
-      Title: `Bilan sécurisé ${month}`,
+      Title: `Bilan sÃ©curisÃ© ${month}`,
       Author: "Vocoshop",
       Subject: "Rapport financier officiel Vocoshop",
       Keywords: `vocoshop,bilan,${month},${from},${to}`,
@@ -130,21 +130,21 @@ function buildSharedReportPdf(params: {
   const addFooter = (doc: any) => {
     const fy = doc.page.height - 30;
     doc.fontSize(7).fillColor("#999");
-    doc.text("Vocoshop — Document officiel authentifié par empreinte numérique", left, fy, { width: pageW - left * 2, align: "center" });
+    doc.text("Vocoshop Â— Document officiel authentifiÃ© par empreinte numÃ©rique", left, fy, { width: pageW - left * 2, align: "center" });
     if (verifyUrl) {
       doc.fontSize(6).fillColor("#aaa");
-      doc.text(`Vérification : ${verifyUrl}`, left, fy + 10, { width: pageW - left * 2, align: "center" });
+      doc.text(`VÃ©rification : ${verifyUrl}`, left, fy + 10, { width: pageW - left * 2, align: "center" });
     }
   };
 
   doc.fontSize(7).fillColor("#22c55e");
-  doc.text("? DOCUMENT OFFICIEL VOCOshop — Authentifié numériquement", left, 25, { width: pageW - left * 2, align: "center" });
+  doc.text("? DOCUMENT OFFICIEL VOCOshop Â— AuthentifiÃ© numÃ©riquement", left, 25, { width: pageW - left * 2, align: "center" });
   doc.moveDown(0.3);
 
-  doc.fontSize(18).font("Helvetica-Bold").fillColor("#000").text("Bilan sécurisé (lecture seule)", left, 40);
+  doc.fontSize(18).font("Helvetica-Bold").fillColor("#000").text("Bilan sÃ©curisÃ© (lecture seule)", left, 40);
   doc.moveDown(0.5);
   doc.fontSize(10).font("Helvetica").fillColor("#333");
-  doc.text(`Période : ${from} ? ${to}`, left);
+  doc.text(`PÃ©riode : ${from} ? ${to}`, left);
   doc.text(`Mois : ${month}`, left);
   doc.text(`Expire le : ${String(expiresAt).slice(0, 10)}`, left);
   if (dataHash) {
@@ -157,12 +157,12 @@ function buildSharedReportPdf(params: {
   doc.moveDown(1);
 
   doc.fillColor("#000");
-  doc.fontSize(12).font("Helvetica-Bold").text("Synthèse", left);
+  doc.fontSize(12).font("Helvetica-Bold").text("SynthÃ¨se", left);
   doc.moveDown(0.5);
 
   const kpiLines = [
     ["Chiffre d'affaires", `${formatMoney(kpis.monthlyRevenue)} FCFA`],
-    ["COGS (coût d'achat)", `${formatMoney(kpis.monthlyCogs)} FCFA`],
+    ["COGS (coÃ»t d'achat)", `${formatMoney(kpis.monthlyCogs)} FCFA`],
     ["Profit brut", `${formatMoney(kpis.monthlyGrossProfit)} FCFA`],
     ["Profit net", `${formatMoney(kpis.monthlyNetProfit)} FCFA`],
     ["Marge", `${Math.round(kpis.monthlyMarginPercent * 10) / 10}%`],
@@ -184,7 +184,7 @@ function buildSharedReportPdf(params: {
   doc.moveTo(left, doc.y).lineTo(right, doc.y).strokeColor("#DDD").stroke();
   doc.moveDown(1);
 
-  doc.fillColor("#000").font("Helvetica-Bold").fontSize(12).text("Détails par jour", left);
+  doc.fillColor("#000").font("Helvetica-Bold").fontSize(12).text("DÃ©tails par jour", left);
   doc.moveDown(0.6);
 
   const col = {
@@ -217,7 +217,7 @@ function buildSharedReportPdf(params: {
     if (y > doc.page.height - 80) {
       doc.addPage();
       doc.fontSize(7).fillColor("#22c55e").text("? DOCUMENT OFFICIEL VOCOshop (suite)", left, 25, { width: pageW - left * 2, align: "center" });
-      doc.font("Helvetica-Bold").fontSize(12).fillColor("#000").text("Détails par jour (suite)", left, 40);
+      doc.font("Helvetica-Bold").fontSize(12).fillColor("#000").text("DÃ©tails par jour (suite)", left, 40);
       doc.moveDown(0.8);
 
       const hy = doc.y;
@@ -256,16 +256,16 @@ function buildSharedReportPdf(params: {
 
   doc.fontSize(7).fillColor("#22c55e").text("? DOCUMENT OFFICIEL VOCOshop", left, 25, { width: pageW - left * 2, align: "center" });
 
-  doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("Vérification d'authenticité", left, 50);
+  doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("VÃ©rification d'authenticitÃ©", left, 50);
   doc.moveDown(1);
   doc.fontSize(10).font("Helvetica").fillColor("#444");
-  doc.text("Ce document est protégé par une empreinte numérique (SHA-256).", left);
-  doc.text("Pour vérifier son intégrité, scannez le QR code ci-dessous", left);
-  doc.text("ou rendez-vous sur le lien de vérification.", left);
+  doc.text("Ce document est protÃ©gÃ© par une empreinte numÃ©rique (SHA-256).", left);
+  doc.text("Pour vÃ©rifier son intÃ©gritÃ©, scannez le QR code ci-dessous", left);
+  doc.text("ou rendez-vous sur le lien de vÃ©rification.", left);
   doc.moveDown(1);
 
   if (verifyUrl) {
-    doc.fontSize(9).fillColor("#555").text("Lien de vérification :", left);
+    doc.fontSize(9).fillColor("#555").text("Lien de vÃ©rification :", left);
     doc.fontSize(8).fillColor("#22c55e").text(verifyUrl, left);
 
     try {
@@ -283,9 +283,9 @@ function buildSharedReportPdf(params: {
   doc.fontSize(9).font("Helvetica").fillColor("#444");
   doc.text("Informations du document :", left);
   doc.fontSize(8).fillColor("#555");
-  doc.text(`Période : ${from} ? ${to}`, left + 10);
+  doc.text(`PÃ©riode : ${from} ? ${to}`, left + 10);
   doc.text(`Mois : ${month}`, left + 10);
-  doc.text(`Généré le : ${new Date().toISOString().slice(0, 10)}`, left + 10);
+  doc.text(`GÃ©nÃ©rÃ© le : ${new Date().toISOString().slice(0, 10)}`, left + 10);
   doc.text(`Expire le : ${String(expiresAt).slice(0, 10)}`, left + 10);
   if (dataHash) {
     doc.text(`Empreinte SHA-256 : ${dataHash}`, left + 10);
@@ -293,7 +293,7 @@ function buildSharedReportPdf(params: {
   doc.moveDown(0.5);
 
   doc.fontSize(7).fillColor("#888");
-  doc.text("Vocoshop — Plateforme de gestion de boutiques agréée.", left);
+  doc.text("Vocoshop Â— Plateforme de gestion de boutiques agrÃ©Ã©e.", left);
 
   addFooter(doc);
 
@@ -434,7 +434,7 @@ export const getInventoryDiffs = asyncHandler(async (req: Request, res: Response
 });
 
 /* =======================================================
-3?? AUJOURD'HUI – BILAN DU JOUR
+3?? AUJOURD'HUI Â– BILAN DU JOUR
 GET /report/today
 ====================================================== */
 export const getTodayReport = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
@@ -468,7 +468,7 @@ export const getTodayReport = asyncHandler(async (req: Request, res: Response, n
 });
 
 /* =======================================================
-4?? CLÔTURE DE JOURNÉE (Sale -> DailyReport) — PROFIT RÉEL
+4?? CLÃ”TURE DE JOURNÃ‰E (Sale -> DailyReport) Â— PROFIT RÃ‰EL
 POST /report/close-day
 ====================================================== */
 export const closeDayReport = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
@@ -574,7 +574,7 @@ export const getReportHistory = asyncHandler(async (req: Request, res: Response,
 });
 
 /* =======================================================
-6?? PARTAGE — CRÉER LIEN (privé)
+6?? PARTAGE Â— CRÃ‰ER LIEN (privÃ©)
 POST /report/share/month
 ====================================================== */
 export const createMonthlyShareLink = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
@@ -602,7 +602,7 @@ export const createMonthlyShareLink = asyncHandler(async (req: Request, res: Res
     rangeFrom = from;
     rangeTo = to;
   } else {
-    return next(new ValidationError("Paramètres invalides. Utilise month (YYYY-MM) ou from/to (YYYY-MM-DD)."));
+    return next(new ValidationError("ParamÃ¨tres invalides. Utilise month (YYYY-MM) ou from/to (YYYY-MM-DD)."));
   }
 
   const days = clamp(safeNum(expiresInDays ?? 30), 1, 180);
@@ -681,64 +681,66 @@ export const createMonthlyShareLink = asyncHandler(async (req: Request, res: Res
 });
 
 /* =======================================================
-7?? PARTAGE — DASHBOARD COMPLÈTE POUR MICROFINANCE
+7?? PARTAGE Â— DASHBOARD COMPLÃˆTE POUR MICROFINANCE
 GET /api/public/report/share/:id
 GET /api/public/report/share/:id?month=YYYY-MM
 ====================================================== */
 export const viewSharedReport = async (req: Request, res: Response) => {
   try {
     const token = String(req.params.id || "").trim();
-
     if (!/^[a-f0-9]{64}$/i.test(token)) return res.status(404).send("Lien invalide.");
 
-    const link: any = await SharedReportLink.findOne({
-      token,
-      isActive: true,
-      expiresAt: { $gt: new Date() },
-    }).lean();
-
-    if (!link) return res.status(404).send("Lien invalide ou expiré.");
+    const link: any = await SharedReportLink.findOne({ token, isActive: true, expiresAt: { $gt: new Date() } }).lean();
+    if (!link) return res.status(404).send("Lien invalide ou expire.");
 
     const storeId = String(link.storeId || "").trim();
     const defaultMonth = String(link.month || "").trim();
     if (!storeId) return res.status(404).send("Lien invalide.");
 
-    const selectedMonth = (isISOMonth(req.query.month) ? req.query.month : defaultMonth) as string;
-    if (!selectedMonth) return res.status(404).send("Lien invalide.");
+    const queryMonth = req.query.month as string | undefined;
+    const compareMonth = req.query.compare as string | undefined;
+    const customFrom = req.query.from as string | undefined;
+    const customTo = req.query.to as string | undefined;
 
-    let from: string;
-    let to: string;
-    try {
-      const r = monthToRange(selectedMonth);
-      from = r.from;
-      to = r.to;
-    } catch {
-      return res.status(404).send("Lien invalide.");
+    let from: string, to: string;
+    if (customFrom && customTo && isISODate(customFrom) && isISODate(customTo)) {
+      from = customFrom; to = customTo;
+    } else if (queryMonth === "all") {
+      from = "2000-01-01"; to = "2099-12-31";
+    } else {
+      const base = (isISOMonth(queryMonth) ? queryMonth : defaultMonth) as string;
+      if (!base) return res.status(404).send("Lien invalide.");
+      try { const r = monthToRange(base); from = r.from; to = r.to; } catch { return res.status(404).send("Lien invalide."); }
     }
+    const selectedMonth = queryMonth || defaultMonth;
 
-    try {
-      await SharedReportLink.updateOne(
-        { _id: link._id },
-        { $inc: { viewsCount: 1 }, $set: { lastViewedAt: new Date() } }
-      );
-    } catch {}
+    await SharedReportLink.updateOne({ _id: link._id }, { $inc: { viewsCount: 1 }, $set: { lastViewedAt: new Date() } }).catch(() => {});
 
-    const [store, reports, products, stockHistory] = await Promise.all([
+    const now = new Date();
+    const [store, reports, products] = await Promise.all([
       Store.findOne({ shopId: storeId }).lean(),
       DailyReport.find({ storeId, date: { $gte: from, $lte: to } }).sort({ date: 1 }).lean(),
       Product.find({ storeId }).sort({ quantity: -1 }).limit(20).lean(),
-      StockHistory.find({ storeId }).sort({ appliedAt: -1 }).limit(30).lean(),
     ]);
 
+    let compareReports: any[] = [];
+    let compareRevenue = 0, compareProfit = 0;
+    if (compareMonth && isISOMonth(compareMonth)) {
+      try {
+        const cr = monthToRange(compareMonth);
+        compareReports = await DailyReport.find({ storeId, date: { $gte: cr.from, $lte: cr.to } }).sort({ date: 1 }).lean();
+        compareRevenue = (compareReports as any[]).reduce((s, r) => s + safeNum(r?.totalRevenue), 0);
+        compareProfit = (compareReports as any[]).reduce((s, r) => s + safeNum(r?.grossProfit), 0);
+      } catch {}
+    }
+
     const merchantName = escapeHtml(String((store as any)?.storeName || link.storeName || "Commerce"));
+    const ownerName = escapeHtml(String((store as any)?.ownerName || ""));
     const merchantCity = escapeHtml(String((store as any)?.city || ""));
     const merchantPhone = escapeHtml(String((store as any)?.phone || ""));
     const shopId = escapeHtml(String(storeId));
     const createdAtStr = (store as any)?.createdAt
       ? new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date((store as any).createdAt))
-      : "N/A";
-    const lastActiveStr = (store as any)?.lastActiveAt
-      ? new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date((store as any).lastActiveAt))
       : "N/A";
 
     const monthlyRevenue = (reports as any[]).reduce((s, r) => s + safeNum(r?.totalRevenue), 0);
@@ -747,36 +749,16 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const monthlyNetProfit = (reports as any[]).reduce((s, r) => s + safeNum(r?.netProfit), 0);
     const monthlySalesCount = (reports as any[]).reduce((s, r) => s + safeNum(r?.totalSales), 0);
     const monthlyMarginPercent = monthlyRevenue > 0 ? clamp((monthlyGrossProfit / monthlyRevenue) * 100, 0, 100) : 0;
+    const stockValue = (products as any[]).reduce((s, p) => s + safeNum(p?.quantity) * safeNum(p?.sellPrice), 0);
 
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    const createdAtDate = (store as any)?.createdAt ? new Date((store as any).createdAt) : now;
-    const monthsActive = Math.max(0, Math.floor((now.getTime() - createdAtDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+    const revEvol = compareRevenue > 0 ? (((monthlyRevenue - compareRevenue) / compareRevenue) * 100).toFixed(1) : null;
+    const profitEvol = compareProfit > 0 ? (((monthlyGrossProfit - compareProfit) / compareProfit) * 100).toFixed(1) : null;
 
-    const [totalSalesCount, recentSalesCount, totalScansCount, recentScansCount, totalProductsCount, recentStockMovesCount] = await Promise.all([
-      Sale.countDocuments({ storeId }),
-      Sale.countDocuments({ storeId, createdAt: { $gte: thirtyDaysAgo } }),
-      OcrScan.countDocuments({ storeId }),
-      OcrScan.countDocuments({ storeId, createdAt: { $gte: thirtyDaysAgo } }),
-      Product.countDocuments({ storeId }),
-      StockHistory.countDocuments({ storeId, createdAt: { $gte: ninetyDaysAgo } }),
+    const [totalSalesCount, totalProductsCount] = await Promise.all([
+      Sale.countDocuments({ storeId }), Product.countDocuments({ storeId }),
     ]);
-
-    const uniqueSaleDays = await Sale.distinct("businessDate", { storeId, createdAt: { $gte: thirtyDaysAgo } });
-    const activeDays = Array.isArray(uniqueSaleDays) ? uniqueSaleDays.length : 0;
-
-    const dayScore = Math.min(30, (activeDays / 30) * 20 + (recentScansCount / 30) * 10);
-    const hasProducts = totalProductsCount > 0 ? 5 : 0;
-    const scansWithReview = await OcrScan.countDocuments({ storeId, needsReview: true });
-    const reviewRate = totalScansCount > 0 ? scansWithReview / totalScansCount : 0;
-    const qualityNoReview = Math.max(0, 10 - reviewRate * 20);
-    const dataScore = Math.min(20, hasProducts + qualityNoReview + (totalSalesCount > 10 ? 5 : totalSalesCount > 0 ? 2 : 0));
-    const ancienneteScore = Math.min(15, monthsActive * 2);
-    const stabilityScore = Math.min(15, activeDays >= 20 ? 15 : activeDays >= 10 ? 10 : activeDays >= 5 ? 6 : activeDays >= 1 ? 3 : 0);
-    const stockScoreVal = Math.min(10, (recentStockMovesCount > 0 ? 5 : 0) + (totalProductsCount >= 5 ? 5 : totalProductsCount >= 1 ? 3 : 0));
-    const totalScore = Math.min(100, Math.max(0, Math.round(dayScore + dataScore + ancienneteScore + stabilityScore + stockScoreVal)));
-
+    const monthsActive = Math.max(0, Math.floor((now.getTime() - new Date((store as any)?.createdAt || now).getTime()) / (30 * 24 * 60 * 60 * 1000)));
+    const totalScore = Math.min(100, Math.max(0, Math.round((totalSalesCount > 10 ? 30 : totalSalesCount > 0 ? 15 : 0) + (totalProductsCount >= 5 ? 20 : 5) + Math.min(20, monthsActive * 2) + 25)));
     const scoreColor = totalScore >= 70 ? "#22c55e" : totalScore >= 40 ? "#eab308" : "#ef4444";
     const scoreLabel = totalScore >= 70 ? "Excellent" : totalScore >= 50 ? "Bon" : totalScore >= 30 ? "Moyen" : "Faible";
 
@@ -785,392 +767,290 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     (availableMonthsRaw as string[]).forEach(d => { if (d) availableMonthsSet.add(d.slice(0, 7)); });
     const availableMonths = Array.from(availableMonthsSet).sort().reverse();
 
-    const monthOptions = availableMonths.map(m => {
-      const selected = m === selectedMonth ? "selected" : "";
-      return `<option value="${escapeHtml(m)}" ${selected}>${escapeHtml(m)}</option>`;
+    const MONTH_NAMES = ["Janvier","Fevrier","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Decembre"];
+    const periodLabel = queryMonth === "all" ? "Toute la periode" : (customFrom && customTo) ? `${new Date(customFrom).toLocaleDateString("fr")} - ${new Date(customTo).toLocaleDateString("fr")}` : `${MONTH_NAMES[parseInt((selectedMonth || defaultMonth).slice(5,7))-1]} ${(selectedMonth || defaultMonth).slice(0,4)}`;
+
+    const fmtCFA = (v: number) => formatMoney(v) + " FCFA";
+
+    let qrDataUri = "";
+    try {
+      const qr = await QRCode.toDataURL(`https://vocoshop.onrender.com/api/public/report/verify/${token}`, { width: 160, margin: 2, color: { dark: "#A78BFA", light: "#0A0617" } });
+      qrDataUri = qr;
+    } catch {}
+
+    const baseUrl = getPublicBaseUrl(req);
+    const verifyUrl = `${baseUrl}/api/public/report/verify/${token}`;
+    const pdfUrl = `${baseUrl}/api/public/report/share/${token}/pdf`;
+
+    const monthsOptions = availableMonths.map(m => {
+      const label = `${MONTH_NAMES[parseInt(m.slice(5,7))-1]} ${m.slice(0,4)}`;
+      const sel = m === queryMonth || (!queryMonth && m === defaultMonth) ? "selected" : "";
+      return `<option value="${m}" ${sel}>${label}</option>`;
     }).join("");
 
-    const values = (reports as any[]).map((r) => safeNum(r?.totalRevenue));
-    const maxVal = Math.max(...values, 1);
-    const w = 720;
-    const h = 100;
-    const pad = 6;
-    const step = values.length > 1 ? (w - pad * 2) / (values.length - 1) : 0;
-    const points = values.map((v: number, i: number) => {
-      const x = pad + i * step;
-      const y = pad + (h - pad * 2) * (1 - v / maxVal);
-      return `${x},${y}`;
-    }).join(" ");
-
-    const areaPoints = values.length > 0
-      ? `${pad},${h - pad} ${points} ${pad + (values.length - 1) * step},${h - pad}`
-      : "";
-
-    const rows = (reports as any[]).map((r) => {
-      const rev = safeNum(r?.totalRevenue);
-      const gp = safeNum(r?.grossProfit);
-      const margin = rev > 0 ? clamp((gp / rev) * 100, 0, 100) : 0;
-      return `<tr>
-        <td>${escapeHtml(r?.date)}</td>
-        <td>${formatMoney(rev)}</td>
-        <td>${formatMoney(safeNum(r?.cogs))}</td>
-        <td>${formatMoney(safeNum(r?.netProfit))}</td>
-        <td>${Math.round(margin * 10) / 10}%</td>
-        <td>${safeNum(r?.totalSales)}</td>
-      </tr>`;
+    const compareOptions = availableMonths.map(m => {
+      const label = `${MONTH_NAMES[parseInt(m.slice(5,7))-1]} ${m.slice(0,4)}`;
+      const sel = m === compareMonth ? "selected" : "";
+      return `<option value="${m}" ${sel}>${label}</option>`;
     }).join("");
 
-    const productRows = (products as any[]).map((p) => {
-      const qty = safeNum(p?.quantity);
-      const sell = safeNum(p?.sellPrice);
-      const buy = safeNum(p?.purchasePrice);
-      const stockVal = qty * buy;
-      return `<tr>
-        <td>${escapeHtml(p?.name)}</td>
-        <td>${escapeHtml(p?.category || "—")}</td>
-        <td>${qty}</td>
-        <td>${formatMoney(sell)}</td>
-        <td>${formatMoney(buy)}</td>
-        <td>${formatMoney(stockVal)}</td>
-      </tr>`;
-    }).join("");
+    const chartLabels = (reports as any[]).map(r => r.date?.slice(8,10) || "");
+    const chartRevenue = (reports as any[]).map(r => safeNum(r?.totalRevenue));
+    const chartProfit = (reports as any[]).map(r => safeNum(r?.grossProfit));
+    const chartCompareRevenue = (compareReports as any[]).map(r => safeNum(r?.totalRevenue));
 
-    const stockRows = (stockHistory as any[]).map((h) => {
-      const diff = safeNum(h?.diff);
-      const sign = diff > 0 ? "+" : "";
-      const diffColor = diff > 0 ? "#22c55e" : diff < 0 ? "#ef4444" : "#A8A3C2";
-      const dateStr = h?.appliedAt ? new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(h.appliedAt)) : "—";
-      return `<tr>
-        <td>${dateStr}</td>
-        <td>${escapeHtml(h?.productName || "—")}</td>
-        <td style="color:${diffColor};font-weight:700">${sign}${diff}</td>
-        <td>${safeNum(h?.previousQuantity)}</td>
-        <td>${safeNum(h?.newQuantity)}</td>
-      </tr>`;
-    }).join("");
-
-    const totalStockValue = (products as any[]).reduce((s, p) => s + safeNum(p?.quantity) * safeNum(p?.purchasePrice), 0);
-    const totalStockResell = (products as any[]).reduce((s, p) => s + safeNum(p?.quantity) * safeNum(p?.sellPrice), 0);
-    const totalStockProfit = totalStockResell - totalStockValue;
-
-    const pdfUrlRelative = `/api/public/report/share/${encodeURIComponent(token)}/pdf`;
-    const pdfUrlAbsolute = `${getPublicBaseUrl(req)}${pdfUrlRelative}`;
-    const verifyUrl = `${getPublicBaseUrl(req)}/api/public/report/verify/${encodeURIComponent(token)}`;
-
-    const verifyRows = (reports as any[]).map(r => ({
-      date: String(r.date || "").slice(0, 10),
-      revenue: safeNum(r?.totalRevenue),
-      cogs: safeNum(r?.cogs),
-      profit: safeNum(r?.netProfit || r?.grossProfit),
-      sales: safeNum(r?.totalSales),
-    }));
-    const currentHash = computeDataHash({
-      revenue: monthlyRevenue, cogs: monthlyCogs,
-      grossProfit: monthlyGrossProfit, netProfit: monthlyNetProfit,
-      salesCount: monthlySalesCount, marginPercent: monthlyMarginPercent,
-      from, to, rows: verifyRows,
+    const productSales = new Map<string, { name: string; qty: number; revenue: number }>();
+    (reports as any[]).forEach(r => {
+      (r.sales || []).forEach((s: any) => {
+        const key = s.productName || "Inconnu";
+        const prev = productSales.get(key) || { name: key, qty: 0, revenue: 0 };
+        prev.qty += safeNum(s?.quantity);
+        prev.revenue += safeNum(s?.totalAmount);
+        productSales.set(key, prev);
+      });
     });
-    const hashValid = currentHash === link.dataHash;
+    const topProducts = Array.from(productSales.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
 
-    const html = `<!doctype html>
+    const stockItems = (products as any[]).filter(p => safeNum(p?.quantity) > 0).slice(0, 10);
+    const stockLabels = stockItems.map(p => escapeHtml(String((p as any)?.name || "").slice(0,15)).replace(/"/g, ""));
+
+    const kpi = (label: string, value: number | string, color: string, icon: string, evol: string | null = null) =>
+      `<div class="kpi-card"><div class="kpi-icon">${icon}</div><div class="kpi-label">${label}</div><div class="kpi-value" style="color:${color}">${typeof value === 'number' ? fmtCFA(value) : value}</div>${evol ? '<div class="kpi-evol ' + (parseFloat(evol) >= 0 ? 'up' : 'down') + '">' + evol + '%</div>' : ''}</div>`;
+
+    const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Dashboard Vocoshop — ${merchantName}</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${merchantName} - Rapport VocoShop</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0A0617;color:#E8E4F0;line-height:1.5}
-.wrap{max-width:1040px;margin:0 auto;padding:20px 16px}
-.top-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
-.brand{font-size:13px;font-weight:700;color:#A78BFA;letter-spacing:1px;text-transform:uppercase}
-.expires-badge{font-size:11px;color:#71717a;background:rgba(255,255,255,.04);padding:4px 10px;border-radius:8px}
-.card{background:#18122B;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px;margin-top:14px}
-.card-green{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04)}
-.card-purple{border-color:rgba(139,92,246,.25);background:rgba(139,92,246,.04)}
-.section-title{font-size:11px;font-weight:800;color:#A78BFA;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px}
-.row{display:flex;gap:12px;flex-wrap:wrap}
-.col{flex:1;min-width:160px}
-.kpi-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:12px}
-.kpi-label{font-size:11px;font-weight:700;color:#8B83A8;text-transform:uppercase;letter-spacing:.5px}
-.kpi-value{font-size:22px;font-weight:900;margin-top:4px;color:#fff}
-.kpi-sub{font-size:11px;color:#6B6589;margin-top:2px}
-.muted{color:#8B83A8}
-.text-sm{font-size:12px}
-.text-xs{font-size:11px}
-.fw-800{font-weight:800}
-.mt-8{margin-top:8px}
-.mt-12{margin-top:12px}
-.mt-16{margin-top:16px}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0A0617;color:#E8E4F0;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 20px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.brand{font-size:14px;font-weight:800;color:#A78BFA;letter-spacing:1.5px}
+.brand span{color:#fff}
+.expires{font-size:11px;color:#6B7280;background:rgba(255,255,255,.03);padding:5px 12px;border-radius:8px}
+.store-card{background:linear-gradient(135deg,#18122B 0%,#1E1638 100%);border:1px solid rgba(167,139,250,.15);border-radius:16px;padding:24px;margin-bottom:20px}
+.store-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px}
+.store-info h1{font-size:24px;font-weight:900;color:#fff;margin-bottom:4px}
+.store-info .owner{font-size:14px;color:#A78BFA;margin-bottom:2px}
+.store-info .meta{font-size:12px;color:#6B7280;margin-top:6px;display:flex;gap:16px;flex-wrap:wrap}
+.verified-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;color:#22c55e}
+.score-box{display:flex;flex-direction:column;align-items:center}
+.score-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;border:3px solid ${scoreColor};color:#fff}
+.score-sub{font-size:10px;color:#6B7280;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+.period-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;background:#18122B;border-radius:14px;padding:12px 16px;border:1px solid rgba(255,255,255,.05)}
+.period-bar select{background:#1E1638;border:1px solid rgba(255,255,255,.1);color:#E8E4F0;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;min-width:140px}
+.period-bar select:focus{outline:2px solid #A78BFA}
+.quick-filters{display:flex;gap:6px;flex-wrap:wrap}
+.qf-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#A8A3C2;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none}
+.qf-btn:hover,.qf-btn.active{background:rgba(167,139,250,.15);color:#A78BFA;border-color:rgba(167,139,250,.3)}
+.qf-btn.active{background:rgba(167,139,250,.2)}
+.nav-arrows{display:flex;gap:4px;margin-left:auto}
+.nav-arrows button{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#A8A3C2;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.nav-arrows button:hover{background:rgba(167,139,250,.15);color:#A78BFA}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:#18122B;border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,.05);transition:transform .2s}
+.kpi-card:hover{transform:translateY(-2px)}
+.kpi-icon{font-size:24px;margin-bottom:8px}
+.kpi-label{font-size:11px;font-weight:700;color:#8B83A8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kpi-value{font-size:20px;font-weight:900}
+.kpi-evol{font-size:11px;font-weight:700;margin-top:4px}
+.kpi-evol.up{color:#22c55e}
+.kpi-evol.down{color:#ef4444}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:768px){.chart-row{grid-template-columns:1fr}}
+.chart-card{background:#18122B;border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,.05)}
+.chart-title{font-size:14px;font-weight:800;color:#fff;margin-bottom:12px}
+.chart-wrap{position:relative;height:280px}
+.chart-wrap canvas{width:100%!important}
+.table-card{background:#18122B;border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,.05);margin-bottom:20px;overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;color:#8B83A8;border-bottom:1px solid rgba(255,255,255,.08);text-transform:uppercase;letter-spacing:.5px}
-td{padding:8px 10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
-tr:hover td{background:rgba(255,255,255,.02)}
-.score-ring{width:120px;height:120px;position:relative;display:flex;align-items:center;justify-content:center}
-.score-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
-.score-ring .score-num{font-size:32px;font-weight:900;z-index:1}
-.score-ring .score-max{font-size:12px;color:#8B83A8;z-index:1;margin-top:30px}
-.score-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:6px}
-.score-bar-fill{height:100%;border-radius:3px;transition:width .3s}
-.badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
-.badge-green{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
-.badge-yellow{background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.2)}
-.badge-red{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
-.badge-purple{background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.2)}
-.seal{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700}
-.seal-valid{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)}
-.seal-invalid{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.25)}
-.btn{display:inline-flex;gap:6px;align-items:center;justify-content:center;padding:8px 14px;border-radius:10px;text-decoration:none;font-weight:800;font-size:12px;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);color:#fff;transition:background .2s}
-.btn:hover{background:rgba(167,139,250,.25)}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:#8B83A8;border-bottom:1px solid rgba(255,255,255,.08);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap}
+tr:hover td{background:rgba(255,255,255,.01)}
+.text-right{text-align:right}
+.text-green{color:#22c55e}
+.text-gold{color:#F59E0B}
+.export-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;border:none;text-decoration:none}
+.btn-primary{background:#7C3AED;color:#fff}
+.btn-primary:hover{background:#6D28D9}
 .btn-outline{background:transparent;border:1px solid rgba(255,255,255,.15);color:#CFC7E8}
 .btn-outline:hover{background:rgba(255,255,255,.06)}
-select{background:#1e1736;border:1px solid rgba(255,255,255,.1);color:#E8E4F0;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
-select:focus{outline:1px solid #A78BFA}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
-.info-label{font-size:11px;color:#6B6589;font-weight:600}
-.info-value{font-size:13px;color:#E8E4F0;font-weight:600}
-.footer{margin-top:20px;padding:14px 0;border-top:1px solid rgba(255,255,255,.06);text-align:center;font-size:11px;color:#4A4464}
-.footer a{color:#7C6FBA;text-decoration:none}
-@media(max-width:640px){
-.info-grid{grid-template-columns:1fr}
-.kpi-value{font-size:18px}
-.score-ring{width:100px;height:100px}
-.score-ring .score-num{font-size:26px}
-}
+.qr-section{display:flex;align-items:center;gap:20px;background:#18122B;border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,.05);margin-bottom:20px;flex-wrap:wrap}
+.qr-section img{border-radius:10px;background:#fff;padding:8px}
+.qr-info{flex:1;min-width:200px}
+.qr-info h3{font-size:14px;font-weight:800;color:#fff;margin-bottom:6px}
+.qr-info p{font-size:12px;color:#6B7280}
+.compare-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.compare-row select{background:#1E1638;border:1px solid rgba(255,255,255,.1);color:#E8E4F0;padding:6px 10px;border-radius:8px;font-size:12px}
+.footer{text-align:center;padding:24px 0;color:#4A4464;font-size:11px;border-top:1px solid rgba(255,255,255,.04);margin-top:30px}
+@media print{.period-bar,.export-bar,.nav-arrows,.btn,.qf-btn{display:none!important}body{background:#fff;color:#000}.store-card,.chart-card,.table-card,.kpi-card{background:#fff;border:1px solid #ddd;break-inside:avoid}}
 </style>
 </head>
 <body>
 <div class="wrap">
-
 <div class="top-bar">
-<div class="brand">Vocoshop</div>
-<div class="expires-badge">Expire le ${escapeHtml(String(link.expiresAt).slice(0,10))}</div>
+  <div class="brand"><span>VOCO</span>SHOP</div>
+  <div class="expires">Lien securise Â· Expire le ${new Date(link.expiresAt).toLocaleDateString("fr")}</div>
 </div>
-
-<div class="card card-green" style="padding:10px 14px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-<div style="display:flex;align-items:center;gap:8px">
-<div class="seal ${hashValid ? 'seal-valid' : 'seal-invalid'}">${hashValid ? '?' : '!!'} ${hashValid ? 'Document officiel Vocoshop' : 'Document non vérifié'}</div>
-<div class="text-xs muted">SHA-256 authentifié</div>
+<div class="store-card">
+  <div class="store-header">
+    <div class="store-info">
+      <h1>${merchantName}</h1>
+      ${ownerName ? '<div class="owner">' + ownerName + '</div>' : ''}
+      <div class="meta">
+        <span>${merchantCity || 'N/A'}</span>
+        <span>${merchantPhone}</span>
+        <span>${shopId}</span>
+        <span>Cree le ${createdAtStr}</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <div class="verified-badge">Donnees verifiees par VocoShop</div>
+      <div class="score-box">
+        <div class="score-ring">${totalScore}</div>
+        <div class="score-sub">${scoreLabel}</div>
+      </div>
+    </div>
+  </div>
 </div>
-<a href="${escapeHtml(verifyUrl)}" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">Vérifier l'authenticité ?</a>
+<div class="export-bar">
+  <button class="btn btn-primary" onclick="window.print()">Imprimer</button>
+  <a class="btn btn-outline" href="${pdfUrl}" download>PDF</a>
+  <button class="btn btn-outline" onclick="downloadCSV()">Excel (CSV)</button>
 </div>
+<div class="period-bar">
+  <select id="monthSelect" onchange="navigateMonth(this.value)">
+    <option value="all" ${queryMonth === 'all' ? 'selected' : ''}>Toute la periode</option>
+    ${monthsOptions}
+  </select>
+  <div class="nav-arrows">
+    <button onclick="prevMonth()" title="Mois precedent">&#9664;</button>
+    <button onclick="nextMonth()" title="Mois suivant">&#9654;</button>
+  </div>
+  <div class="quick-filters">
+    <a class="qf-btn${!queryMonth || queryMonth === defaultMonth && !compareMonth ? ' active' : ''}" href="?month=${defaultMonth || ''}">Ce mois</a>
+    <a class="qf-btn${queryMonth === 'all' && !customFrom ? ' active' : ''}" href="?month=all">Tout</a>
+    <a class="qf-btn" href="#" onclick="setRange('3m');return false">3 mois</a>
+    <a class="qf-btn" href="#" onclick="setRange('6m');return false">6 mois</a>
+    <a class="qf-btn" href="#" onclick="setRange('12m');return false">12 mois</a>
+  </div>
+  <div class="compare-row">
+    <span style="font-size:12px;color:#6B7280;">Comparer avec</span>
+    <select id="compareSelect" onchange="navigateCompare(this.value)">
+      <option value="">Aucune</option>
+      ${compareOptions}
+    </select>
+    ${compareMonth ? '<a class="qf-btn" href="?month='+(queryMonth||defaultMonth)+'" style="color:#ef4444">x</a>' : ''}
+  </div>
 </div>
-
-<div class="card" style="padding:14px 16px">
-<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
-<div>
-<h1 style="font-size:20px;font-weight:900;margin:0;color:#fff">${merchantName}</h1>
-<div class="text-sm muted mt-8">
-ID : ${shopId}${merchantCity ? ' · ' + merchantCity : ''}${merchantPhone ? ' · ' + merchantPhone : ''}
+<div style="margin-bottom:12px;color:#A78BFA;font-size:13px;font-weight:700">${periodLabel}${compareMonth ? ' vs ' + MONTH_NAMES[parseInt(compareMonth.slice(5,7))-1] + ' ' + compareMonth.slice(0,4) : ''}</div>
+<div class="kpi-grid">
+  ${kpi("Chiffre d'affaires", monthlyRevenue, "#F59E0B", "CA", revEvol)}
+  ${kpi("Benefice brut", monthlyGrossProfit, "#22c55e", "Benef.", profitEvol)}
+  ${kpi("Depenses (COGS)", monthlyCogs, "#ef4444", "Dep.")}
+  ${kpi("Valeur du stock", stockValue, "#3B82F6", "Stock")}
+  ${kpi("Marge", monthlyMarginPercent.toFixed(1) + "%", "#A78BFA", "Marge")}
+  ${kpi("Nb ventes", String(monthlySalesCount), "#fff", "Ventes")}
 </div>
-<div class="text-xs muted mt-8">
-Membre depuis ${createdAtStr} · Dernière activité : ${lastActiveStr}
+<div class="chart-row">
+  <div class="chart-card">
+    <div class="chart-title">Evolution du CA</div>
+    <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Top produits (CA)</div>
+    <div class="chart-wrap"><canvas id="productsChart"></canvas></div>
+  </div>
 </div>
+${topProducts.length > 0 ? '<div class="table-card"><div class="chart-title" style="margin-bottom:12px">Produits les plus vendus</div><table><tr><th>Produit</th><th class="text-right">Qte</th><th class="text-right">CA</th></tr>' + topProducts.map(p => '<tr><td>' + escapeHtml(p.name) + '</td><td class="text-right">' + p.qty + '</td><td class="text-right text-gold">' + fmtCFA(p.revenue) + '</td></tr>').join("") + '</table></div>' : ''}
+${stockItems.length > 0 ? '<div class="chart-card" style="margin-bottom:20px"><div class="chart-title">Etat du stock</div><div class="chart-wrap"><canvas id="stockChart"></canvas></div></div>' : ''}
+<div class="qr-section">
+  ${qrDataUri ? '<img src="' + qrDataUri + '" width="100" height="100" alt="QR Code">' : ''}
+  <div class="qr-info">
+    <h3>Verification d'authenticite</h3>
+    <p>Ce rapport est signe numeriquement par VocoShop. Scannez le QR code pour confirmer son authenticite.</p>
+    <p style="margin-top:8px"><a href="${verifyUrl}" target="_blank" style="color:#A78BFA">${verifyUrl}</a></p>
+    <p style="margin-top:4px;color:#4B5563;font-size:10px">Rapport genere le ${now.toLocaleDateString("fr")} Â· ID: ${token.slice(0,16)}...</p>
+  </div>
 </div>
-<div style="display:flex;gap:6px;flex-wrap:wrap">
-<a class="btn" href="${pdfUrlAbsolute}" download>Télécharger PDF</a>
-<a class="btn btn-outline" href="${escapeHtml(verifyUrl)}" target="_blank">Vérifier</a>
-</div>
-</div>
-</div>
-
-<div class="row" style="align-items:stretch">
-<div class="card" style="flex:0 0 180px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px">
-<div class="score-ring">
-<svg width="120" height="120" viewBox="0 0 120 120">
-<circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>
-<circle cx="60" cy="60" r="52" fill="none" stroke="${scoreColor}" stroke-width="8"
-stroke-dasharray="${(totalScore / 100) * 327} 327" stroke-linecap="round"/>
-</svg>
-<div class="score-num" style="color:${scoreColor}">${totalScore}</div>
-<div class="score-max">/100</div>
-</div>
-<div class="badge badge-${totalScore >= 70 ? 'green' : totalScore >= 40 ? 'yellow' : 'red'}" style="margin-top:8px">${scoreLabel}</div>
-</div>
-<div class="card" style="flex:1">
-<div class="section-title">Détail du score</div>
-${[
-{s: dayScore, max: 30, label: "Régularité d'utilisation"},
-{s: dataScore, max: 20, label: "Qualité des données"},
-{s: ancienneteScore, max: 15, label: "Ancienneté"},
-{s: stabilityScore, max: 15, label: "Stabilité commerciale"},
-{s: stockScoreVal, max: 10, label: "Gestion du stock"},
-].map(item => {
-const pct = item.max > 0 ? (item.s / item.max) * 100 : 0;
-const barColor = pct >= 70 ? "#22c55e" : pct >= 40 ? "#eab308" : "#ef4444";
-return `<div style="margin-bottom:8px">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<span class="text-xs muted">${escapeHtml(item.label)}</span>
-<span class="text-xs fw-800">${Math.round(item.s)}/${item.max}</span>
-</div>
-<div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
-</div>`;
-}).join("")}
-</div>
-</div>
-
-<div class="row" style="align-items:baseline;justify-content:space-between;margin-top:14px">
-<div class="section-title" style="margin-bottom:0">Revenus du mois</div>
-<div>
-${availableMonths.length > 0 ? `<select onchange="window.location.href='?month='+this.value">${monthOptions}</select>` : ""}
-</div>
-</div>
-
-<div class="row mt-8">
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Chiffre d'affaires</div>
-<div class="kpi-value">${formatMoney(monthlyRevenue)}</div>
-<div class="kpi-sub">FCFA</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Profit brut</div>
-<div class="kpi-value">${formatMoney(monthlyGrossProfit)}</div>
-<div class="kpi-sub">FCFA</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Marge</div>
-<div class="kpi-value">${Math.round(monthlyMarginPercent * 10) / 10}%</div>
-<div class="kpi-sub">brut/CA</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Ventes</div>
-<div class="kpi-value">${monthlySalesCount}</div>
-<div class="kpi-sub">tickets</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Profit net</div>
-<div class="kpi-value">${formatMoney(monthlyNetProfit)}</div>
-<div class="kpi-sub">FCFA</div>
-</div></div>
-</div>
-
-<div class="row mt-8">
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">COGS</div>
-<div class="kpi-value text-sm">${formatMoney(monthlyCogs)} FCFA</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Jours actifs</div>
-<div class="kpi-value text-sm">${activeDays} / 30</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Scans OCR</div>
-<div class="kpi-value text-sm">${totalScansCount}</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Ventes totales</div>
-<div class="kpi-value text-sm">${totalSalesCount}</div>
-</div></div>
-<div class="col"><div class="kpi-box">
-<div class="kpi-label">Ancienneté</div>
-<div class="kpi-value text-sm">${monthsActive} mois</div>
-</div></div>
-</div>
-
-<div class="card mt-12">
-<div class="section-title">Évolution du chiffre d'affaires</div>
-${values.length > 0 ? `
-<svg width="100%" viewBox="0 0 ${w} ${h}" style="margin-top:8px">
-<defs>
-<linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0%" stop-color="rgba(167,139,250,.25)"/>
-<stop offset="100%" stop-color="rgba(167,139,250,.02)"/>
-</linearGradient>
-</defs>
-<polygon fill="url(#areaGrad)" points="${areaPoints}"/>
-<polyline fill="none" stroke="rgba(167,139,250,.9)" stroke-width="2.5" points="${points}"/>
-${values.map((v: number, i: number) => {
-const x = pad + i * step;
-const y = pad + (h - pad * 2) * (1 - v / maxVal);
-return `<circle cx="${x}" cy="${y}" r="3" fill="#A78BFA"/>`;
-}).join("")}
-</svg>
-` : '<div class="muted text-sm" style="padding:20px 0;text-align:center">Aucune donnée pour cette période</div>'}
-</div>
-
-<div class="card mt-12">
-<div class="section-title">Détails par jour</div>
-${rows ? `
-<div style="overflow-x:auto">
-<table>
-<thead><tr><th>Date</th><th>CA</th><th>COGS</th><th>Profit</th><th>Marge</th><th>Ventes</th></tr></thead>
-<tbody>${rows}</tbody>
-</table>
-</div>
-` : '<div class="muted text-sm" style="padding:20px 0;text-align:center">Aucune donnée journalière</div>'}
-</div>
-
-<div class="card mt-12">
-<div class="section-title">Stock</div>
-<div class="info-grid mt-8">
-<div><div class="info-label">Produits</div><div class="info-value">${totalProductsCount}</div></div>
-<div><div class="info-label">Articles en stock</div><div class="info-value">${(products as any[]).reduce((s, p) => s + safeNum(p?.quantity), 0)}</div></div>
-<div><div class="info-label">Valeur d'achat</div><div class="info-value">${formatMoney(totalStockValue)} FCFA</div></div>
-<div><div class="info-label">Valeur de revente</div><div class="info-value">${formatMoney(totalStockResell)} FCFA</div></div>
-<div><div class="info-label">Marge potentielle</div><div class="info-value" style="color:#22c55e">${formatMoney(totalStockProfit)} FCFA</div></div>
-<div><div class="info-label">Mouvements (90j)</div><div class="info-value">${recentStockMovesCount}</div></div>
-</div>
-</div>
-
-${productRows ? `
-<div class="card mt-12">
-<div class="section-title">Produits (${totalProductsCount})</div>
-<div style="overflow-x:auto">
-<table>
-<thead><tr><th>Nom</th><th>Catégorie</th><th>Qté</th><th>Prix vente</th><th>Prix achat</th><th>Valeur stock</th></tr></thead>
-<tbody>${productRows}</tbody>
-</table>
-</div>
-</div>
-` : ""}
-
-${stockRows ? `
-<div class="card mt-12">
-<div class="section-title">Mouvements de stock récents</div>
-<div style="overflow-x:auto">
-<table>
-<thead><tr><th>Date</th><th>Produit</th><th>Variation</th><th>Avant</th><th>Après</th></tr></thead>
-<tbody>${stockRows}</tbody>
-</table>
-</div>
-</div>
-` : ""}
-
-<div class="card card-purple mt-12" style="padding:10px 14px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-<div style="display:flex;align-items:center;gap:6px">
-<div class="badge badge-purple">Blockchain</div>
-<div class="text-xs muted">Empreinte SHA-256</div>
-</div>
-<div class="text-xs muted">Chaîne : ${(link.dataHash || "").slice(0, 24)}...</div>
-</div>
-</div>
-
 <div class="footer">
-<div>Vocoshop — Document officiel · Lien sécurisé révocable et expirant</div>
-<div class="mt-8">
-<a href="${escapeHtml(verifyUrl)}" target="_blank">Vérifier l'authenticité</a>
- · Généré le ${new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(now)}
+  VocoShop â€” Vendez. Gerer. Grandissez.<br>
+  Rapport genere automatiquement. Inalterable sur le serveur.
 </div>
 </div>
-
-</div>
+<script>
+const currentMonth = "${queryMonth || defaultMonth}";
+const availMonths = ${JSON.stringify(availableMonths)};
+function setPeriod(m) {
+  let u = new URL(window.location);
+  if(m==='all'){u.searchParams.set('month','all')}else{u.searchParams.set('month',m)}
+  u.searchParams.delete('from');u.searchParams.delete('to');
+  window.location=u.toString();
+}
+function setRange(r) {
+  let u = new URL(window.location);
+  const n = new Date();
+  let from, to;
+  if(r==='3m'){const d=new Date(n.getFullYear(),n.getMonth()-2,1);from=d.toISOString().slice(0,10);to=n.toISOString().slice(0,10)}
+  else if(r==='6m'){const d=new Date(n.getFullYear(),n.getMonth()-5,1);from=d.toISOString().slice(0,10);to=n.toISOString().slice(0,10)}
+  else if(r==='12m'){const d=new Date(n.getFullYear(),n.getMonth()-11,1);from=d.toISOString().slice(0,10);to=n.toISOString().slice(0,10)}
+  u.searchParams.set('from',from);u.searchParams.set('to',to);u.searchParams.delete('month');
+  window.location=u.toString();
+}
+function prevMonth(){const i=availMonths.indexOf(currentMonth);if(i>=0&&i<availMonths.length-1)setPeriod(availMonths[i+1])}
+function nextMonth(){const i=availMonths.indexOf(currentMonth);if(i>0)setPeriod(availMonths[i-1])}
+function navigateMonth(m){setPeriod(m)}
+function navigateCompare(m){
+  let u=new URL(window.location);
+  if(m)u.searchParams.set('compare',m);else u.searchParams.delete('compare');
+  window.location=u.toString();
+}
+function downloadCSV(){
+  const rows=[["Date","CA (FCFA)","Benefice (FCFA)","COGS (FCFA)","Ventes"]];
+  ${JSON.stringify((reports as any[]).map(r => [r.date?.slice(0,10)||"", safeNum(r?.totalRevenue), safeNum(r?.grossProfit), safeNum(r?.cogs), safeNum(r?.totalSales)]))}.forEach(r=>rows.push(r));
+  let csv=rows.map(r=>r.join(",")).join("\\n");
+  const blob=new Blob(["\\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="bilan_${merchantName.replace(/[^a-zA-Z0-9]/g,'_')}_${(selectedMonth || defaultMonth).replace(/\s/g,'_')}.csv";a.click();
+}
+document.addEventListener('DOMContentLoaded',function(){
+  Chart.defaults.color='#8B83A8';Chart.defaults.borderColor='rgba(255,255,255,.05)';
+  new Chart(document.getElementById('revenueChart'),{
+    type:'line',
+    data:{
+      labels:${JSON.stringify(chartLabels)},
+      datasets:[
+        {label:'CA ${periodLabel}',data:${JSON.stringify(chartRevenue)},borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.1)',fill:true,tension:.3},
+        {label:'Benefice',data:${JSON.stringify(chartProfit)},borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',fill:true,tension:.3}${compareReports.length > 0 ? ',{label:"CA '+MONTH_NAMES[parseInt(compareMonth!.slice(5,7))-1]+'",data:'+JSON.stringify(chartCompareRevenue)+',borderColor:"#A78BFA",borderDash:[5,5],tension:.3}' : ''}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}
+  });
+  new Chart(document.getElementById('productsChart'),{
+    type:'bar',
+    data:{labels:${JSON.stringify(topProducts.map(p=>p.name.slice(0,15)))},datasets:[{label:'CA (FCFA)',data:${JSON.stringify(topProducts.map(p=>p.revenue))},backgroundColor:'#A78BFA',borderRadius:6}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}
+  });
+  ${stockItems.length > 0 ? 'new Chart(document.getElementById("stockChart"),{type:"bar",data:{labels:' + JSON.stringify(stockLabels) + ',datasets:[{label:"Qte en stock",data:' + JSON.stringify(stockItems.map(p=>safeNum(p?.quantity))) + ',backgroundColor:"#3B82F6",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});' : ''}
+});
+<\/script>
 </body>
 </html>`;
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
     return res.status(200).send(html);
   } catch (err) {
-    console.error("? viewSharedReport:", err);
+    console.error("viewSharedReport:", err);
     return res.status(500).send("Erreur serveur.");
   }
 };
 
-/* =======================================================
-7B?? PARTAGE — PDF (PUBLIC)
-GET /api/public/report/share/:id/pdf
-====================================================== */
 export const downloadSharedReportPdf = async (req: Request, res: Response) => {
   try {
     const token = String(req.params.id || "").trim();
@@ -1183,7 +1063,7 @@ export const downloadSharedReportPdf = async (req: Request, res: Response) => {
       expiresAt: { $gt: new Date() },
     }).lean();
 
-    if (!link) return res.status(404).send("Lien invalide ou expiré.");
+    if (!link) return res.status(404).send("Lien invalide ou expirÃ©.");
 
     const storeId = String(link.storeId || "").trim();
     const month = String(link.month || "").trim();
@@ -1268,7 +1148,7 @@ export const downloadSharedReportPdf = async (req: Request, res: Response) => {
 };
 
 /* =======================================================
-8?? VÉRIFICATION D'AUTHENTICITÉ (PUBLIC)
+8?? VÃ‰RIFICATION D'AUTHENTICITÃ‰ (PUBLIC)
 GET /api/public/report/verify/:token
 ====================================================== */
 export const verifySharedReport = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
@@ -1281,7 +1161,7 @@ export const verifySharedReport = asyncHandler(async (req: Request, res: Respons
   const link: any = await SharedReportLink.findOne({ token }).lean();
 
   if (!link) {
-    return res.status(200).json({ valid: false, error: "Lien introuvable ou supprimé." });
+    return res.status(200).json({ valid: false, error: "Lien introuvable ou supprimÃ©." });
   }
 
   const expired = new Date(link.expiresAt) < new Date();
@@ -1324,7 +1204,7 @@ export const verifySharedReport = asyncHandler(async (req: Request, res: Respons
   if (!active) {
     return res.status(200).json({
       ...verification,
-      error: expired ? "Ce lien a expiré." : "Ce lien a été révoqué par le propriétaire.",
+      error: expired ? "Ce lien a expirÃ©." : "Ce lien a Ã©tÃ© rÃ©voquÃ© par le propriÃ©taire.",
     });
   }
 
@@ -1332,7 +1212,7 @@ export const verifySharedReport = asyncHandler(async (req: Request, res: Respons
 });
 
 /* =======================================================
-9?? PARTAGE — RÉVOQUER (privé)
+9?? PARTAGE Â— RÃ‰VOQUER (privÃ©)
 POST /report/share/:id/revoke
 ====================================================== */
 export const revokeShareLink = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
@@ -1349,5 +1229,5 @@ export const revokeShareLink = asyncHandler(async (req: Request, res: Response, 
 
   if (!link) return next(new NotFoundError("Lien introuvable"));
 
-  return res.json({ message: "Lien révoqué", linkId: id });
+  return res.json({ message: "Lien rÃ©voquÃ©", linkId: id });
 });
