@@ -18,9 +18,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import PhoneInput from "react-native-phone-number-input";
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
-import { useLanguage } from "../src/api/context/LanguageContext";
-import LanguagePicker from "../src/api/components/LanguagePicker";
-import { FLAGS } from "../src/api/constants/flags";
 
 function safeTrim(v: any) {
 return typeof v === "string" ? v.trim() : "";
@@ -28,10 +25,9 @@ return typeof v === "string" ? v.trim() : "";
 
 export default function LoginScreen({ navigation, route }: any) {
 
-const { checkPhone, loginWithPassword } = useContext(AuthContext);
-const { t } = useLanguage();
+  const { checkPhone, loginWithPassword } = useContext(AuthContext);
 
-const [phone, setPhone] = useState(route?.params?.preselectedPhone
+  const [phone, setPhone] = useState(route?.params?.preselectedPhone
   ? route.params.preselectedPhone.replace(/^\+\d{1,3}/, "")
   : ""
 );
@@ -181,29 +177,21 @@ return (
 <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-<Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-{step === "phone" && (
-<View style={styles.langRow}>
-<View />
-<LanguagePicker />
-</View>
-)}
+          <Text style={styles.title}>
+            {step === "phone" ? "Bienvenue" : "Bienvenue"}
+          </Text>
 
-<Text style={styles.title}>
-{step === "phone" ? t("login.title.phone") : "Bienvenue"}
-</Text>
-
-<Text style={styles.subtitle}>
-{step === "phone" ? t("login.subtitle.phone") : "Entrez votre code secret 6 chiffres"}
-</Text>
+          <Text style={styles.subtitle}>
+            {step === "phone" ? "Entrez votre numéro pour commencer" : "Entrez votre code secret 6 chiffres"}
+          </Text>
 
 {step === "phone" ? (
 
 <>
-<View style={styles.phoneWrapper}>
-<Text style={styles.flag}>{FLAGS[countryCode] || ""}</Text>
-<PhoneInput
+            <View style={styles.phoneWrapper}>
+              <PhoneInput
 ref={phoneRef}
 defaultCode={countryCode}
 layout="first"
@@ -292,11 +280,9 @@ title: { color: "#fff", fontSize: 32, fontWeight: "900", textAlign: "center", ma
 
 subtitle: { color: "rgba(255,255,255,0.55)", textAlign: "center", marginBottom: 28, fontSize: 14, paddingHorizontal: 10 },
 
-phoneWrapper: { flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 14, height: 58, paddingHorizontal: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  phoneWrapper: { flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 14, height: 58, paddingHorizontal: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
 
-flag: { fontSize: 22, marginRight: 10 },
-
-phoneAbsolute: { position: "absolute", left: 0, top: 0, bottom: 0, width: 70, backgroundColor: "transparent" },
+  phoneAbsolute: { position: "absolute", left: 0, top: 0, bottom: 0, width: 70, backgroundColor: "transparent" },
 
 separator: { width: 1, height: 24, backgroundColor: "rgba(255,255,255,0.12)", marginRight: 10 },
 
