@@ -8,6 +8,7 @@ import { getStoreId } from "../utils/storeId";
 import { getBusinessDate, safeNum as n, isValidObjectId } from "../utils/helpers";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { ValidationError, NotFoundError } from "../utils/AppError";
+import { notifyText } from "../services/notificationService";
 
 /* =====================================================
 HELPERS
@@ -317,7 +318,21 @@ lineProfit: l.lineProfit,
 // 6) supprimer ventes “en attente”
 await Sale.deleteMany({ storeId, businessDate: date });
 
-await touchStoreActivity(storeId);
+  await touchStoreActivity(storeId);
+
+  // ✅ Envoyer le bilan au propriétaire
+  try {
+    const store = await Store.findById(storeId).select("ownerPhone phone storeName").lean();
+    const ownerPhone = store?.ownerPhone || store?.phone;
+    if (ownerPhone && grossProfit != null) {
+      const msg = `📊 *${store?.storeName || "Boutique"}* - Bilan ${date}\n` +
+        `💰 CA : ${totalRevenue.toLocaleString("fr")} FCFA\n` +
+        `🛒 Ventes : ${totalSales}\n` +
+        `📈 Bénéfice : ${grossProfit.toLocaleString("fr")} FCFA\n` +
+        `_Généré par Vocoshop_`;
+      notifyText(ownerPhone, msg).catch(() => {});
+    }
+  } catch (_) {}
 
   return res.json({ message: "Journée clôturée (profit réel calculé)", report, userName: req.user?.name || "", userRole: req.user?.role || "" });
 });
