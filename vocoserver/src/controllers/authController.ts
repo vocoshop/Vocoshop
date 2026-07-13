@@ -6,6 +6,7 @@ import Store from "../models/Store";
 import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
+import { sendSMS } from "../services/smsService";
 
 function makePhoneVariants(phone: string): string[] {
   const variants = [phone];
@@ -118,17 +119,27 @@ lastActiveAt: new Date(),
 trialEnd,
 });
 
-await Subscription.create({
-storeId: store._id,
-plan: "STANDARD",
-status: "trial",
-trialStart: new Date(),
-trialEnd,
-referralCount: 0,
-referralRewarded: 0,
-});
+  await Subscription.create({
+    storeId: store._id,
+    plan: "STANDARD",
+    status: "trial",
+    trialStart: new Date(),
+    trialEnd,
+    referralCount: 0,
+    referralRewarded: 0,
+  });
 
-const token = generateToken(store._id.toString(), store.phone);
+  // ✅ Envoyer un SMS de bienvenue au propriétaire
+  const ownerTarget = ownerPhone || phoneNorm;
+  const shopName = storeName?.trim() || "votre boutique";
+  const welcomeMsg =
+    `Bienvenue sur VocoShop !\n` +
+    `Votre boutique ${shopName} est creee avec succes.\n` +
+    `Connectez-vous avec votre mot de passe.\n\n` +
+    `VocoShop - Vendez, Gerer, Grandissez.`;
+  sendSMS(ownerTarget, welcomeMsg).catch(() => {});
+
+  const token = generateToken(store._id.toString(), store.phone);
 
 return res.json({
 message: "Compte cree",
