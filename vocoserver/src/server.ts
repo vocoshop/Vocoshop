@@ -139,8 +139,27 @@ if (!token) return res.status(400).send("Token manquant");
 const expoBase = process.env.EXPO_DEEP_LINK_BASE;
 if (!expoBase) return res.status(500).send("EXPO_DEEP_LINK_BASE manquant");
 
-const redirectUrl = `${expoBase}/--/invite?token=${encodeURIComponent(token)}`;
-return res.redirect(302, redirectUrl);
+  const redirectUrl = `${expoBase}/--/invite?token=${encodeURIComponent(token)}`;
+  return res.redirect(302, redirectUrl);
+});
+
+// Lien universel : ouvre l'app si installée, sinon Play Store
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.don_carly.vocoshop";
+const APP_SCHEME = "vocoshop://";
+
+app.get("/download", (_req, res) => {
+  res.send(`<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="background:#0A0617;color:#fff;text-align:center;padding-top:60px;font-family:Arial,sans-serif;">
+<p>Ouverture de VocoShop...</p>
+<p style="color:#aaa;font-size:14px;">Si l'application ne s'ouvre pas, <a href="${PLAY_STORE_URL}" style="color:#A78BFA;">telechargez-la sur le Play Store</a></p>
+<script>
+  setTimeout(function(){ window.location = "${PLAY_STORE_URL}"; }, 2500);
+  window.location = "${APP_SCHEME}";
+</script>
+</body>
+</html>`);
 });
 
 // AUTH / OTP / IA (AVEC RATE LIMITING)
