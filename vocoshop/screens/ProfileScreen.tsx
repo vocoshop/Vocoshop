@@ -178,7 +178,7 @@ message: `Rejoins Vocoshop avec mon code de parrainage : ${referralCode}`,
             onPress: () => {
               navigation.navigate("StorePicker", {
                 stores: ownerStores,
-                ownerPhone: user?.phone || "",
+                ownerPhone: storeOwnerPhone || user?.phone || "",
               });
             },
           },
