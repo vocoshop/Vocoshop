@@ -490,21 +490,21 @@ onPress={() => navigation.navigate("ReportDetail", { reportId: r._id })}
 </TouchableOpacity>
 ))}
 
-{/* ✅ “Afficher plus” discret (uniquement si hasMore) */}
-{hasMore && (
-<TouchableOpacity
-style={styles.showMoreWrap}
-activeOpacity={0.7}
-onPress={loadMore}
-disabled={loadingMore}
->
-{loadingMore ? (
-<ActivityIndicator size="small" color="#9CA3AF" />
-) : (
-<Text style={styles.showMoreText}>Afficher plus</Text>
-)}
-</TouchableOpacity>
-)}
+        {/* ✅ Ligne grise "Voir plus" (uniquement si hasMore) */}
+        {hasMore && (
+          <TouchableOpacity
+            style={styles.showMoreWrap}
+            activeOpacity={0.7}
+            onPress={loadMore}
+            disabled={loadingMore}
+          >
+            <View style={styles.showMoreLine} />
+            <Text style={styles.showMoreText}>
+              {loadingMore ? "Chargement..." : "Voir plus de dates"}
+            </Text>
+            <View style={styles.showMoreLine} />
+          </TouchableOpacity>
+        )}
 </View>
 </ScrollView>
 )}
@@ -632,16 +632,23 @@ marginTop: 6,
 },
 
 // ✅ discret “Afficher plus”
-showMoreWrap: {
-marginTop: 14,
-alignItems: "center",
-justifyContent: "center",
-paddingVertical: 6,
-},
-showMoreText: {
-color: "#9CA3AF",
-fontSize: 13,
-fontWeight: "700",
+  showMoreWrap: {
+    marginTop: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    gap: 12,
+  },
+  showMoreLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#2D2547",
+  },
+  showMoreText: {
+    color: "#666",
+    fontSize: 12,
+    fontWeight: "600",
 },
 
 // ✅ Skeleton pieces
