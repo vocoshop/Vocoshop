@@ -7,17 +7,24 @@ import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
 
+function makePhoneVariants(phone: string): string[] {
+  const variants = [phone];
+  const m = phone.match(/^\+(\d{1,3})(\d+)$/);
+  if (m) {
+    const withZero = `+${m[1]}0${m[2]}`;
+    if (withZero !== phone) variants.push(withZero);
+    const withoutZero = `+${m[1]}${m[2].replace(/^0+/, "")}`;
+    if (withoutZero !== phone && withoutZero !== withZero) variants.push(withoutZero);
+  }
+  return variants;
+}
+
 export const checkPhone = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
   const phone = normalizePhone(req.body?.phone);
   if (!phone) return next(new ValidationError("Numero requis"));
 
-  // Normalisation du 0 après code pays (ex: +2420612... → +242612...)
-  // Certains numéros sont stockés avec le 0, d'autres sans
-  const phoneAlt = phone.startsWith("+")
-    ? phone.replace(/^(\+\d{1,3})0/, "$1")
-    : phone;
-  const phoneOr = phone !== phoneAlt ? [phone, phoneAlt] : [phone];
+  const phoneOr = makePhoneVariants(phone);
 
   // 1) Find direct store match (login phone)
   const directStore = await Store.findOne({
@@ -138,13 +145,14 @@ ownershipStatus: store.ownershipStatus,
 
 export const loginStore = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
-const { phone, password, deviceId } = req.body;
+  const { phone, password, deviceId } = req.body;
 
-const phoneNorm = normalizePhone(phone);
-if (!phoneNorm) return next(new ValidationError("Numero requis"));
+  const phoneNorm = normalizePhone(phone);
+  if (!phoneNorm) return next(new ValidationError("Numero requis"));
 
-const store = await Store.findOne({ phone: phoneNorm });
-if (!store) return next(new NotFoundError("Compte introuvable"));
+  const phoneOr = makePhoneVariants(phoneNorm);
+  const store = await Store.findOne({ phone: { $in: phoneOr } });
+  if (!store) return next(new NotFoundError("Compte introuvable"));
 
 if (store.passwordHash) {
 if (!password) return next(new ValidationError("Mot de passe requis"));
@@ -255,12 +263,16 @@ const { phone, storeId } = req.body;
 const phoneNorm = normalizePhone(phone);
 if (!phoneNorm || !storeId) return next(new ValidationError("Numéro et boutique requis"));
 
-const store = await Store.findById(storeId).lean();
-if (!store) return next(new NotFoundError("Boutique introuvable"));
+  const store = await Store.findById(storeId).lean();
+  if (!store) return next(new NotFoundError("Boutique introuvable"));
 
-if (store.ownerPhone !== phoneNorm) {
-return next(new UnauthorizedError("Vous n'êtes pas le propriétaire de cette boutique"));
-}
+  // Compare les 2 formats (avec/sans 0 après code pays)
+  const phoneVariants = makePhoneVariants(phoneNorm);
+  const storePhoneVariants = store.ownerPhone ? makePhoneVariants(store.ownerPhone) : [];
+  const ownerMatch = phoneVariants.some((v) => storePhoneVariants.includes(v));
+  if (!ownerMatch) {
+    return next(new UnauthorizedError("Vous n'êtes pas le propriétaire de cette boutique"));
+  }
 
 const token = generateToken(store._id.toString(), store.phone);
 
