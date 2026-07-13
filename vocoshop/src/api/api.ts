@@ -87,15 +87,23 @@ isRedirectingSubscription = false;
 }
 }
 
-/* =====================================================
- 🔐 TOKEN INVALID — LOGOUT AUTO
- ===================================================== */
-if (status === 401) {
-  console.log("🔐 Token invalide — logout automatique");
-  try {
-    navigate("Login");
-  } catch {}
-}
+    /* =====================================================
+     🔐 TOKEN INVALID — LOGOUT AUTO
+     ===================================================== */
+    if (status === 401) {
+      const reauth = code === "REAUTH_REQUIRED";
+      if (reauth) {
+        // Inactivité prolongée → demander mot de passe seulement
+        try {
+          navigate("Login", { reauth: true });
+        } catch {}
+      } else {
+        console.log("🔐 Token invalide — logout automatique");
+        try {
+          navigate("Login");
+        } catch {}
+      }
+    }
 
 return Promise.reject(error);
 }

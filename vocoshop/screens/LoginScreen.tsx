@@ -40,7 +40,8 @@ const [callingCode, setCallingCode] = useState(route?.params?.preselectedPhone
   ? route.params.preselectedPhone.replace(/^\+(\d{1,3}).*$/, "$1")
   : "33"
 );
-const [selectedStoreName, setSelectedStoreName] = useState(route?.params?.selectedStoreName || "");
+  const [selectedStoreName, setSelectedStoreName] = useState(route?.params?.selectedStoreName || "");
+  const [reauth, setReauth] = useState(!!route?.params?.reauth);
 
 const [errorMsg, setErrorMsg] = useState("");
 
@@ -67,13 +68,28 @@ const animateToStep = (target: "phone" | "password") => {
   });
 };
 
-useEffect(() => {
-  if (route?.params?.preselectedPhone) {
-    checkPhone(buildFullPhone()).then((result) => {
-      if (result.exists) animateToStep("password");
-    });
-  }
-}, [route?.params?.preselectedPhone]);
+  useEffect(() => {
+    if (route?.params?.preselectedPhone) {
+      checkPhone(buildFullPhone()).then((result) => {
+        if (result.exists) animateToStep("password");
+      });
+    }
+  }, [route?.params?.preselectedPhone]);
+
+  // Reauth : session expirée, on va direct au mot de passe
+  useEffect(() => {
+    if (reauth) {
+      (async () => {
+        try {
+          const savedPhone = await AsyncStorage.getItem("voco_last_phone");
+          if (savedPhone) {
+            setPhone(savedPhone);
+            setStep("password");
+          }
+        } catch (_) {}
+      })();
+    }
+  }, [reauth]);
 
 const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -151,9 +167,11 @@ return;
 }
 setLoading(true);
 setErrorMsg("");
-try {
-await loginWithPassword(cleanPhone, pwd);
-// Vérifier si une invitation propriétaire est en attente
+    try {
+      await loginWithPassword(cleanPhone, pwd);
+      // Sauvegarder le téléphone pour le reauth
+      await AsyncStorage.setItem("voco_last_phone", cleanPhone);
+      // Vérifier si une invitation propriétaire est en attente
 try {
 const invRes = await API.get("/invitations/pending", { params: { phone: cleanPhone } });
 if ((invRes.data as any)?.hasInvitation) {
@@ -181,11 +199,12 @@ return (
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
           <Text style={styles.title}>
-            {step === "phone" ? "Bienvenue sur Vocoshop" : "Bienvenue"}
+            {reauth ? "Session expirée" : step === "phone" ? "Bienvenue sur Vocoshop" : "Bienvenue"}
           </Text>
 
           <Text style={styles.subtitle}>
-            {step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
+            {reauth ? "Inactivité prolongée. Entrez votre mot de passe." :
+             step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
           </Text>
 
 {step === "phone" ? (
