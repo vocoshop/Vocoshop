@@ -88,7 +88,7 @@ export class OcrService {
       }
 
       const enhanced = this.preprocessImage(img);
-      const engineResult = await this.runOcrEngines(enhanced);
+      const engineResult = await this.runOcrEngines(enhanced, options?.defaultLineType);
       const lines = await this.parseLines(storeId, engineResult.rawText, options?.defaultLineType);
 
       allTexts.push(engineResult.rawText);
@@ -293,15 +293,19 @@ export class OcrService {
   OCR ENGINE — MULTI-MOTEUR AVEC FALLBACK
   Ordre : OpenAI Vision > Mistral OCR > Tesseract.js
   ===================================================== */
-  private async runOcrEngines(imageBase64: string): Promise<OcrEngineResult> {
+  private async runOcrEngines(imageBase64: string, scanType?: string): Promise<OcrEngineResult> {
     const openaiKey = process.env.OPENAI_API_KEY;
     const mistralKey = process.env.MISTRAL_API_KEY;
+
+    const typeLabel = scanType === "stock_in" ? "stock / livraison" :
+                       scanType === "sale" ? "vente" :
+                       scanType === "expense" ? "dépense" : "commerce";
 
     if (openaiKey) {
       try {
         const preprocessed = await preprocessForVision(imageBase64);
         const base64Clean = preprocessed.buffer.toString("base64");
-        const result = await this.runOpenaiVision(base64Clean, openaiKey, preprocessed.mimeType);
+        const result = await this.runOpenaiVision(base64Clean, openaiKey, preprocessed.mimeType, typeLabel);
         return result;
       } catch (err) {
         console.error("OpenAI Vision failed, falling back:", (err as Error).message);
@@ -310,7 +314,7 @@ export class OcrService {
 
     if (mistralKey) {
       try {
-        const result = await this.runMistralOcr(imageBase64, mistralKey);
+        const result = await this.runMistralOcr(imageBase64, mistralKey, typeLabel);
         if (result.rawText.trim()) return result;
       } catch (err) {
         console.error("Mistral OCR failed, falling back:", (err as Error).message);
@@ -339,8 +343,21 @@ export class OcrService {
   private async runOpenaiVision(
     imageBase64: string,
     apiKey: string,
-    mimeType: string = "image/jpeg"
+    mimeType: string = "image/jpeg",
+    scanType: string = "commerce"
   ): Promise<OcrEngineResult> {
+    const contextPrompt = scanType === "stock / livraison"
+      ? "Tu lis une fiche de réception de stock, un bon de livraison ou un carnet d'approvisionnement. " +
+        "Les colonnes typiques sont : produit, quantité reçue, prix d'achat. " +
+        "Les annotations comme \"reçu\", \"livré\", \"stock\", \"arrivage\" sont des titres de section, pas des produits."
+      : scanType === "vente"
+      ? "Tu lis un cahier de vente manuscrit. " +
+        "Les colonnes typiques sont : produit, quantité vendue, prix unitaire, total."
+      : scanType === "dépense"
+      ? "Tu lis une note de dépenses. " +
+        "Les colonnes typiques sont : motif, montant, date."
+      : "Tu lis un cahier de commerce manuscrit.";
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -353,7 +370,8 @@ export class OcrService {
           {
             role: "system",
             content:
-              "Tu es un expert OCR spécialisé dans la lecture de cahiers de commerce manuscrits en Afrique centrale.\n\n" +
+              "Tu es un expert OCR spécialisé dans la lecture de documents de commerce manuscrits en Afrique centrale.\n\n" +
+              `${contextPrompt}\n\n` +
               "RÈGLES ABSOLUES :\n" +
               "1. Tu ne réponds QU'avec le texte brut extrait, AUCUN préambule, AUCUNE explication.\n" +
               "2. Recopie CHAQUE ligne exactement comme elle est écrite, sans reformuler.\n" +
@@ -399,9 +417,19 @@ export class OcrService {
 
   private async runMistralOcr(
     imageBase64: string,
-    apiKey: string
+    apiKey: string,
+    scanType: string = "commerce"
   ): Promise<OcrEngineResult> {
     const base64 = removeBase64Header(imageBase64);
+
+    const contextText = scanType === "stock / livraison"
+      ? "Il s'agit d'une fiche de réception de stock ou bon de livraison."
+      : scanType === "vente"
+      ? "Il s'agit d'un cahier de vente."
+      : scanType === "dépense"
+      ? "Il s'agit d'une note de dépenses."
+      : "";
+
     const response = await fetch(
       "https://api.mistral.ai/v1/chat/completions",
       {
@@ -418,7 +446,7 @@ export class OcrService {
               content: [
                 {
                   type: "text",
-                  text: "Extrais tout le texte visible sur cette image. Réponds UNIQUEMENT avec le texte brut, sans préambule, sans explication, sans formatage. Recopie chaque ligne exactement.",
+                  text: `${contextText} Extrais tout le texte visible sur cette image. Reponds UNIQUEMENT avec le texte brut, sans preambule, sans explication, sans formatage. Recopie chaque ligne exactement.`,
                 },
                 {
                   type: "image_url",
