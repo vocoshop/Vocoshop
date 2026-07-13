@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import PhoneInput from "react-native-phone-number-input";
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
+import { FLAGS } from "../src/api/constants/flags";
 
 function safeTrim(v: any) {
 return typeof v === "string" ? v.trim() : "";
@@ -191,6 +192,7 @@ return (
 
 <>
             <View style={styles.phoneWrapper}>
+              <Text style={styles.flag}>{FLAGS[countryCode] || ""}</Text>
               <PhoneInput
 ref={phoneRef}
 defaultCode={countryCode}
@@ -281,6 +283,8 @@ title: { color: "#fff", fontSize: 32, fontWeight: "900", textAlign: "center", ma
 subtitle: { color: "rgba(255,255,255,0.55)", textAlign: "center", marginBottom: 28, fontSize: 14, paddingHorizontal: 10 },
 
   phoneWrapper: { flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 14, height: 58, paddingHorizontal: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+
+  flag: { fontSize: 22, marginRight: 10 },
 
   phoneAbsolute: { position: "absolute", left: 0, top: 0, bottom: 0, width: 70, backgroundColor: "transparent" },
 
