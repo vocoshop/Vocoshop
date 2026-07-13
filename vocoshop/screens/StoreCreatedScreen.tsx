@@ -24,7 +24,14 @@ export default function StoreCreatedScreen() {
 
   const [resending, setResending] = useState(false);
 
-  const message = `Bonjour, une boutique "${storeName}" a été créée pour toi sur Vocoshop. Télécharge l'application puis crée ton compte avec ce numéro : ${ownerPhone}. Une fois connecté, tu pourras accepter la propriété de ta boutique.`;
+  const message =
+    `📢 La boutique "${storeName}" rejoint VocoShop !\n\n` +
+    `Desormais, vous pouvez suivre toute l'activite de votre boutique en temps reel depuis votre telephone :\n` +
+    `📊 Chiffre d'affaires\n` +
+    `📦 Etat du stock\n` +
+    `📈 Benefices et bilans quotidiens\n\n` +
+    `📲 Telechargez VocoShop sur le Play Store et connectez-vous avec ce numero : ${ownerPhone}\n\n` +
+    `👉 VocoShop — Vendez. Gerer. Grandissez.`;
 
   const handleShare = async () => {
     try {

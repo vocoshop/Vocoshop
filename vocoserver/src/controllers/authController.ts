@@ -6,7 +6,6 @@ import Store from "../models/Store";
 import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
-import { sendSMS } from "../services/smsService";
 
 function makePhoneVariants(phone: string): string[] {
   const variants = [phone];
@@ -128,16 +127,6 @@ trialEnd,
     referralCount: 0,
     referralRewarded: 0,
   });
-
-  // ✅ Envoyer un SMS de bienvenue au propriétaire
-  const ownerTarget = ownerPhone || phoneNorm;
-  const shopName = storeName?.trim() || "votre boutique";
-  const welcomeMsg =
-    `Bienvenue sur VocoShop !\n` +
-    `Votre boutique ${shopName} est creee avec succes.\n` +
-    `Connectez-vous avec votre mot de passe.\n\n` +
-    `VocoShop - Vendez, Gerer, Grandissez.`;
-  sendSMS(ownerTarget, welcomeMsg).catch(() => {});
 
   const token = generateToken(store._id.toString(), store.phone);
 
