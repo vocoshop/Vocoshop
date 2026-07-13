@@ -14,6 +14,7 @@ Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import API from "../../src/api/api";
 import useSales, { Product } from "./useSales";
@@ -68,6 +69,23 @@ const [editingQtyValue, setEditingQtyValue] = useState("");
           setHasSalesToday(true);
         }
       } catch (e) {}
+    })();
+  }, []);
+
+  // Rappel : journée auto-clôturée → proposer d'envoyer le bilan
+  useEffect(() => {
+    (async () => {
+      try {
+        const flag = await AsyncStorage.getItem("voco_auto_closed");
+        if (flag === "true") {
+          await AsyncStorage.removeItem("voco_auto_closed");
+          Alert.alert(
+            "Journée clôturée",
+            "La journée d'hier a été clôturée automatiquement.\nPensez à envoyer le bilan au propriétaire.",
+            [{ text: "OK" }]
+          );
+        }
+      } catch (_) {}
     })();
   }, []);
 

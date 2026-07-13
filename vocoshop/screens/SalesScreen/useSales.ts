@@ -290,11 +290,12 @@ if (val !== "true") return;
 const openedAt = await AsyncStorage.getItem(DAY_OPENED_KEY);
 const today = new Date().toISOString().split("T")[0];
 
-if (openedAt && openedAt !== today) {
-try { await API.post("/sales/close-day", {}, { headers }); } catch (e) { console.log("⚠️ auto-close day:", e); }
-resetDayOpen();
-return;
-}
+    if (openedAt && openedAt !== today) {
+      try { await API.post("/sales/close-day", {}, { headers }); } catch (e) { console.log("⚠️ auto-close day:", e); }
+      resetDayOpen();
+      await AsyncStorage.setItem("voco_auto_closed", "true");
+      return;
+    }
 
 setDayActive(true);
 })();
