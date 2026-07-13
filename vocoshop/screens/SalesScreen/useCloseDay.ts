@@ -51,9 +51,10 @@ const [dayModal, setDayModal] = useState(false);
 const [dayLoading, setDayLoading] = useState(false);
 const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 
-  const shareBilanPdf = useCallback(async (report: TodaySummary, userName: string) => {
+  const shareBilanPdf = useCallback(async (report: TodaySummary, userName: string, storeName: string, ownerName: string) => {
     try {
       const employeeName = userName || "Employé";
+      const name = ownerName || employeeName;
       const itemsHtml = (report.sales || []).map((s) =>
         `<tr>
           <td style="padding:8px;border-bottom:1px solid #e0e0e0;color:#333;">${s.productName}</td>
@@ -135,19 +136,14 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 </body>
 </html>`;
 
-      const rev = Math.round(report.totalRevenue).toLocaleString("fr-FR");
-      const profit = grossProfit != null ? Math.round(grossProfit).toLocaleString("fr-FR") : "0";
       const date = new Date(report.date).toLocaleDateString("fr");
 
       const message =
-        `Bonjour,\n\n` +
-        `Voici le bilan de votre boutique pour le ${date} :\n` +
-        `💰 Chiffre d'affaires : ${rev} FCFA\n` +
-        `🛒 Ventes : ${report.totalSales}\n` +
-        `📈 Bénéfice : ${profit} FCFA\n` +
-        `Réf : ${reportRef}\n\n` +
-        `📲 Suivez toute votre activité en temps réel avec VocoShop sur le Play Store.\n` +
-        `VocoShop : Vendez, Gérez, Grandissez.`;
+        `Bonjour ${name}, ` +
+        `voici le bilan de ${storeName || "votre boutique"} pour le ${date}.\n\n` +
+        `📲 Retrouvez tous vos rapports et suivez votre activité en temps réel ` +
+        `avec l'application VocoShop, disponible sur le Play Store.\n` +
+        `👉 VocoShop : Vendez, Gérez, Grandissez.`;
 
       const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
 
@@ -267,7 +263,9 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 
       // ✅ Partage du bilan en PDF pour tout le monde
       const userName = data?.userName || "";
-      shareBilanPdf(report, userName);
+      const storeName = data?.storeName || "";
+      const ownerName = data?.ownerName || "";
+      shareBilanPdf(report, userName, storeName, ownerName);
 
     } catch (err: any) {
       console.log("❌ closeDay error:", err?.response?.data || err);

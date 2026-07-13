@@ -319,7 +319,17 @@ await Sale.deleteMany({ storeId, businessDate: date });
 
   await touchStoreActivity(storeId);
 
-  return res.json({ message: "Journée clôturée (profit réel calculé)", report, userName: req.user?.name || "", userRole: req.user?.role || "" });
+  // Récupérer infos boutique pour le message de partage
+  const storeInfo = await Store.findById(storeId).select("storeName ownerName ownerPhone").lean();
+
+  return res.json({
+    message: "Journée clôturée (profit réel calculé)",
+    report,
+    userName: req.user?.name || "",
+    userRole: req.user?.role || "",
+    storeName: storeInfo?.storeName || "",
+    ownerName: storeInfo?.ownerName || "",
+  });
 });
 
 /* =====================================================
