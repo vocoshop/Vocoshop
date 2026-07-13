@@ -111,7 +111,7 @@ const continueWithPhone = async () => {
   if (loading) return;
   const cleanPhone = buildFullPhone();
   if (!cleanPhone || cleanPhone.length < 8) {
-    Alert.alert("", "Numéro de téléphone invalide");
+    Alert.alert("", "Entre un numéro.");
     return;
   }
   try {
@@ -180,11 +180,11 @@ return (
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
           <Text style={styles.title}>
-            {step === "phone" ? "Bienvenue" : "Bienvenue"}
+            {step === "phone" ? "Bienvenue sur Vocoshop" : "Bienvenue"}
           </Text>
 
           <Text style={styles.subtitle}>
-            {step === "phone" ? "Entrez votre numéro pour commencer" : "Entrez votre code secret 6 chiffres"}
+            {step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
           </Text>
 
 {step === "phone" ? (
@@ -213,7 +213,7 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.phoneCustomInput}
 />
 </View>
-                <Text style={styles.infoText}>Un code sera envoyé à ce numéro</Text>
+                <Text style={styles.infoText}>Entrez votre numéro de téléphone pour commencer.</Text>
 {!!errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} onPress={continueWithPhone} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Continuer</Text>}
