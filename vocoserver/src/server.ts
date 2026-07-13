@@ -144,7 +144,7 @@ return res.redirect(302, redirectUrl);
 });
 
 // AUTH / OTP / IA (AVEC RATE LIMITING)
-app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/otp", otpLimiter, otpRoutes);
 app.use("/api/ai", generalLimiter, aiRoutes);
 
