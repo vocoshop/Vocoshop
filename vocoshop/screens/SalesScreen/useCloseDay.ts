@@ -22,11 +22,12 @@ createdAt?: string;
 }
 
 export interface TodaySummary {
-date: string;
-totalSales: number;
-totalRevenue: number;
-grossProfit?: number;
-sales: TodaySaleItem[];
+  _id?: string;
+  date: string;
+  totalSales: number;
+  totalRevenue: number;
+  grossProfit?: number;
+  sales: TodaySaleItem[];
 }
 
 type CloseDayResponse = { report: TodaySummary } | TodaySummary;
@@ -141,14 +142,17 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
     const rev = (report.totalRevenue ?? 0).toLocaleString("fr");
     const profit = (report.grossProfit ?? 0).toLocaleString("fr");
     const date = new Date(report.date).toLocaleDateString("fr");
+    const ref = report._id ? report._id.slice(-6).toUpperCase() : "";
 
     const msg =
       `Bonjour,\n\n` +
       `Voici le bilan de votre boutique pour le ${date} :\n` +
       `💰 Chiffre d'affaires : ${rev} FCFA\n` +
-      `🛒 Ventes : ${report.totalSales}\n` +
-      `📈 Bénéfice : ${profit} FCFA\n\n` +
-      `Suivez tout en temps réel avec l'application VocoShop, disponible sur le Play Store.\n` +
+      `🛒 Nombre de ventes : ${report.totalSales}\n` +
+      `📈 Bénéfice net : ${profit} FCFA\n\n` +
+      `Réf : ${ref}\n` +
+      `Ce rapport est généré automatiquement par VocoShop et ne peut être modifié sur le serveur.\n\n` +
+      `📲 Suivez toute votre activité en temps réel avec l'application VocoShop, disponible sur le Play Store.\n` +
       `👉 VocoShop : Vendez, Gérez, Grandissez.`;
 
     try {
@@ -242,6 +246,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
       }
 
       setDaySummary({
+        _id: (report as any)._id?.toString(),
         date: report.date ?? "",
         totalSales: Number(report.totalSales ?? 0),
         totalRevenue: Number(report.totalRevenue ?? 0),
