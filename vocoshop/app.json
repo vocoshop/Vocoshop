@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#501482"
       },
-"edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
 "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
