@@ -750,6 +750,8 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const monthlySalesCount = (reports as any[]).reduce((s, r) => s + safeNum(r?.totalSales), 0);
     const monthlyMarginPercent = monthlyRevenue > 0 ? clamp((monthlyGrossProfit / monthlyRevenue) * 100, 0, 100) : 0;
     const stockValue = (products as any[]).reduce((s, p) => s + safeNum(p?.quantity) * safeNum(p?.sellPrice), 0);
+    const estimatedResellValue = (products as any[]).reduce((s, p) => s + safeNum(p?.quantity) * safeNum(p?.sellPrice), 0);
+    const totalPotentialProfit = (products as any[]).reduce((s, p) => s + safeNum(p?.quantity) * (safeNum(p?.sellPrice) - safeNum(p?.purchasePrice)), 0);
 
     const revEvol = compareRevenue > 0 ? (((monthlyRevenue - compareRevenue) / compareRevenue) * 100).toFixed(1) : null;
     const profitEvol = compareProfit > 0 ? (((monthlyGrossProfit - compareProfit) / compareProfit) * 100).toFixed(1) : null;
@@ -956,6 +958,14 @@ tr:hover td{background:rgba(255,255,255,.01)}
   ${kpi("Valeur du stock", stockValue, "#3B82F6", "Stock")}
   ${kpi("Marge", monthlyMarginPercent.toFixed(1) + "%", "#A78BFA", "Marge")}
   ${kpi("Nb ventes", String(monthlySalesCount), "#fff", "Ventes")}
+</div>
+
+<div style="margin-bottom:12px;color:#A78BFA;font-size:13px;font-weight:700">Vue d'ensemble de la boutique</div>
+<div class="kpi-grid">
+  ${kpi("Valeur estimee boutique", estimatedResellValue, "#F59E0B", "Boutique")}
+  ${kpi("Benefice estime", totalPotentialProfit, "#22c55e", "Potentiel")}
+  ${kpi("Produits en stock", String((products as any[]).reduce((s, p) => s + safeNum(p?.quantity), 0)), "#3B82F6", "Total stock")}
+  ${kpi("References produits", String(totalProductsCount), "#A78BFA", "References")}
 </div>
 <div class="chart-row">
   <div class="chart-card">
