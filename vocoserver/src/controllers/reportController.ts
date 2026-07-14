@@ -3,7 +3,6 @@ import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import PDFDocument = require("pdfkit");
 import QRCode from "qrcode";
-import { computeScore } from "../blockchain/vocoScore";
 
 import Product from "../models/Product";
 import StockHistory from "../models/StockHistory";
@@ -776,13 +775,36 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const profitEvol = compareProfit > 0 ? (((monthlyGrossProfit - compareProfit) / compareProfit) * 100).toFixed(1) : null;
 
     const totalProductsCount = await Product.countDocuments({ storeId });
-    // VocoScore réel (même que dans l'app) — computeScore attend un shopId
-    let totalScore = 0;
-    try {
-      const shopIdStr = String((store as any)?.shopId || storeId);
-      const scoreData = await computeScore(shopIdStr);
-      totalScore = Math.round((scoreData.overallScore || 0) / 10);
-    } catch { totalScore = 20; }
+
+    // Score commerçant (même calcul que l'app Financement — GET /funding/score)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo2 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+    const [totalSalesStr, recentSalesStr, totalScansStr, recentScansStr, recentStockMovesStr, scansWithReviewStr] = await Promise.all([
+      Sale.countDocuments({ storeId }),
+      Sale.countDocuments({ storeId, createdAt: { $gte: thirtyDaysAgo } }),
+      OcrScan.countDocuments({ storeId }),
+      OcrScan.countDocuments({ storeId, createdAt: { $gte: thirtyDaysAgo } }),
+      StockHistory.countDocuments({ storeId, createdAt: { $gte: ninetyDaysAgo2 } }),
+      OcrScan.countDocuments({ storeId, needsReview: true }),
+    ]);
+
+    const uniqueSaleDays = await Sale.distinct("businessDate", { storeId, createdAt: { $gte: thirtyDaysAgo } });
+    const activeDays = Array.isArray(uniqueSaleDays) ? uniqueSaleDays.length : 0;
+    const uniqueScanDays = await OcrScan.distinct("createdAt", { storeId, createdAt: { $gte: thirtyDaysAgo } });
+    const scanDays = Array.isArray(uniqueScanDays) ? uniqueScanDays.length : 0;
+    const reviewRate = totalScansStr > 0 ? scansWithReviewStr / totalScansStr : 0;
+
+    const dayScore = Math.min(30, (activeDays / 30) * 20 + (scanDays / 30) * 10);
+    const hasProducts = totalProductsCount > 0 ? 5 : 0;
+    const qualityNoReview = Math.max(0, 10 - reviewRate * 20);
+    const dataScore = Math.min(20, hasProducts + qualityNoReview + (totalSalesStr > 10 ? 5 : totalSalesStr > 0 ? 2 : 0));
+    const createdAtDate = (store as any)?.createdAt ? new Date((store as any).createdAt) : now;
+    const monthsActive = Math.max(0, Math.floor((now.getTime() - createdAtDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+    const ancienneteScore = Math.min(15, monthsActive * 2);
+    const stabilityScore = Math.min(15, activeDays >= 20 ? 15 : activeDays >= 10 ? 10 : activeDays >= 5 ? 6 : activeDays >= 1 ? 3 : 0);
+    const stockScore = Math.min(10, (recentStockMovesStr > 0 ? 5 : 0) + (totalProductsCount >= 5 ? 5 : totalProductsCount >= 1 ? 3 : 0));
+    const totalScore = Math.min(100, Math.max(0, Math.round(dayScore + dataScore + ancienneteScore + stabilityScore + stockScore)));
     const scoreColor = totalScore >= 70 ? "#22c55e" : totalScore >= 40 ? "#eab308" : "#ef4444";
     const scoreLabel = totalScore >= 70 ? "Excellent" : totalScore >= 50 ? "Bon" : totalScore >= 30 ? "Moyen" : "Faible";
 
