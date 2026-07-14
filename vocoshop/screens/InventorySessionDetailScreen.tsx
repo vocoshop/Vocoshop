@@ -323,8 +323,8 @@ return (
 <Text style={[styles.diffText, { color: diff > 0 ? "#4ADE80" : diff < 0 ? "#F87171" : "#E5E7EB" }]}>
 Écart : {diff > 0 ? `+${diff}` : `${diff}`}
 </Text>
-{!!prettyDate(item?.appliedAt) && (
-<Text style={styles.dateText}>Appliqué : {prettyDate(item.appliedAt)}</Text>
+                {!!formatDateTime(item?.appliedAt) && (
+                  <Text style={styles.dateText}>Appliqué : {formatDateTime(item.appliedAt)}</Text>
 )}
 </>
 ) : (
