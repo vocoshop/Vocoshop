@@ -9,8 +9,9 @@
     "newArchEnabled": false,
     "scheme": "vocoshop",
     "splash": {
-      "backgroundColor": "#6A2DB8",
-      "resizeMode": "contain"
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#5A189A"
     },
 
 "ios": {
@@ -26,7 +27,7 @@
 "package": "com.don_carly.vocoshop",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#7334C8"
+        "backgroundColor": "#5A189A"
       },
 "edgeToEdgeEnabled": true,
 "predictiveBackGestureEnabled": false,
