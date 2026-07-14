@@ -250,7 +250,7 @@ export default function FundingScreen() {
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* SECTION 1 : MON SCORE */}
         <View style={styles.scoreCard}>
           <View style={styles.scoreHeader}>
@@ -414,16 +414,7 @@ export default function FundingScreen() {
           ))}
         </View>
 
-        {/* SECTION 5 : NOUVELLE DEMANDE */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.newDemandeBtn}
-            onPress={() => setShowDemandeModal(true)}
-          >
-            <Ionicons name="add-circle-outline" size={22} color="#fff" />
-            <Text style={styles.newDemandeBtnText}>Nouvelle Demande de Financement</Text>
-          </TouchableOpacity>
-        </View>
+        {/* SECTION 5 : NOUVELLE DEMANDE — déplacé en footer */}
 
         {/* SECTION 6 : MES DEMANDES */}
         {demandes.length > 0 && (
@@ -470,6 +461,17 @@ export default function FundingScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* FIXED FOOTER */}
+      <View style={styles.demandeFooter}>
+        <TouchableOpacity
+          style={styles.newDemandeBtn}
+          onPress={() => setShowDemandeModal(true)}
+        >
+          <Ionicons name="add-circle-outline" size={22} color="#fff" />
+          <Text style={styles.newDemandeBtnText}>Nouvelle Demande de Financement</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* MODAL DÉTAILS SCORE */}
       <Modal visible={detailsVisible} transparent animationType="slide">
@@ -853,6 +855,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   newDemandeBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  demandeFooter: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    paddingTop: 14,
+    backgroundColor: "rgba(10,6,23,0.96)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
 
   demandeCard: {
     backgroundColor: "#18122B",

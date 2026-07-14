@@ -9,9 +9,10 @@ TextInput,
 FlatList,
 Modal,
 ActivityIndicator,
-Alert,
-RefreshControl,
-Linking,
+  Alert,
+  RefreshControl,
+  Linking,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect, useRoute } from "@react-navigation/native";
@@ -816,35 +817,37 @@ setShowCartModal(true);
 {/* -------- PRODUCT MODAL -------- */}
 <Modal visible={showProductModal} transparent animationType="fade">
 <View style={styles.modalOverlay}>
-<View style={styles.modalContent}>
-<Text style={styles.modalTitle}>{selectedProduct?.name ?? "Produit"}</Text>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>{selectedProduct?.name ?? "Produit"}</Text>
 
-<TextInput
-placeholder="Prix d'achat (FCFA)"
-placeholderTextColor="#777"
-keyboardType="numeric"
-style={styles.input}
-value={unitPriceInput}
-onChangeText={setUnitPriceInput}
-/>
+          <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 250 }}>
+            <TextInput
+              placeholder="Prix d'achat (FCFA)"
+              placeholderTextColor="#777"
+              keyboardType="numeric"
+              style={styles.input}
+              value={unitPriceInput}
+              onChangeText={setUnitPriceInput}
+            />
 
-<TextInput
-placeholder="Quantité à commander"
-placeholderTextColor="#777"
-keyboardType="numeric"
-style={styles.input}
-value={quantityInput}
-onChangeText={setQuantityInput}
-/>
+            <TextInput
+              placeholder="Quantité à commander"
+              placeholderTextColor="#777"
+              keyboardType="numeric"
+              style={styles.input}
+              value={quantityInput}
+              onChangeText={setQuantityInput}
+            />
+          </ScrollView>
 
-<TouchableOpacity style={styles.bigBtn} onPress={addToCart}>
-<Text style={styles.bigBtnText}>Ajouter au panier</Text>
-</TouchableOpacity>
+          <TouchableOpacity style={styles.bigBtn} onPress={addToCart}>
+            <Text style={styles.bigBtnText}>Ajouter au panier</Text>
+          </TouchableOpacity>
 
-<TouchableOpacity style={{ marginTop: 10 }} onPress={() => setShowProductModal(false)}>
-<Text style={styles.cancelText}>Annuler</Text>
-</TouchableOpacity>
-</View>
+          <TouchableOpacity style={{ marginTop: 10 }} onPress={() => setShowProductModal(false)}>
+            <Text style={styles.cancelText}>Annuler</Text>
+          </TouchableOpacity>
+        </View>
 </View>
 </Modal>
 

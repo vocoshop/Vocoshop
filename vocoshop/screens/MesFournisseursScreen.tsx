@@ -10,6 +10,7 @@ import {
   Modal,
   Alert,
   RefreshControl,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -298,80 +299,82 @@ export default function MesFournisseursScreen() {
 
       <Modal visible={showAdd} transparent animationType="fade" onRequestClose={closeAddModal}>
         {modalStep === "form" ? (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Nouveau fournisseur</Text>
-                <TouchableOpacity onPress={closeAddModal}>
-                  <Ionicons name="close" size={22} color="#9CA3AF" />
+            <View style={styles.modalOverlay}>
+              <View style={styles.modal}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Nouveau fournisseur</Text>
+                  <TouchableOpacity onPress={closeAddModal}>
+                    <Ionicons name="close" size={22} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={{ maxHeight: 400 }} keyboardShouldPersistTaps="handled">
+                  <TextInput
+                    placeholder="Nom"
+                    placeholderTextColor="#777"
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                  />
+                  <TextInput
+                    placeholder="Téléphone"
+                    placeholderTextColor="#777"
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                  />
+                  <TextInput
+                    placeholder="WhatsApp (optionnel)"
+                    placeholderTextColor="#777"
+                    style={styles.input}
+                    value={whatsapp}
+                    onChangeText={setWhatsapp}
+                    keyboardType="phone-pad"
+                  />
+                  <TextInput
+                    placeholder="Note (optionnel)"
+                    placeholderTextColor="#777"
+                    style={[styles.input, { height: 70, textAlignVertical: "top" }]}
+                    multiline
+                    value={note}
+                    onChangeText={setNote}
+                  />
+                </ScrollView>
+
+                <TouchableOpacity
+                  style={styles.productToggle}
+                  onPress={() => setModalStep("products")}
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                    <Ionicons name="cube-outline" size={18} color="#A78BFA" />
+                    <Text style={styles.productToggleText}>Produits fournis</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    {selectedProductIds.size > 0 && (
+                      <Text style={styles.selectedCount}>{selectedProductIds.size}</Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={18} color="#6B7280" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.bigBtn, { opacity: saving ? 0.7 : 1 }]}
+                  onPress={saveSupplier}
+                  activeOpacity={0.9}
+                  disabled={saving}
+                >
+                  <Text style={styles.bigBtnText}>
+                    {saving ? "Enregistrement..." : "Enregistrer"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={{ marginTop: 10 }} onPress={closeAddModal}>
+                  <Text style={styles.cancel}>Annuler</Text>
                 </TouchableOpacity>
               </View>
-
-              <TextInput
-                placeholder="Nom"
-                placeholderTextColor="#777"
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-              />
-              <TextInput
-                placeholder="Téléphone"
-                placeholderTextColor="#777"
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-              />
-              <TextInput
-                placeholder="WhatsApp (optionnel)"
-                placeholderTextColor="#777"
-                style={styles.input}
-                value={whatsapp}
-                onChangeText={setWhatsapp}
-                keyboardType="phone-pad"
-              />
-              <TextInput
-                placeholder="Note (optionnel)"
-                placeholderTextColor="#777"
-                style={[styles.input, { height: 70, textAlignVertical: "top" }]}
-                multiline
-                value={note}
-                onChangeText={setNote}
-              />
-
-              <TouchableOpacity
-                style={styles.productToggle}
-                onPress={() => setModalStep("products")}
-                activeOpacity={0.8}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-                  <Ionicons name="cube-outline" size={18} color="#A78BFA" />
-                  <Text style={styles.productToggleText}>Produits fournis</Text>
-                </View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  {selectedProductIds.size > 0 && (
-                    <Text style={styles.selectedCount}>{selectedProductIds.size}</Text>
-                  )}
-                  <Ionicons name="chevron-forward" size={18} color="#6B7280" />
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.bigBtn, { opacity: saving ? 0.7 : 1 }]}
-                onPress={saveSupplier}
-                activeOpacity={0.9}
-                disabled={saving}
-              >
-                <Text style={styles.bigBtnText}>
-                  {saving ? "Enregistrement..." : "Enregistrer"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={{ marginTop: 10 }} onPress={closeAddModal}>
-                <Text style={styles.cancel}>Annuler</Text>
-              </TouchableOpacity>
             </View>
-          </View>
         ) : (
           <View style={styles.pickerOverlay}>
             <View style={styles.pickerContent}>

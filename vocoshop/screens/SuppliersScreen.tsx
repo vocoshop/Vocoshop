@@ -1,16 +1,17 @@
 // screens/SuppliersScreen.tsx
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-View,
-Text,
-StyleSheet,
-TouchableOpacity,
-TextInput,
-FlatList,
-ActivityIndicator,
-Modal,
-Alert,
-RefreshControl,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+  ActivityIndicator,
+  Modal,
+  Alert,
+  RefreshControl,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -236,56 +237,58 @@ refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
 
 {/* ADD MODAL */}
 <Modal visible={showAdd} transparent animationType="fade" onRequestClose={closeAddModal}>
-<View style={styles.modalOverlay}>
-<View style={styles.modal}>
-<Text style={styles.modalTitle}>Nouveau fournisseur</Text>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modal}>
+          <Text style={styles.modalTitle}>Nouveau fournisseur</Text>
 
-<TextInput
-placeholder="Nom"
-placeholderTextColor="#777"
-style={styles.input}
-value={name}
-onChangeText={setName}
-/>
-<TextInput
-placeholder="Téléphone"
-placeholderTextColor="#777"
-style={styles.input}
-value={phone}
-onChangeText={setPhone}
-keyboardType="phone-pad"
-/>
-<TextInput
-placeholder="WhatsApp (optionnel)"
-placeholderTextColor="#777"
-style={styles.input}
-value={whatsapp}
-onChangeText={setWhatsapp}
-keyboardType="phone-pad"
-/>
-<TextInput
-placeholder="Note (optionnel)"
-placeholderTextColor="#777"
-style={[styles.input, { height: 90, textAlignVertical: "top" }]}
-multiline
-value={note}
-onChangeText={setNote}
-/>
+          <ScrollView style={{ maxHeight: 400 }} keyboardShouldPersistTaps="handled">
+            <TextInput
+              placeholder="Nom"
+              placeholderTextColor="#777"
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+            />
+            <TextInput
+              placeholder="Téléphone"
+              placeholderTextColor="#777"
+              style={styles.input}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+            <TextInput
+              placeholder="WhatsApp (optionnel)"
+              placeholderTextColor="#777"
+              style={styles.input}
+              value={whatsapp}
+              onChangeText={setWhatsapp}
+              keyboardType="phone-pad"
+            />
+            <TextInput
+              placeholder="Note (optionnel)"
+              placeholderTextColor="#777"
+              style={[styles.input, { height: 90, textAlignVertical: "top" }]}
+              multiline
+              value={note}
+              onChangeText={setNote}
+            />
+          </ScrollView>
 
-<TouchableOpacity
-style={[styles.bigBtn, { opacity: saving ? 0.7 : 1 }]}
-onPress={saveSupplier}
-activeOpacity={0.9}
-disabled={saving}
->
-<Text style={styles.bigBtnText}>{saving ? "Enregistrement..." : "Enregistrer"}</Text>
-</TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.bigBtn, { opacity: saving ? 0.7 : 1 }]}
+            onPress={saveSupplier}
+            activeOpacity={0.9}
+            disabled={saving}
+          >
+            <Text style={styles.bigBtnText}>{saving ? "Enregistrement..." : "Enregistrer"}</Text>
+          </TouchableOpacity>
 
-<TouchableOpacity style={{ marginTop: 10 }} onPress={closeAddModal}>
-<Text style={styles.cancel}>Annuler</Text>
-</TouchableOpacity>
-</View>
-</View>
+          <TouchableOpacity style={{ marginTop: 10 }} onPress={closeAddModal}>
+            <Text style={styles.cancel}>Annuler</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 </Modal>
 </View>
 );
