@@ -655,7 +655,9 @@ export const createMonthlyShareLink = asyncHandler(async (req: Request, res: Res
 
   await SharedReportLink.updateMany({ storeId, month: finalMonth, isActive: true }, { $set: { isActive: false } });
 
-  const storeName = String((reports as any[])[0]?.storeName || req.body?.storeName || "Boutique").trim();
+  // Récupérer le vrai nom de la boutique
+  const storeInfo = await Store.findById(storeId).select("storeName").lean();
+  const storeName = String(storeInfo?.storeName || req.body?.storeName || "Boutique").trim();
 
   const link = await SharedReportLink.create({
     storeId,
