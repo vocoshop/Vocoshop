@@ -450,7 +450,7 @@ export default function PhotoStockScreen() {
                 </TouchableOpacity>
               )
             ) : (
-              <View style={{ width: 72 }} />
+              <View style={{ width: 80 }} />
             )}
           </View>
 
@@ -739,13 +739,13 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-evenly",
     alignItems: "center",
     paddingVertical: 16,
-    paddingHorizontal: 30,
+    paddingHorizontal: 16,
     backgroundColor: "rgba(10,6,23,0.95)",
   },
-  galleryBtn: { alignItems: "center" },
+  galleryBtn: { alignItems: "center", width: 80 },
   actionLabel: { color: "#A8A3C2", fontSize: 11, marginTop: 4 },
   captureBtn: {
     width: 72,
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
   },
-  doneBtn: { alignItems: "center" },
+  doneBtn: { alignItems: "center", width: 80 },
   analyzeBtn: {
     flexDirection: "row",
     alignItems: "center",
