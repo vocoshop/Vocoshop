@@ -23,13 +23,18 @@ if (s.length <= 10) return s;
 return `${s.slice(0, 6)}…${s.slice(-4)}`;
 }
 
-function prettyDate(d?: any) {
-if (!d) return null;
-try {
-return new Date(d).toLocaleString();
-} catch {
-return null;
+function formatDate(d?: any) {
+  if (!d) return "";
+  try { return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }); }
+  catch { return ""; }
 }
+
+function formatDateTime(d?: any) {
+  if (!d) return "";
+  try {
+    return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) + " à " +
+           new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  } catch { return ""; }
 }
 
 function getStatusUI(status?: string) {
@@ -203,48 +208,54 @@ return (
 <Ionicons name="chevron-back" size={26} color="#fff" />
 </TouchableOpacity>
 
-<View style={{ flex: 1 }}>
-<Text style={styles.title}>Inventaire #{String(session._id).slice(-5)}</Text>
-</View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>
+            {formatDate(session.createdAt) || `Inventaire #${String(session._id).slice(-5)}`}
+          </Text>
+        </View>
 
 <TouchableOpacity style={styles.iconBtn} onPress={() => loadAll({ silent: false })} activeOpacity={0.85}>
 <Ionicons name="refresh-outline" size={20} color="#C6C0DD" />
 </TouchableOpacity>
 </View>
 
-{/* INFO BOX */}
-<View style={styles.infoBox}>
-<View style={styles.infoRowBoutique}>
-<View style={styles.infoRow}>
-<Ionicons name="storefront-outline" size={20} color="#A78BFA" />
-<Text style={styles.infoText}>Boutique : {shortId(session.storeId)}</Text>
-</View>
+      {/* INFO BOX */}
+      <View style={styles.infoBox}>
+        <View style={styles.infoTopRow}>
+          <View style={[styles.statusBadgeLarge, { backgroundColor: ui.color + "20", borderColor: ui.color }]}>
+            <Ionicons name={ui.icon} size={16} color={ui.color} />
+            <Text style={[styles.statusBadgeLargeText, { color: ui.color }]}>{ui.label}</Text>
+          </View>
+          <Text style={styles.infoId}>#{String(session._id).slice(-6).toUpperCase()}</Text>
+        </View>
 
-<View style={[styles.badge, { borderColor: ui.color }]}>
-<Ionicons name={ui.icon} size={14} color={ui.color} />
-<Text style={[styles.badgeText, { color: ui.color }]}>{ui.label}</Text>
-</View>
-</View>
-
-<View style={styles.infoRow}>
-<Ionicons name="person-circle-outline" size={20} color="#A78BFA" />
-<Text style={styles.infoText}>Employé : {shortId(session.employeeId)}</Text>
-</View>
-
-{!!prettyDate(session.completedAt) && (
-<View style={styles.infoRow}>
-<Ionicons name="time-outline" size={20} color="#A78BFA" />
-<Text style={styles.infoText}>Terminé : {prettyDate(session.completedAt)}</Text>
-</View>
-)}
-
-{!!prettyDate(session.appliedAt) && (
-<View style={styles.infoRow}>
-<Ionicons name="checkmark-done-outline" size={20} color="#9AF5C7" />
-<Text style={styles.infoText}>Appliqué : {prettyDate(session.appliedAt)}</Text>
-</View>
-)}
-</View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoItem}>
+            <Ionicons name="person-outline" size={14} color="#6B7280" />
+            <Text style={styles.infoLabel}>Employé</Text>
+            <Text style={styles.infoValue}>{session.employeeName || shortId(session.employeeId) || "—"}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="time-outline" size={14} color="#6B7280" />
+            <Text style={styles.infoLabel}>Créé le</Text>
+            <Text style={styles.infoValue}>{formatDateTime(session.createdAt) || "—"}</Text>
+          </View>
+          {session.completedAt ? (
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-outline" size={14} color="#6B7280" />
+              <Text style={styles.infoLabel}>Terminé</Text>
+              <Text style={styles.infoValue}>{formatDateTime(session.completedAt)}</Text>
+            </View>
+          ) : null}
+          {session.appliedAt ? (
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-done-outline" size={14} color="#22c55e" />
+              <Text style={styles.infoLabel}>Appliqué</Text>
+              <Text style={styles.infoValue}>{formatDateTime(session.appliedAt)}</Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
 
 {/* SUMMARY */}
 <View style={styles.summaryBox}>
@@ -384,24 +395,48 @@ alignItems: "center", justifyContent: "center",
 },
 
 title: { fontSize: 24, color: "#fff", fontWeight: "900" },
-badge: {
-alignSelf: "flex-start",
-marginTop: 6,
-flexDirection: "row",
-alignItems: "center",
-gap: 6,
-paddingHorizontal: 10,
-paddingVertical: 6,
-borderRadius: 999,
-borderWidth: 1,
-backgroundColor: "rgba(255,255,255,0.04)",
-},
-badgeText: { fontSize: 12, fontWeight: "900" },
+  badge: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  badgeText: { fontSize: 12, fontWeight: "900" },
 
-infoBox: { backgroundColor: "#161228", padding: 16, borderRadius: 14, marginBottom: 12 },
-infoRowBoutique: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
-infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-infoText: { color: "#fff", fontSize: 13 },
+  infoBox: { backgroundColor: "#161228", padding: 16, borderRadius: 14, marginBottom: 14 },
+  infoTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  statusBadgeLarge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  statusBadgeLargeText: { fontSize: 13, fontWeight: "800" },
+  infoId: { color: "#4B5563", fontSize: 12, fontFamily: "monospace" },
+  infoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  infoItem: {
+    backgroundColor: "rgba(255,255,255,0.03)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    minWidth: "47%",
+    flex: 1,
+  },
+  infoLabel: { color: "#6B7280", fontSize: 10, fontWeight: "600", marginBottom: 2 },
+  infoValue: { color: "#E5E7EB", fontSize: 13, fontWeight: "700" },
+
+  infoRowBoutique: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  infoText: { color: "#fff", fontSize: 13 },
 
 summaryBox: {
 backgroundColor: "rgba(255,255,255,0.05)",
