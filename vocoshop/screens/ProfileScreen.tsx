@@ -25,6 +25,7 @@ import { getMyStoreProfile, updateStoreOnboarding } from "../src/api/services/st
 import { useSubscription } from "../src/api/context/SubscriptionContext";
 import API from "../src/api/api";
 import { useNotifications } from "../src/api/context/NotificationContext";
+import { PushService } from "../src/api/services/pushService";
 
 const NOTIF_KEY = "vocos_notif_enabled";
 
@@ -150,13 +151,22 @@ loadStoreProfile();
 }, [loadStoreProfile])
 );
 
-const toggleNotif = async () => {
-try {
-const next = !notifEnabled;
-setNotifEnabled(next);
-await AsyncStorage.setItem(NOTIF_KEY, next ? "1" : "0");
-} catch (e) {}
-};
+  const toggleNotif = async () => {
+    try {
+      const next = !notifEnabled;
+      setNotifEnabled(next);
+      await AsyncStorage.setItem(NOTIF_KEY, next ? "1" : "0");
+
+      if (next) {
+        await PushService.setup();
+        Alert.alert("Notifications activées", "Vous recevrez les alertes de VocoShop.");
+      } else {
+        const pushToken = await PushService.getPushToken();
+        if (pushToken) await PushService.unregisterToken(pushToken);
+        Alert.alert("Notifications désactivées", "Vous ne recevrez plus d'alertes.");
+      }
+    } catch (e) {}
+  };
 
   const onShareCode = async () => {
     try {
