@@ -262,13 +262,10 @@ export default function FundingScreen() {
             <ActivityIndicator color="#8A4DFF" style={{ marginVertical: 20 }} />
           ) : (
             <>
-              <View style={styles.scoreCircle}>
+              <View style={[styles.scoreCircle, { borderColor: level.color + "40" }]}>
                 <Text style={[styles.scoreNumber, { color: level.color }]}>{score}</Text>
                 <Text style={styles.scoreMax}>/100</Text>
-              </View>
-
-              <View style={[styles.levelBadge, { backgroundColor: level.color + "20" }]}>
-                <Text style={[styles.levelText, { color: level.color }]}>{level.label}</Text>
+                <Text style={[styles.scoreLabel, { color: level.color }]}>{level.label}</Text>
               </View>
 
               <View style={styles.scoreDetails}>
@@ -321,23 +318,49 @@ export default function FundingScreen() {
           </View>
 
           <View style={styles.simCard}>
-            <Text style={styles.simLabel}>Montant souhaité (FCFA)</Text>
+            <Text style={styles.simLabel}>Montant souhaité</Text>
+            <View style={styles.quickAmounts}>
+              {["100 000", "250 000", "500 000", "1 000 000"].map((a) => (
+                <TouchableOpacity
+                  key={a}
+                  style={[styles.quickAmountBtn, simAmount === a && styles.quickAmountBtnActive]}
+                  onPress={() => { setSimAmount(a); setTimeout(() => runSimulation(), 100); }}
+                >
+                  <Text style={[styles.quickAmountText, simAmount === a && styles.quickAmountTextActive]}>
+                    {a} F
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <TextInput
               style={styles.simInput}
               value={simAmount}
               onChangeText={setSimAmount}
               keyboardType="numeric"
-              placeholder="500 000"
+              placeholder="Ou montant personnalisé..."
               placeholderTextColor="#555"
             />
 
-            <Text style={styles.simLabel}>Durée (mois)</Text>
+            <Text style={styles.simLabel}>Durée</Text>
+            <View style={styles.quickAmounts}>
+              {["6", "12", "18", "24"].map((d) => (
+                <TouchableOpacity
+                  key={d}
+                  style={[styles.quickAmountBtn, simDuration === d && styles.quickAmountBtnActive]}
+                  onPress={() => { setSimDuration(d); setTimeout(() => runSimulation(), 100); }}
+                >
+                  <Text style={[styles.quickAmountText, simDuration === d && styles.quickAmountTextActive]}>
+                    {d} mois
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <TextInput
               style={styles.simInput}
               value={simDuration}
               onChangeText={setSimDuration}
               keyboardType="numeric"
-              placeholder="12"
+              placeholder="Ou durée personnalisée..."
               placeholderTextColor="#555"
             />
 
@@ -721,11 +744,18 @@ const styles = StyleSheet.create({
   },
   scoreTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
   scoreCircle: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    borderWidth: 4,
+    alignSelf: "center",
     alignItems: "center",
-    marginBottom: 12,
+    justifyContent: "center",
+    marginBottom: 8,
   },
-  scoreNumber: { fontSize: 48, fontWeight: "900" },
-  scoreMax: { color: "#666", fontSize: 16, fontWeight: "600", marginTop: -4 },
+  scoreNumber: { fontSize: 38, fontWeight: "900" },
+  scoreMax: { color: "#666", fontSize: 14, fontWeight: "600", marginTop: -2 },
+  scoreLabel: { fontSize: 11, fontWeight: "800", marginTop: 2, textTransform: "uppercase", letterSpacing: 1 },
   levelBadge: {
     alignSelf: "center",
     paddingHorizontal: 16,
@@ -782,14 +812,39 @@ const styles = StyleSheet.create({
   },
   simLabel: { color: "#A8A3C2", fontSize: 12, marginBottom: 6, fontWeight: "600" },
   simInput: {
-    backgroundColor: "#120D24",
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 12,
+    padding: 14,
     color: "#fff",
     fontSize: 16,
+    fontWeight: "700",
     marginBottom: 12,
+  },
+  quickAmounts: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 8,
+    flexWrap: "wrap",
+  },
+  quickAmountBtn: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#2A2040",
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  quickAmountBtnActive: {
+    backgroundColor: "rgba(138,77,255,0.15)",
+    borderColor: "rgba(138,77,255,0.4)",
+  },
+  quickAmountText: {
+    color: "#A8A3C2",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  quickAmountTextActive: {
+    color: "#A78BFA",
   },
   simBtn: {
     backgroundColor: "#8A4DFF",
