@@ -93,6 +93,9 @@ function buildSharedReportPdf(params: {
   expiresAt: string;
   verifyUrl?: string;
   dataHash?: string;
+  merchantName?: string;
+  ownerName?: string;
+  shopId?: string;
   kpis: {
     monthlyRevenue: number;
     monthlyCogs: number;
@@ -138,10 +141,23 @@ function buildSharedReportPdf(params: {
   };
 
   doc.fontSize(7).fillColor("#22c55e");
-  doc.text("? DOCUMENT OFFICIEL VOCOshop  Authentifié numériquement", left, 25, { width: pageW - left * 2, align: "center" });
+  doc.text("DOCUMENT OFFICIEL VOCOshop - Authentifie numeriquement", left, 25, { width: pageW - left * 2, align: "center" });
   doc.moveDown(0.3);
 
-  doc.fontSize(18).font("Helvetica-Bold").fillColor("#000").text("Bilan sécurisé (lecture seule)", left, 40);
+  if (params.merchantName) {
+    doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text(params.merchantName, left);
+    doc.moveDown(0.2);
+  }
+  if (params.ownerName) {
+    doc.fontSize(10).font("Helvetica").fillColor("#555").text(`Proprietaire : ${params.ownerName}`, left);
+    doc.moveDown(0.1);
+  }
+  if (params.shopId) {
+    doc.fontSize(8).font("Helvetica").fillColor("#888").text(`ID : ${params.shopId}`, left);
+    doc.moveDown(0.3);
+  }
+
+  doc.fontSize(14).font("Helvetica-Bold").fillColor("#000").text("Bilan securise (lecture seule)", left);
   doc.moveDown(0.5);
   doc.fontSize(10).font("Helvetica").fillColor("#333");
   doc.text(`Période : ${from} ? ${to}`, left);
@@ -718,7 +734,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
 
     const now = new Date();
     const [store, reports, products] = await Promise.all([
-      Store.findOne({ shopId: storeId }).lean(),
+      Store.findById(storeId).lean(),
       DailyReport.find({ storeId, date: { $gte: from, $lte: to } }).sort({ date: 1 }).lean(),
       Product.find({ storeId }).sort({ quantity: -1 }).limit(20).lean(),
     ]);
@@ -738,7 +754,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const ownerName = escapeHtml(String((store as any)?.ownerName || ""));
     const merchantCity = escapeHtml(String((store as any)?.city || ""));
     const merchantPhone = escapeHtml(String((store as any)?.phone || ""));
-    const shopId = escapeHtml(String(storeId));
+    const shopId = escapeHtml(String((store as any)?.shopId || storeId));
     const createdAtStr = (store as any)?.createdAt
       ? new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date((store as any).createdAt))
       : "N/A";
@@ -1021,9 +1037,19 @@ function navigateCompare(m){
   window.location=u.toString();
 }
 function downloadCSV(){
-  const rows=[["Date","CA (FCFA)","Benefice (FCFA)","COGS (FCFA)","Ventes"]];
+  const rows=[];
+  rows.push(["Boutique","${merchantName.replace(/"/g,'""')}"]);
+  ${ownerName ? `rows.push(["Proprietaire","${ownerName.replace(/"/g,'""')}"]);` : ''}
+  rows.push(["ID","${shopId.replace(/"/g,'""')}"]);
+  rows.push(["Periode","${periodLabel.replace(/"/g,'""')}"]);
+  rows.push(["Genere le","${now.toLocaleDateString('fr')}"]);
+  rows.push([]);
+  rows.push(["Date","CA (FCFA)","Benefice (FCFA)","COGS (FCFA)","Ventes"]);
   ${JSON.stringify((reports as any[]).map(r => [r.date?.slice(0,10)||"", safeNum(r?.totalRevenue), safeNum(r?.grossProfit), safeNum(r?.cogs), safeNum(r?.totalSales)]))}.forEach(r=>rows.push(r));
-  let csv=rows.map(r=>r.join(",")).join("\\n");
+  rows.push([]);
+  rows.push(["CA total","${merchantName.replace(/"/g,'""')}","","","Total"]);
+  rows.push(["","","","","${monthlyRevenue}"]);
+  let csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\\n");
   const blob=new Blob(["\\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
   a.download="bilan_${merchantName.replace(/[^a-zA-Z0-9]/g,'_')}_${(selectedMonth || defaultMonth).replace(/\s/g,'_')}.csv";a.click();
@@ -1078,6 +1104,10 @@ export const downloadSharedReportPdf = async (req: Request, res: Response) => {
     const storeId = String(link.storeId || "").trim();
     const month = String(link.month || "").trim();
     if (!storeId || !month) return res.status(404).send("Lien invalide.");
+
+    const store = await Store.findById(storeId).select("storeName ownerName").lean();
+    const merchantName = String((store as any)?.storeName || link.storeName || "");
+    const ownerName = String((store as any)?.ownerName || "");
 
     let from: string;
     let to: string;
@@ -1138,6 +1168,9 @@ export const downloadSharedReportPdf = async (req: Request, res: Response) => {
       expiresAt: String(link.expiresAt || ""),
       verifyUrl,
       dataHash: String(link.dataHash || ""),
+      merchantName,
+      ownerName,
+      shopId: storeId,
       kpis: {
         monthlyRevenue,
         monthlyCogs,
