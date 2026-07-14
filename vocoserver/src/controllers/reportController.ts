@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import PDFDocument = require("pdfkit");
 import QRCode from "qrcode";
+import { computeScore } from "../blockchain/vocoScore";
 
 import Product from "../models/Product";
 import StockHistory from "../models/StockHistory";
@@ -774,11 +775,14 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const revEvol = compareRevenue > 0 ? (((monthlyRevenue - compareRevenue) / compareRevenue) * 100).toFixed(1) : null;
     const profitEvol = compareProfit > 0 ? (((monthlyGrossProfit - compareProfit) / compareProfit) * 100).toFixed(1) : null;
 
-    const [totalSalesCount, totalProductsCount] = await Promise.all([
-      Sale.countDocuments({ storeId }), Product.countDocuments({ storeId }),
-    ]);
-    const monthsActive = Math.max(0, Math.floor((now.getTime() - new Date((store as any)?.createdAt || now).getTime()) / (30 * 24 * 60 * 60 * 1000)));
-    const totalScore = Math.min(100, Math.max(0, Math.round((totalSalesCount > 10 ? 30 : totalSalesCount > 0 ? 15 : 0) + (totalProductsCount >= 5 ? 20 : 5) + Math.min(20, monthsActive * 2) + 25)));
+    const totalProductsCount = await Product.countDocuments({ storeId });
+    // VocoScore réel (même que dans l'app) — computeScore attend un shopId
+    let totalScore = 0;
+    try {
+      const shopIdStr = String((store as any)?.shopId || storeId);
+      const scoreData = await computeScore(shopIdStr);
+      totalScore = Math.round((scoreData.overallScore || 0) / 10);
+    } catch { totalScore = 20; }
     const scoreColor = totalScore >= 70 ? "#22c55e" : totalScore >= 40 ? "#eab308" : "#ef4444";
     const scoreLabel = totalScore >= 70 ? "Excellent" : totalScore >= 50 ? "Bon" : totalScore >= 30 ? "Moyen" : "Faible";
 
