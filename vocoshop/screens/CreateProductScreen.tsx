@@ -128,8 +128,10 @@ export default function CreateProductScreen() {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         }).catch(() => {});
       }
-      Alert.alert("Produit créé", name);
-      nav.goBack();
+      Alert.alert("Produit créé", name, [
+        { text: "Terminer", onPress: () => nav.goBack() },
+        { text: "Créer un autre", onPress: () => resetForm() },
+      ]);
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.response?.data?.message || e?.message || "Échec.";
       Alert.alert("Erreur", typeof msg === "string" ? msg : JSON.stringify(msg));
@@ -138,6 +140,15 @@ export default function CreateProductScreen() {
   };
 
   const fmt = (v: number) => v.toLocaleString("fr-FR");
+
+  const resetForm = () => {
+    setName("");
+    setSellUnit(""); setSellCustomUnit("");
+    setSellPrice("");
+    setBuyUnit(""); setBuyCustomUnit(""); setBuyQty("");
+    setBuyPrice(""); setStockQty(""); setStockUnit("");
+    setExpirationDate(""); setImageUri(null);
+  };
 
   return (
     <View style={S.container}>
