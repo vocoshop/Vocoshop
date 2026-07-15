@@ -127,7 +127,7 @@ export default function CreateProductScreen() {
       if (imageUri) { const fn = imageUri.split("/").pop() || "p.jpg"; fd.append("image", { uri: imageUri, name: fn, type: `image/${fn.split(".").pop() || "jpg"}` } as any); }
       await API.post("/products", fd, { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } });
       Alert.alert("Produit créé", name);
-      nav.goBack();
+      nav.navigate("AddStock");
     } catch (e: any) { Alert.alert("Erreur", e?.response?.data?.error || "Échec."); }
     finally { setLoading(false); }
   };
