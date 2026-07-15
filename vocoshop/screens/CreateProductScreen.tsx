@@ -160,12 +160,16 @@ export default function CreateProductScreen() {
         <View style={S.divider} />
         <Text style={S.sectionTitle}>Vous l'achetez en...</Text>
         <View style={S.row3}>
-          <TouchableOpacity style={[S.input, { flex: 1 }]} onPress={() => setShowBuyUnitPicker(true)}>
+          <TouchableOpacity style={[S.input, { flex: 1.2 }]} onPress={() => setShowBuyUnitPicker(true)}>
             <Text style={{ color: buyLabel !== effectiveUnit ? "#A78BFA" : "#fff" }}>{buyLabel}</Text>
           </TouchableOpacity>
-          <TextInput style={[S.input, { flex: 0.5 }]} placeholder="Qté" placeholderTextColor="#555" keyboardType="numeric" value={buyQty} onChangeText={setBuyQty} />
+          <View style={[S.input, { flex: 0.8, flexDirection: "row", alignItems: "center", gap: 4 }]}>
+            <Text style={{ color: "#6B7280", fontSize: 12 }}>1 =</Text>
+            <TextInput style={{ flex: 1, color: "#fff", padding: 0, textAlign: "center" }} placeholder="24" placeholderTextColor="#555" keyboardType="numeric" value={buyQty} onChangeText={setBuyQty} />
+            <Text style={{ color: "#6B7280", fontSize: 12 }}>{effectiveUnit}</Text>
+          </View>
           <View style={[S.input, { flex: 1, flexDirection: "row", alignItems: "center" }]}>
-            <TextInput style={{ flex: 1, color: "#fff", padding: 0 }} placeholder="Prix FCFA" placeholderTextColor="#555" keyboardType="numeric" value={buyPrice} onChangeText={setBuyPrice} />
+            <TextInput style={{ flex: 1, color: "#fff", padding: 0 }} placeholder="Prix" placeholderTextColor="#555" keyboardType="numeric" value={buyPrice} onChangeText={setBuyPrice} />
             <Text style={{ color: "#6B7280", fontSize: 12 }}>FCFA</Text>
           </View>
         </View>
