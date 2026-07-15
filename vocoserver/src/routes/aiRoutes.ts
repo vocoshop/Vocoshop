@@ -261,6 +261,13 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "  - Si les bouteilles sont visibles, estime le nombre (12, 24) et mets 'contains' = cette valeur.\n" +
               "  - Ex: photo casier Primus 12 bouteilles → packaging: { name: 'Casier', contains: 12 }\n" +
               "  - Ex: photo casier Mutzig 24 bouteilles → packaging: { name: 'Casier', contains: 24 }\n\n" +
+              "POUR LES BIDONS / JERRYCANS (HUILE, LAIT, EAU...) :\n" +
+              "  - Un bidon est un grand contenant en plastique de 1L, 5L, 20L ou 25L.\n" +
+              "  - Lis le volume ecrit dessus : '25 L', '20 Litres', '5L', '1L'.\n" +
+              "  - 'name' = 'Bidon', 'contains' = le volume en chiffres (25, 20, 5, 1).\n" +
+              "  - L'unite de base du produit devient 'litre'.\n" +
+              "  - Ex: bidon huile '25 L' → packaging: { name: 'Bidon', contains: 25 }, unit: 'litre'\n" +
+              "  - Ex: bidon eau '20 Litres' → packaging: { name: 'Bidon', contains: 20 }, unit: 'litre'\n\n" +
               "POUR LES SACS :\n" +
               "  - Lis TOUS les textes imprimes sur le sac (poids, etiquette).\n" +
               "  - Si '50 kg', '25 kg', '10 kg' est ecrit → 'contains' = 50, 25 ou 10\n" +
