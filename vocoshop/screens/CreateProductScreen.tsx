@@ -130,7 +130,10 @@ export default function CreateProductScreen() {
       }
       Alert.alert("Produit créé", name);
       nav.goBack();
-    } catch (e: any) { Alert.alert("Erreur", e?.response?.data?.error || "Échec."); }
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || e?.response?.data?.message || e?.message || "Échec.";
+      Alert.alert("Erreur", typeof msg === "string" ? msg : JSON.stringify(msg));
+    }
     finally { setLoading(false); }
   };
 
