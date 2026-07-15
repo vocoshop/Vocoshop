@@ -32,7 +32,7 @@ export default function CreateProductScreen() {
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Boissons");
-  const [baseUnit, setBaseUnit] = useState("pièce");
+  const [baseUnit, setBaseUnit] = useState("bouteille");
   const [customUnit, setCustomUnit] = useState("");
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
