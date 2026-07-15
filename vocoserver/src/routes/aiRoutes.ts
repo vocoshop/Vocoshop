@@ -268,6 +268,12 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "  - L'unite de base du produit devient 'litre'.\n" +
               "  - Ex: bidon huile '25 L' → packaging: { name: 'Bidon', contains: 25 }, unit: 'litre'\n" +
               "  - Ex: bidon eau '20 Litres' → packaging: { name: 'Bidon', contains: 20 }, unit: 'litre'\n\n" +
+              "POUR LES CARTONS (BOUCHERIE, VOLAILLE, POISSON...) :\n" +
+              "  - Un carton de viande/poisson affiche souvent son poids : '10 kg', '15 kg', '20 kg', '5 kg'.\n" +
+              "  - 'name' = 'Carton', 'contains' = le poids en chiffres.\n" +
+              "  - L'unite de base du produit devient 'kg' ou 'kilogramme'.\n" +
+              "  - Ex: carton poulet '10 KG' → packaging: { name: 'Carton', contains: 10 }, unit: 'kg'\n" +
+              "  - Ex: carton poisson '15 kg net' → packaging: { name: 'Carton', contains: 15 }, unit: 'kg'\n\n" +
               "POUR LES SACS :\n" +
               "  - Lis TOUS les textes imprimes sur le sac (poids, etiquette).\n" +
               "  - Si '50 kg', '25 kg', '10 kg' est ecrit → 'contains' = 50, 25 ou 10\n" +
