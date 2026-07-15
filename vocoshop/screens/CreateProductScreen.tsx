@@ -47,6 +47,8 @@ export default function CreateProductScreen() {
   const [baseUnit, setBaseUnit] = useState("pièce");
   const [customUnit, setCustomUnit] = useState("");
   const [initialStock, setInitialStock] = useState("");
+  const [initialStockUnit, setInitialStockUnit] = useState("");
+  const [showStockUnitPicker, setShowStockUnitPicker] = useState(false);
   const [expirationDate, setExpirationDate] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [showCatPicker, setShowCatPicker] = useState(false);
@@ -124,7 +126,11 @@ export default function CreateProductScreen() {
       fd.append("unit", effectiveUnit);
       fd.append("sellPrice", String(Math.round(us)));
       fd.append("purchasePrice", String(Math.round(ub)));
-      fd.append("quantity", initialStock || "0");
+      const stockUnitCfg = buyList.find(c => c.name === initialStockUnit);
+      const finalQty = stockUnitCfg
+        ? Number(initialStock || 0) * Math.max(1, Number(stockUnitCfg.qty || 0))
+        : Number(initialStock || 0);
+      fd.append("quantity", String(finalQty));
       if (expirationDate.trim()) fd.append("expirationDate", expirationDate.trim());
       fd.append("alertLevel", "3");
       fd.append("purchaseConfigs", JSON.stringify(buyList.map(c => ({ name: c.name, quantity: Number(c.qty) || 0, purchasePrice: Number(c.price) || 0 })).filter(c => c.quantity > 0)));
@@ -178,7 +184,12 @@ export default function CreateProductScreen() {
             </TouchableOpacity>
 
             <Text style={S.label}>Stock initial (facultatif)</Text>
-            <TextInput style={S.input} placeholder="Ex: 100" placeholderTextColor="#555" keyboardType="numeric" value={initialStock} onChangeText={setInitialStock} />
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TextInput style={[S.input, { flex: 1 }]} placeholder="Qté" placeholderTextColor="#555" keyboardType="numeric" value={initialStock} onChangeText={setInitialStock} />
+              <TouchableOpacity style={[S.input, { flex: 1 }]} onPress={() => setShowStockUnitPicker(true)}>
+                <Text style={{ color: initialStockUnit ? "#fff" : "#555" }}>{initialStockUnit || effectiveUnit}</Text>
+              </TouchableOpacity>
+            </View>
 
             <Text style={S.label}>Date d'expiration (facultatif)</Text>
             <TextInput style={S.input} placeholder="YYYY-MM-DD (ex: 2026-12-31)" placeholderTextColor="#555" value={expirationDate} onChangeText={setExpirationDate} autoCapitalize="none" />
@@ -393,6 +404,21 @@ export default function CreateProductScreen() {
           {SELL_PRESETS.map(p => (
             <TouchableOpacity key={p} style={[S.pickerItem, selectedSellPreset === p && S.pickerItemActive]} onPress={() => { setSelectedSellPreset(p); setSellCustomName(""); setShowSellTypePicker(false); }}>
               <Text style={[S.pickerText, selectedSellPreset === p && S.pickerTextActive]}>{p}</Text>
+            </TouchableOpacity>
+          ))}
+        </View></View>
+      </Modal>
+
+      {/* Stock unit picker */}
+      <Modal visible={showStockUnitPicker} transparent animationType="fade">
+        <View style={S.modalBg}><View style={S.modalCard}>
+          <Text style={S.modalTitle}>Unité du stock initial</Text>
+          <TouchableOpacity style={[S.pickerItem, !initialStockUnit && S.pickerItemActive]} onPress={() => { setInitialStockUnit(""); setShowStockUnitPicker(false); }}>
+            <Text style={[S.pickerText, !initialStockUnit && S.pickerTextActive]}>{effectiveUnit} (unité de base)</Text>
+          </TouchableOpacity>
+          {buyList.map(c => (
+            <TouchableOpacity key={c.name} style={[S.pickerItem, initialStockUnit === c.name && S.pickerItemActive]} onPress={() => { setInitialStockUnit(c.name); setShowStockUnitPicker(false); }}>
+              <Text style={[S.pickerText, initialStockUnit === c.name && S.pickerTextActive]}>{c.name} (1 {c.name} = {c.qty} {effectiveUnit}s)</Text>
             </TouchableOpacity>
           ))}
         </View></View>
