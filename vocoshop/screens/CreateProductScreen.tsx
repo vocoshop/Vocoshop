@@ -46,6 +46,7 @@ export default function CreateProductScreen() {
   const [category, setCategory] = useState("Boissons");
   const [baseUnit, setBaseUnit] = useState("pièce");
   const [customUnit, setCustomUnit] = useState("");
+  const [initialStock, setInitialStock] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
@@ -122,7 +123,7 @@ export default function CreateProductScreen() {
       fd.append("unit", effectiveUnit);
       fd.append("sellPrice", String(Math.round(us)));
       fd.append("purchasePrice", String(Math.round(ub)));
-      fd.append("quantity", "0");
+      fd.append("quantity", initialStock || "0");
       fd.append("alertLevel", "3");
       fd.append("purchaseConfigs", JSON.stringify(buyList.map(c => ({ name: c.name, quantity: Number(c.qty) || 0, purchasePrice: Number(c.price) || 0 })).filter(c => c.quantity > 0)));
       fd.append("sellConfigs", JSON.stringify(sc.map(c => ({ name: c.name, quantity: Number(c.qty) || 0, sellPrice: Number(c.price) || 0 })).filter(c => c.quantity > 0 && c.sellPrice > 0)));
@@ -173,6 +174,9 @@ export default function CreateProductScreen() {
             <TouchableOpacity style={S.input} onPress={() => setShowUnitPicker(true)}>
               <Text style={{ color: "#fff" }}>{effectiveUnit}</Text>
             </TouchableOpacity>
+
+            <Text style={S.label}>Stock initial (facultatif)</Text>
+            <TextInput style={S.input} placeholder="Ex: 100" placeholderTextColor="#555" keyboardType="numeric" value={initialStock} onChangeText={setInitialStock} />
 
             <Text style={S.label}>Photo (facultatif)</Text>
             <TouchableOpacity style={S.photoBtn} onPress={pickImage}>
@@ -294,6 +298,7 @@ export default function CreateProductScreen() {
               <View style={S.summaryRow}><Text style={S.sumLabel}>Produit</Text><Text style={S.sumValue}>{name || "—"}</Text></View>
               <View style={S.summaryRow}><Text style={S.sumLabel}>Catégorie</Text><Text style={S.sumValue}>{category}</Text></View>
               <View style={S.summaryRow}><Text style={S.sumLabel}>Unité</Text><Text style={S.sumValue}>{effectiveUnit}</Text></View>
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Stock initial</Text><Text style={S.sumValue}>{initialStock || "0"} {effectiveUnit}s</Text></View>
               <View style={S.sumDiv} />
               <View style={S.summaryRow}><Text style={S.sumLabel}>Achat unitaire</Text><Text style={S.sumValue}>{fmt(Math.round(summary.ub))} FCFA</Text></View>
               <View style={S.summaryRow}><Text style={S.sumLabel}>Vente unitaire</Text><Text style={S.sumValue}>{fmt(Math.round(summary.us))} FCFA</Text></View>
