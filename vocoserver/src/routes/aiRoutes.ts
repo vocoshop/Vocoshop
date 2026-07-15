@@ -254,6 +254,13 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "Si certaines photos montrent le produit a l'unite ET d'autres photos montrent un emballage (casier, carton, sac, pack...), remplis le champ 'packaging':\n" +
               "  - 'name' : le nom de l'emballage (Casier, Carton, Sac, Pack, Palette, Bouteille...)\n" +
               "  - 'contains' : combien d'unites sont dans cet emballage (ex: 24 pour un casier de 24 bouteilles, 12 pour un carton)\n\n" +
+              "POUR LES CASIERS DE BIERE / BRASSERIE :\n" +
+              "  - Un casier de biere contient presque toujours 12 ou 24 bouteilles.\n" +
+              "  - Si tu vois un casier en plastique avec des bouteilles (Primus, Mutzig, Tembo, Skol, Castel, Beaufort, Heineken...), compte les bouteilles visibles ou lis l'inscription sur le cote.\n" +
+              "  - Les inscriptions typiques : '12 x 65cl', '24 x 33cl', '12 bouteilles'\n" +
+              "  - Si les bouteilles sont visibles, estime le nombre (12, 24) et mets 'contains' = cette valeur.\n" +
+              "  - Ex: photo casier Primus 12 bouteilles → packaging: { name: 'Casier', contains: 12 }\n" +
+              "  - Ex: photo casier Mutzig 24 bouteilles → packaging: { name: 'Casier', contains: 24 }\n\n" +
               "POUR LES SACS :\n" +
               "  - Lis TOUS les textes imprimes sur le sac (poids, etiquette).\n" +
               "  - Si '50 kg', '25 kg', '10 kg' est ecrit → 'contains' = 50, 25 ou 10\n" +
