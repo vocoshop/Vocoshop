@@ -16,11 +16,20 @@ import { runOrQueue } from "../../src/api/offline/queue";
 import { isOffline } from "../../src/api/utils/network";
 
 /* ================= TYPES ================= */
+export interface SellConfig {
+  name: string;
+  quantity: number;
+  sellPrice: number;
+}
+
 export interface Product {
-_id: string;
-name: string;
-sellPrice: number;
-quantity: number;
+  _id: string;
+  name: string;
+  sellPrice: number;
+  quantity: number;
+  baseUnit?: string;
+  unit?: string;
+  sellConfigs?: SellConfig[];
 }
 
 export interface CartItem {

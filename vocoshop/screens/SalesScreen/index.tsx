@@ -56,7 +56,8 @@ const [qty, setQty] = useState("1");
 const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 const [cartModal, setCartModal] = useState(false);
 const [editingQty, setEditingQty] = useState<string | null>(null);
-const [editingQtyValue, setEditingQtyValue] = useState("");
+  const [editingQtyValue, setEditingQtyValue] = useState("");
+  const [selectedSellConfig, setSelectedSellConfig] = useState("");
   const [saleMsg, setSaleMsg] = useState<{ type: "success" | "offline" | "error"; text: string } | null>(null);
   const [hasSalesToday, setHasSalesToday] = useState(false);
 
@@ -244,39 +245,75 @@ style={styles.search}
     </TouchableOpacity>
   )}
 
-{/* ================= QTY MODAL ================= */}
-<Modal visible={!!selectedProduct} transparent animationType="fade">
-<View style={styles.overlay}>
-<View style={styles.qtyModal}>
-<Text style={styles.modalTitle}>{selectedProduct?.name}</Text>
+        {/* ================= QTY MODAL ================= */}
+        <Modal visible={!!selectedProduct} transparent animationType="fade">
+          <View style={styles.overlay}>
+            <View style={styles.qtyModal}>
+              <Text style={styles.modalTitle}>{selectedProduct?.name}</Text>
 
-<TextInput
-value={qty}
-onChangeText={setQty}
-keyboardType="numeric"
-placeholder="Quantité"
-placeholderTextColor="#777"
-style={styles.qtyInput}
-/>
+              {selectedProduct?.sellConfigs && selectedProduct.sellConfigs.length > 0 && (
+                <>
+                  <Text style={{ color: "#A8A3C2", fontSize: 12, fontWeight: "600", marginBottom: 6, marginTop: 4 }}>
+                    Mode de vente
+                  </Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    <TouchableOpacity
+                      key="unite"
+                      style={[styles.sellChip, !selectedSellConfig && styles.sellChipActive]}
+                      onPress={() => setSelectedSellConfig("")}
+                    >
+                      <Text style={[styles.sellChipText, !selectedSellConfig && styles.sellChipTextActive]}>
+                        Unité ({selectedProduct?.sellPrice || 0} F)
+                      </Text>
+                    </TouchableOpacity>
+                    {selectedProduct.sellConfigs.map((c, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[styles.sellChip, selectedSellConfig === c.name && styles.sellChipActive]}
+                        onPress={() => setSelectedSellConfig(c.name)}
+                      >
+                        <Text style={[styles.sellChipText, selectedSellConfig === c.name && styles.sellChipTextActive]}>
+                          {c.name} ({c.quantity} × {Math.round(c.sellPrice / c.quantity)} F)
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
 
-<TouchableOpacity
-style={styles.primaryBtn}
-onPress={() => {
-if (selectedProduct) {
-addToCart(selectedProduct, Number(qty));
-}
-setSelectedProduct(null);
-}}
->
-<Text style={styles.btnText}>Ajouter au panier</Text>
-</TouchableOpacity>
+              <TextInput
+                value={qty}
+                onChangeText={setQty}
+                keyboardType="numeric"
+                placeholder="Quantité"
+                placeholderTextColor="#777"
+                style={styles.qtyInput}
+              />
 
-<TouchableOpacity onPress={() => setSelectedProduct(null)}>
-<Text style={styles.link}>Annuler</Text>
-</TouchableOpacity>
-</View>
-</View>
-</Modal>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={() => {
+                  if (selectedProduct) {
+                    let finalQty = Number(qty);
+                    if (selectedSellConfig && selectedProduct.sellConfigs) {
+                      const cfg = selectedProduct.sellConfigs.find(c => c.name === selectedSellConfig);
+                      if (cfg) finalQty = finalQty * cfg.quantity;
+                    }
+                    addToCart(selectedProduct, finalQty);
+                  }
+                  setSelectedProduct(null);
+                  setSelectedSellConfig("");
+                }}
+              >
+                <Text style={styles.btnText}>Ajouter au panier</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => { setSelectedProduct(null); setSelectedSellConfig(""); }}>
+                <Text style={styles.link}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
 {/* ================= CART MODAL ================= */}
 <Modal visible={cartModal} animationType="slide">
@@ -540,15 +577,29 @@ backgroundColor: "#1E1638",
 borderRadius: 14,
 padding: 20,
 },
-qtyInput: {
-backgroundColor: "#2D2547",
-color: "#fff",
-padding: 12,
-borderRadius: 10,
-marginVertical: 12,
-},
+  qtyInput: {
+    backgroundColor: "#2D2547",
+    color: "#fff",
+    padding: 12,
+    borderRadius: 10,
+    marginVertical: 12,
+  },
+  sellChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  sellChipActive: {
+    backgroundColor: "rgba(167,139,250,0.15)",
+    borderColor: "rgba(167,139,250,0.4)",
+  },
+  sellChipText: { color: "#A8A3C2", fontSize: 12, fontWeight: "600" },
+  sellChipTextActive: { color: "#A78BFA" },
 
-modal: {
+  modal: {
 flex: 1,
 backgroundColor: "#0A0617",
 padding: 20,

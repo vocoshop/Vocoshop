@@ -19,12 +19,21 @@ import { AuthContext } from "../src/api/context/AuthContext";
 import { runOrQueue } from "../src/api/offline/queue";
 import { isOffline } from "../src/api/utils/network";
 
+type PurchaseConfig = {
+  name: string;
+  quantity: number;
+  purchasePrice: number;
+};
+
 type Product = {
-_id: string;
-name: string;
-category?: string;
-quantity?: number;
-expirationDates?: string[];
+  _id: string;
+  name: string;
+  category?: string;
+  quantity?: number;
+  expirationDates?: string[];
+  baseUnit?: string;
+  unit?: string;
+  purchaseConfigs?: PurchaseConfig[];
 };
 
 function isValidYYYYMMDD(v: string) {
@@ -72,10 +81,26 @@ productId?: string;
 const realId = productId || product?._id;
 const { token } = useContext(AuthContext);
 
-const [currentProduct, setCurrentProduct] = useState<Product | null>(product || null);
-const [quantity, setQuantity] = useState("");
-const [expirationDate, setExpirationDate] = useState("");
-const [loading, setLoading] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(product || null);
+  const [quantity, setQuantity] = useState("");
+  const [expirationDate, setExpirationDate] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [selectedConfig, setSelectedConfig] = useState<PurchaseConfig | null>(null);
+
+  const purchaseConfigs: PurchaseConfig[] = currentProduct?.purchaseConfigs || [];
+  const hasConfigs = purchaseConfigs.length > 0;
+  const baseUnit = currentProduct?.baseUnit || currentProduct?.unit || "pièce";
+
+  // Auto-select first config on mount
+  useEffect(() => {
+    if (hasConfigs && !selectedConfig) {
+      setSelectedConfig(purchaseConfigs[0]);
+    }
+  }, [hasConfigs]);
+
+  const effectiveQty = selectedConfig
+    ? Number(quantity || 0) * selectedConfig.quantity
+    : Number(quantity || 0);
 
 const headers = useMemo(
 () => ({
@@ -149,17 +174,19 @@ expirationDates: nextExp,
 // ================================
 // Ajouter du stock (+ offline queue)
 // ================================
-const submitAddStock = async () => {
-const qty = Number(quantity);
+  const submitAddStock = async () => {
+    const rawQty = Number(quantity);
 
-if (!token) return Alert.alert("Erreur", "Session invalide. Reconnectez-vous.");
-if (!realId) return Alert.alert("Erreur", "Produit introuvable (ID manquant).");
+    if (!token) return Alert.alert("Erreur", "Session invalide. Reconnectez-vous.");
+    if (!realId) return Alert.alert("Erreur", "Produit introuvable (ID manquant).");
 
-if (!quantity || Number.isNaN(qty) || qty <= 0) {
-return Alert.alert("Erreur", "Veuillez entrer une quantité valide.");
-}
+    if (!quantity || Number.isNaN(rawQty) || rawQty <= 0) {
+      return Alert.alert("Erreur", "Veuillez entrer une quantité valide.");
+    }
 
-const exp = expirationDate.trim();
+    const qty = effectiveQty; // déjà converti en unité de base
+
+    const exp = expirationDate.trim();
 if (exp.length > 0 && !isValidYYYYMMDD(exp)) {
 return Alert.alert("Erreur", "Date invalide. Format YYYY-MM-DD (ex: 2026-01-31).");
 }
@@ -271,14 +298,45 @@ const offlineNow = isOffline();
 
         {/* Ajouter du stock */}
         <Text style={[styles.label, { marginTop: 22 }]}>Ajouter du stock</Text>
+
+        {hasConfigs && (
+          <>
+            <Text style={styles.subLabel}>Conditionnement d'achat</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              {purchaseConfigs.map((c, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.configChip, selectedConfig?.name === c.name && styles.configChipActive]}
+                  onPress={() => setSelectedConfig(c)}
+                >
+                  <Text style={[styles.configChipText, selectedConfig?.name === c.name && styles.configChipTextActive]}>
+                    {c.name} ({c.quantity} {baseUnit}s)
+                  </Text>
+                  {c.purchasePrice > 0 && (
+                    <Text style={[styles.configChipSub, selectedConfig?.name === c.name && styles.configChipTextActive]}>
+                      {c.purchasePrice.toLocaleString()} FCFA
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
+
         <TextInput
-          placeholder="Ex: 10"
+          placeholder={hasConfigs && selectedConfig ? `Nombre de ${selectedConfig.name.toLowerCase()}s` : "Ex: 10"}
           placeholderTextColor="#777"
           keyboardType="numeric"
           style={styles.input}
           value={quantity}
           onChangeText={setQuantity}
         />
+
+        {hasConfigs && selectedConfig && Number(quantity) > 0 && (
+          <Text style={styles.conversionText}>
+            = {effectiveQty} {baseUnit}s (total stock ajouté)
+          </Text>
+        )}
 
         {/* Date d'expiration */}
         <Text style={[styles.label, { marginTop: 12 }]}>Date d'expiration (optionnel)</Text>
@@ -356,5 +414,31 @@ marginTop: 8,
     backgroundColor: "rgba(10,6,23,0.96)",
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.06)",
+  },
+  subLabel: { color: "#A8A3C2", fontSize: 12, fontWeight: "600", marginBottom: 6 },
+  configChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    marginRight: 8,
+    alignItems: "center",
+  },
+  configChipActive: {
+    backgroundColor: "rgba(167,139,250,0.15)",
+    borderColor: "rgba(167,139,250,0.4)",
+  },
+  configChipText: { color: "#A8A3C2", fontSize: 13, fontWeight: "600" },
+  configChipTextActive: { color: "#A78BFA" },
+  configChipSub: { color: "#6B7280", fontSize: 11, marginTop: 2 },
+  conversionText: {
+    color: "#4ADE80",
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 4,
+    marginBottom: 8,
+    textAlign: "center",
   },
 });
