@@ -323,7 +323,7 @@ export default function PhotoStockScreen() {
               <View style={styles.overlayContainer}>
                 <View style={styles.overlayTop}>
                   <Text style={styles.overlayHint}>
-                    Cadre les produits & appuie sur le bouton
+                    Photo 1 : l'unité · Photo 2 : l'emballage (casier, carton, sac)
                   </Text>
                   <Text style={styles.overlaySub}>
                     Prends 1-3 photos pour meilleure reconnaissance

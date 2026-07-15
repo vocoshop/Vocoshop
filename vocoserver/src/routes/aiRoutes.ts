@@ -247,9 +247,18 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "Format JSON attendu:\n" +
               `{\n` +
               `  "products": [\n` +
-              `    { "name": "Marque Produit avec taille", "category": "Categorie", "brand": "Marque", "unit": "piece", "estimatedQuantity": 1, "suggestedExpirationDate": "", "suggestedSellPrice": 0, "suggestedPurchasePrice": 0 }\n` +
+              `    { "name": "Marque Produit avec taille", "category": "Categorie", "brand": "Marque", "unit": "piece", "estimatedQuantity": 1, "suggestedExpirationDate": "", "suggestedSellPrice": 0, "suggestedPurchasePrice": 0, "packaging": { "name": "Casier", "contains": 24 } }\n` +
               `  ]\n` +
               `}\n\n` +
+              "REGLE IMPORTANTE — DETECTER L'EMBALLAGE / CONDITIONNEMENT:\n" +
+              "Si certaines photos montrent le produit a l'unite ET d'autres photos montrent un emballage (casier, carton, sac, pack...), remplis le champ 'packaging':\n" +
+              "  - 'name' : le nom de l'emballage (Casier, Carton, Sac, Pack, Palette, Bouteille...)\n" +
+              "  - 'contains' : combien d'unites sont dans cet emballage (ex: 24 pour un casier de 24 bouteilles, 12 pour un carton, 50 pour un sac de 50kg)\n" +
+              "  - Si le poids est visible sur le sac (ex: '50 kg'), utilise cette valeur pour 'contains'\n" +
+              "  - Si l'emballage n'est pas visible, mets \"packaging\": null\n" +
+              "Exemples:\n" +
+              "  Photo unite: bouteille Coca 50cl | Photo casier: casier rouge 24 bouteilles → packaging: { name: \"Casier\", contains: 24 }\n" +
+              "  Photo unite: paquet de sucre 1kg | Photo sac: sac Dania 50kg → packaging: { name: \"Sac\", contains: 50 }\n\n" +
               "REGLE ABSOLUE — LA MARQUE FAIT PARTIE DU NOM:\n" +
               "Deux memes produits avec la MEME taille/poids mais de MARQUES DIFFERENTES sont des produits DIFFERENTS.\n" +
               "Le nom DOIT inclure la marque quand elle est visible.\n" +
@@ -285,7 +294,7 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
             content: [
               {
                 type: "text",
-                text: "Identifie tous les produits visibles sur ces photos. ATTENTION: si un meme produit existe en plusieurs tailles/volumes (50cl vs 1L, 1kg vs 5kg, etc.), liste-les comme des produits SEPARES avec des noms DIFFERENTS incluant la taille. Si la marque est visible (Candia, Lactel, Dania...), inclus-la dans le nom et le champ brand.",
+                text: "Identifie tous les produits visibles sur ces photos. ATTENTION: certaines photos peuvent montrer le produit a l'unite, d'autres son emballage (casier, carton, sac). Si tu vois un emballage, indique son nom et combien d'unites il contient dans le champ packaging. Si la marque est visible, inclus-la dans le nom.",
               },
               ...imageParts,
             ],
@@ -385,6 +394,16 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
           );
           created.push({ product, isNew: false, quantityAdded: qty });
         } else {
+          // Packaging détecté par l'IA
+          const packaging = (item as any).packaging;
+          const pConfigs: any[] = [];
+          if (packaging && packaging.name && packaging.contains > 1) {
+            pConfigs.push({
+              name: packaging.name,
+              quantity: packaging.contains,
+              purchasePrice: Math.max(0, parseInt(item.purchasePrice) || 0),
+            });
+          }
           const createFields: any = {
             storeId,
             name: item.name.trim(),
@@ -395,8 +414,7 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
             purchasePrice: Math.max(0, parseInt(item.purchasePrice) || 0),
             quantity: qty,
             alertLevel: 3,
-            // Configs par défaut (seront à affiner plus tard)
-            purchaseConfigs: [],
+            purchaseConfigs: pConfigs,
             sellConfigs: [{
               name: "Unité",
               quantity: 1,
