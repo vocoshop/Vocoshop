@@ -304,12 +304,21 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "  CORRECT: \"Eau Pure Vie 50cl\" et \"Eau Pure Vie 1.5L\"\n" +
               "  FAUX: \"Eau\" ou \"Lait\" ou \"Riz\" (trop generique)\n\n" +
               "Regles:\n" +
-              "- Le champ 'name' DOIT TOUJOURS inclure: [Marque] + [Produit] + [Taille/Volume/Poids] si visibles sur l'emballage\n" +
+              "- Le champ 'name' DOIT TOUJOURS inclure: [Marque] + [Produit] + [Volume/Poids] si visibles sur l'emballage\n" +
+              "    * Bouteille de 50cl → name: 'Coca-Cola 50cl', unit: 'bouteille'\n" +
+              "    * Bouteille de 1.5L → name: 'Eau Pure Vie 1.5L', unit: 'bouteille'\n" +
               "- Le champ 'brand' = le nom de la marque si visible (ex: \"Candia\", \"Coca-Cola\", \"Dania\"), sinon chaine vide\n" +
               "- Si la marque n'est PAS visible, mets juste \"Produit + Taille\" (ex: \"Riz parfume 1kg\")\n" +
               "- Meme si le format n'est pas ecrit, deduis-le de la forme de l'emballage (bouteille 50cl vs 1L, sachet 500g vs 1kg)\n" +
               "- Categorie en francais (ex: Boisson, Epicerie, Laitiere, Hygiene, Quincaillerie, etc.)\n" +
-              "- unit = l'unite de vente. Pour les sacs de farine/riz/sucre, mets 'kg' ou 'kilogramme'. Pour les bouteilles, mets 'piece' ou 'bouteille'. Pour les sachets, mets 'sachet' ou 'piece'.\n" +
+              "- unit = l'unite de vente. Regle IMPORTANTE :\n" +
+              "    * Pour les bouteilles (Coca, eau, soda...) → 'bouteille' (PAS 'litre' ! Le volume 50cl/1.5L va dans le NOM)\n" +
+              "    * Pour les canettes → 'canette'\n" +
+              "    * Pour les sacs de farine/riz/sucre → 'kg' ou 'kilogramme'\n" +
+              "    * Pour l'huile en bidon → 'litre' (car on vend au detail en litre)\n" +
+              "    * Pour la viande/poisson → 'kg' ou 'kilogramme'\n" +
+              "    * Pour les sachets → 'sachet' ou 'piece'\n" +
+              "  Exemples de noms avec volume : 'Coca-Cola 50cl', 'Eau Pure Vie 1.5L', 'Huile Aya 25L'\n" +
               "- estimatedQuantity = la quantite estimee visible sur la photo (ex: 1 bouteille = 1, un pack de 6 = 6, un carton de 12 = 12, un lot de 20 savons = 20)\n" +
               "- suggestedExpirationDate = date d'expiration si visible sur l'emballage (format YYYY-MM-DD ou YYYY-MM, sinon chaine vide)\n" +
               "- suggestedSellPrice = prix de vente estime en FCFA (0 si inconnu)\n" +
