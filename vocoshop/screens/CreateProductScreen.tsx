@@ -216,7 +216,6 @@ export default function CreateProductScreen() {
                 <TouchableOpacity style={S.input} onPress={() => setShowBuyTypePicker(true)}>
                   <Text style={{ color: selectedBuyPreset ? "#fff" : "#555" }}>{selectedBuyPreset || "Choisir..."}</Text>
                 </TouchableOpacity>
-                </View>
                 {selectedBuyPreset === "Autre" && (
                   <TextInput style={S.input} placeholder="Nom du conditionnement" placeholderTextColor="#555" value={buyCustomName} onChangeText={setBuyCustomName} />
                 )}
