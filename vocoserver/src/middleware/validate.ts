@@ -45,8 +45,12 @@ export const addProductSchema = z.object({
   category: z.string().max(100).optional(),
   purchasePrice: z.coerce.number().min(0).optional(),
   unit: z.string().max(20).optional(),
+  baseUnit: z.string().max(20).optional(),
+  alertLevel: z.coerce.number().min(0).optional(),
   alertThreshold: z.coerce.number().min(0).optional(),
   expirationDate: z.string().optional(),
+  purchaseConfigs: z.string().optional(),
+  sellConfigs: z.string().optional(),
 });
 
 export const addStockSchema = z.object({
