@@ -1,10 +1,10 @@
-import React, { useState, useContext, useMemo } from "react";
+import React, { useState, useContext, useMemo, useEffect } from "react";
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity, Alert,
   ScrollView, ActivityIndicator, Modal, Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
@@ -27,8 +27,20 @@ const UNIT_BY_CAT: Record<string, string[]> = {
 
 export default function CreateProductScreen() {
   const nav = useNavigation<any>();
+  const route = useRoute<any>();
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
+
+  // Pré-remplissage depuis photo/OCR
+  const prefill = route?.params?.prefill;
+  useEffect(() => {
+    if (prefill) {
+      if (prefill.name) setName(prefill.name);
+      if (prefill.category) setCategory(prefill.category);
+      if (prefill.sellPrice) setSellPrice(String(prefill.sellPrice));
+      if (prefill.baseUnit) setBaseUnit(prefill.baseUnit);
+    }
+  }, []);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Boissons");

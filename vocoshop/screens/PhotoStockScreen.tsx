@@ -167,39 +167,40 @@ export default function PhotoStockScreen() {
       Alert.alert("Info", "Aucun produit valide à importer");
       return;
     }
+
+    // Séparer nouveaux produits (sans _id) et existants (avec _id)
+    const newProducts = valid.filter((p) => !(p as any)._id);
+    const existingProducts = valid.filter((p) => !!(p as any)._id);
+
     setImporting(true);
     try {
-      const res = await API.post("/ai/vision-products/import", {
-        products: valid,
-      });
-      const data = res.data as {
-        created: number;
-        errors: string[];
-        products: {
-          _id: string;
-          name: string;
-          quantity: number;
-          isNew: boolean;
-          quantityAdded: number;
-        }[];
-      };
+      // Importer les produits existants (juste ajout stock)
+      if (existingProducts.length > 0) {
+        await API.post("/ai/vision-products/import", { products: existingProducts });
+      }
 
-      const newCount = data.products.filter((p) => p.isNew).length;
-      const existingCount = data.products.filter((p) => !p.isNew).length;
-      const msg = [
-        `✅ ${data.created} produit(s) traités`,
-        newCount > 0 ? `📦 ${newCount} nouveau(x) créé(s)` : "",
-        existingCount > 0
-          ? `📈 ${existingCount} existant(s) mis à jour`
-          : "",
-        data.errors.length > 0
-          ? `\n⚠️ ${data.errors.length} erreur(s)`
-          : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
+      // Pour les nouveaux produits, ouvrir l'écran de création pré-rempli
+      if (newProducts.length > 0) {
+        const first = newProducts[0];
+        navigation.navigate("CreateProduct", {
+          prefill: {
+            name: first.name || "",
+            category: first.category || "",
+            sellPrice: first.sellPrice || 0,
+            baseUnit: first.unit || "pièce",
+          },
+        });
+        if (newProducts.length > 1) {
+          Alert.alert(
+            "Plusieurs produits",
+            `${newProducts.length} nouveaux produits détectés. Le premier est pré-rempli. Créez les autres manuellement.`
+          );
+        }
+        setImporting(false);
+        return;
+      }
 
-      Alert.alert("Import terminé", msg, [
+      Alert.alert("Import terminé", `${existingProducts.length} produit(s) mis à jour.`, [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
