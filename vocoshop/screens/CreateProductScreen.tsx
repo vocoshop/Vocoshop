@@ -1,23 +1,21 @@
-// screens/CreateProductScreen.tsx
+// screens/CreateProductScreen.tsx — Assistant étape par étape
 import React, { useState, useContext, useMemo } from "react";
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity, Alert,
   ScrollView, ActivityIndicator, Modal, Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
 
-// ===================== PRESETS =====================
+// ===== PRESETS =====
 const CATEGORIES = [
   "Boissons", "Épicerie", "Laitière", "Boucherie", "Hygiène",
   "Quincaillerie", "Pharmacie", "Alimentation", "Divers",
 ];
-
-const UNIT_PRESETS: Record<string, string[]> = {
+const UNIT_BY_CAT: Record<string, string[]> = {
   Boissons: ["bouteille", "canette", "litre", "verre", "gobelet", "casier", "carton"],
   Épicerie: ["kilogramme", "sachet", "paquet", "pièce", "litre"],
   Laitière: ["bouteille", "pot", "pièce", "litre"],
@@ -28,441 +26,414 @@ const UNIT_PRESETS: Record<string, string[]> = {
   Alimentation: ["kilogramme", "sachet", "paquet", "pièce", "litre"],
   Divers: ["pièce", "kilogramme", "litre", "sachet"],
 };
+const BUY_PRESETS = [
+  { label: "Casier", icon: "🥤", emoji: "📦" },
+  { label: "Carton", icon: "📦", emoji: "📦" },
+  { label: "Sac", icon: "🛍", emoji: "🛍" },
+  { label: "Pack", icon: "🎁", emoji: "🎁" },
+  { label: "Palette", icon: "📋", emoji: "📋" },
+  { label: "Bouteille", icon: "🍾", emoji: "🍾" },
+  { label: "Sachet", icon: "🛍", emoji: "🛍" },
+  { label: "Boîte", icon: "📦", emoji: "📦" },
+  { label: "Lot", icon: "📦", emoji: "📦" },
+  { label: "Autre", icon: "✏️", emoji: "" },
+];
+const SELL_PRESETS = [
+  { label: "À l'unité", icon: "1️⃣" },
+  { label: "Casier", icon: "🥤" },
+  { label: "Carton", icon: "📦" },
+  { label: "Pack", icon: "🎁" },
+  { label: "Sac", icon: "🛍" },
+  { label: "Lot", icon: "📦" },
+  { label: "Palette", icon: "📋" },
+  { label: "Autre", icon: "✏️" },
+];
 
-const PACKAGING_PRESETS: Record<string, string[]> = {
-  Boissons: ["Bouteille", "Pack", "Casier", "Carton", "Palette"],
-  Épicerie: ["Pièce", "Sachet", "Paquet", "Sac", "Carton"],
-  Laitière: ["Bouteille", "Pack", "Pot", "Casier"],
-  Boucherie: ["Kilogramme", "Demi-kilo", "Carton", "Pièce"],
-  Hygiène: ["Pièce", "Pack", "Carton", "Flacon"],
-  Quincaillerie: ["Pièce", "Boîte", "Carton", "Lot"],
-  Pharmacie: ["Boîte", "Plaquette", "Carton", "Pièce"],
-  Alimentation: ["Pièce", "Sachet", "Paquet", "Sac", "Carton"],
-  Divers: ["Pièce", "Carton", "Sac", "Lot"],
-};
-
-// ===================== TYPES =====================
-type PurchaseConfig = { name: string; quantity: string; purchasePrice: string };
-type SellConfig = { name: string; quantity: string; sellPrice: string };
-
-// ===================== COMPONENT =====================
 export default function CreateProductScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const nav = useNavigation<any>();
   const { token } = useContext(AuthContext);
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
 
-  // Part 1
+  // Step 1
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Boissons");
   const [baseUnit, setBaseUnit] = useState("pièce");
   const [customUnit, setCustomUnit] = useState("");
-  const [simpleSellPrice, setSimpleSellPrice] = useState("");
-  const [simplePurchasePrice, setSimplePurchasePrice] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [showCatPicker, setShowCatPicker] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Part 2 — achats
-  const [purchaseConfigs, setPurchaseConfigs] = useState<PurchaseConfig[]>([]);
+  // Step 2 — achats
+  const [buyList, setBuyList] = useState<{ name: string; qty: string; price: string }[]>([]);
+  const [buyCustomName, setBuyCustomName] = useState("");
+  const [buyQty, setBuyQty] = useState("");
+  const [buyPrice, setBuyPrice] = useState("");
+  const [showBuyForm, setShowBuyForm] = useState(false);
+  const [selectedBuyPreset, setSelectedBuyPreset] = useState("");
 
-  // Part 3 — ventes
-  const [sellConfigs, setSellConfigs] = useState<SellConfig[]>([
-    { name: "Unité", quantity: "1", sellPrice: "" },
-  ]);
+  // Step 3 — ventes
+  const [sellList, setSellList] = useState<{ name: string; qty: string; price: string }[]>([]);
+  const [sellCustomName, setSellCustomName] = useState("");
+  const [sellQty, setSellQty] = useState("");
+  const [sellPrice, setSellPrice] = useState("");
+  const [showSellForm, setShowSellForm] = useState(false);
+  const [selectedSellPreset, setSelectedSellPreset] = useState("");
+
+  const effectiveUnit = customUnit.trim() || baseUnit;
+  const units = UNIT_BY_CAT[category] || UNIT_BY_CAT.Divers;
 
   // Summary
   const summary = useMemo(() => {
-    const defaultBuyConfig = purchaseConfigs.length > 0 ? purchaseConfigs[0] : null;
-    const defaultSellConfig = sellConfigs.length > 0 ? sellConfigs[0] : null;
+    const buyCfg = [...buyList].sort((a, b) => Number(a.price || 0) / Math.max(1, Number(a.qty || 0)) - Number(b.price || 0) / Math.max(1, Number(b.qty || 0)))[0];
+    const sellCfg = [...sellList].sort((a, b) => Number(a.price || 0) / Math.max(1, Number(a.qty || 0)) - Number(b.price || 0) / Math.max(1, Number(b.qty || 0)))[0];
+    const ub = buyCfg ? Number(buyCfg.price || 0) / Math.max(1, Number(buyCfg.qty || 0)) : 0;
+    const us = sellCfg ? Number(sellCfg.price || 0) / Math.max(1, Number(sellCfg.qty || 0)) : 0;
+    return { ub, us, profit: us - ub, margin: us > 0 ? Math.round(((us - ub) / us) * 100) : 0 };
+  }, [buyList, sellList]);
 
-    const unitBuyPrice = defaultBuyConfig
-      ? Number(defaultBuyConfig.purchasePrice || 0) / Math.max(1, Number(defaultBuyConfig.quantity || 0))
-      : 0;
-    const unitSellPrice = defaultSellConfig
-      ? Number(defaultSellConfig.sellPrice || 0) / Math.max(1, Number(defaultSellConfig.quantity || 0))
-      : 0;
-    const profit = unitSellPrice - unitBuyPrice;
-    const margin = unitSellPrice > 0 ? Math.round((profit / unitSellPrice) * 100) : 0;
-
-    return { unitBuyPrice, unitSellPrice, profit, margin };
-  }, [purchaseConfigs, sellConfigs]);
-
-  const effectiveUnit = customUnit.trim() || baseUnit;
-
-  // ===================== HELPERS =====================
-  const addPurchaseConfig = () => {
-    const presets = PACKAGING_PRESETS[category] || PACKAGING_PRESETS.Divers;
-    const defaultName = purchaseConfigs.length === 0 ? presets[0] : presets[purchaseConfigs.length % presets.length] || "Carton";
-    setPurchaseConfigs([...purchaseConfigs, { name: defaultName, quantity: "", purchasePrice: "" }]);
+  // Step 2 helpers
+  const addBuy = () => {
+    const presetName = selectedBuyPreset === "Autre" ? buyCustomName.trim() : selectedBuyPreset;
+    if (!presetName || !buyQty || !buyPrice) return;
+    setBuyList([...buyList, { name: presetName, qty: buyQty, price: buyPrice }]);
+    setSelectedBuyPreset(""); setBuyCustomName(""); setBuyQty(""); setBuyPrice(""); setShowBuyForm(false);
   };
+  const removeBuy = (i: number) => setBuyList(buyList.filter((_, idx) => idx !== i));
 
-  const removePurchaseConfig = (i: number) => {
-    setPurchaseConfigs(purchaseConfigs.filter((_, idx) => idx !== i));
+  // Step 3 helpers
+  const addSell = () => {
+    const presetName = selectedSellPreset === "Autre" ? sellCustomName.trim() : selectedSellPreset;
+    if (!presetName || !sellQty || !sellPrice) return;
+    setSellList([...sellList, { name: presetName, qty: sellQty, price: sellPrice }]);
+    setSelectedSellPreset(""); setSellCustomName(""); setSellQty(""); setSellPrice(""); setShowSellForm(false);
   };
-
-  const updatePurchase = (i: number, field: keyof PurchaseConfig, value: string) => {
-    const updated = [...purchaseConfigs];
-    updated[i] = { ...updated[i], [field]: value };
-    setPurchaseConfigs(updated);
-  };
-
-  const addSellConfig = () => {
-    setSellConfigs([...sellConfigs, { name: "Unité", quantity: "1", sellPrice: "" }]);
-  };
-
-  const removeSellConfig = (i: number) => {
-    if (sellConfigs.length <= 1) return;
-    setSellConfigs(sellConfigs.filter((_, idx) => idx !== i));
-  };
-
-  const updateSell = (i: number, field: keyof SellConfig, value: string) => {
-    const updated = [...sellConfigs];
-    updated[i] = { ...updated[i], [field]: value };
-    setSellConfigs(updated);
-  };
+  const removeSell = (i: number) => setSellList(sellList.filter((_, idx) => idx !== i));
 
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Permission refusée", "Accès à la galerie requis.");
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
+    if (!perm.granted) return Alert.alert("Permission refusée");
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
+    if (!r.canceled) setImageUri(r.assets[0].uri);
   };
 
-  // ===================== SAVE =====================
-  const saveProduct = async () => {
-    if (!name.trim()) return Alert.alert("Erreur", "Nom du produit requis.");
-    if (!token) return Alert.alert("Erreur", "Session invalide.");
-
-    // Prix de base (mode simple)
-    if (!simpleSellPrice || Number(simpleSellPrice) <= 0) {
-      return Alert.alert("Erreur", "Veuillez entrer un prix de vente.");
-    }
-    const baseSellPrice = Number(simpleSellPrice);
-    const basePurchasePrice = Number(simplePurchasePrice || 0);
-
-    // Mode avancé : calculer depuis les configs
-    let unitSellPrice = baseSellPrice;
-    let unitBuyPrice = basePurchasePrice;
-    let finalSellConfigs = sellConfigs;
-    let finalPurchaseConfigs = purchaseConfigs;
-
-    if (showAdvanced && sellConfigs.length > 0) {
-      const sellCfg = sellConfigs.find(c => Number(c.sellPrice) > 0 && Number(c.quantity) > 0);
-      if (sellCfg) unitSellPrice = Number(sellCfg.sellPrice) / Math.max(1, Number(sellCfg.quantity));
-      finalSellConfigs = sellConfigs.filter(c => Number(c.quantity) > 0 && Number(c.sellPrice) > 0);
-    } else {
-      // Mode simple : config par défaut
-      finalSellConfigs = [{ name: "Unité", quantity: 1, sellPrice: String(baseSellPrice) }];
-    }
-
-    if (showAdvanced && purchaseConfigs.length > 0) {
-      const buyCfg = purchaseConfigs.find(c => Number(c.purchasePrice) > 0 && Number(c.quantity) > 0);
-      if (buyCfg) unitBuyPrice = Number(buyCfg.purchasePrice) / Math.max(1, Number(buyCfg.quantity));
-      finalPurchaseConfigs = purchaseConfigs.filter(c => Number(c.quantity) > 0 && Number(c.purchasePrice) > 0);
-    }
-
+  const save = async () => {
+    if (!name.trim()) return Alert.alert("", "Donnez un nom au produit.");
+    const sc = sellList.length > 0 ? sellList : buyList.length > 0 ? [{ name: "Unité", qty: "1", price: String(summary.us || 0) }] : [];
+    if (sc.length === 0) return Alert.alert("", "Ajoutez au moins un mode de vente.");
+    if (!token) return Alert.alert("", "Session invalide.");
+    const us = sc[0] ? Number(sc[0].price) / Math.max(1, Number(sc[0].qty)) : 0;
+    const bc = [...buyList].sort((a, b) => Number(a.price || 0) / Math.max(1, Number(a.qty || 0)) - Number(b.price || 0) / Math.max(1, Number(b.qty || 0)))[0];
+    const ub = bc ? Number(bc.price || 0) / Math.max(1, Number(bc.qty || 0)) : 0;
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("name", name.trim());
-      formData.append("category", category);
-      formData.append("baseUnit", effectiveUnit);
-      formData.append("unit", effectiveUnit);
-      formData.append("sellPrice", String(Math.round(unitSellPrice)));
-      formData.append("purchasePrice", String(Math.round(unitBuyPrice)));
-      formData.append("quantity", "0");
-      formData.append("alertLevel", "3");
-      const finalPC = finalPurchaseConfigs.map((c: any) => ({
-        name: c.name, quantity: Number(c.quantity) || 0, purchasePrice: Number(c.purchasePrice) || 0,
-      })).filter((c: any) => c.quantity > 0);
-      const finalSC = finalSellConfigs.map((c: any) => ({
-        name: c.name, quantity: Number(c.quantity) || 0, sellPrice: Number(c.sellPrice) || 0,
-      })).filter((c: any) => c.quantity > 0 && c.sellPrice > 0);
-      formData.append("purchaseConfigs", JSON.stringify(finalPC));
-      formData.append("sellConfigs", JSON.stringify(finalSC));
-
-      if (imageUri) {
-        const filename = imageUri.split("/").pop() || "photo.jpg";
-        formData.append("image", { uri: imageUri, name: filename, type: `image/${filename.split(".").pop() || "jpg"}` } as any);
-      }
-
-      await API.post("/products", formData, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
-      });
-
-      Alert.alert("Succès", "Produit créé avec ses conditionnements.");
-      navigation.goBack();
-    } catch (err: any) {
-      Alert.alert("Erreur", err?.response?.data?.error || "Une erreur est survenue.");
-    } finally { setLoading(false); }
+      const fd = new FormData();
+      fd.append("name", name.trim());
+      fd.append("category", category);
+      fd.append("baseUnit", effectiveUnit);
+      fd.append("unit", effectiveUnit);
+      fd.append("sellPrice", String(Math.round(us)));
+      fd.append("purchasePrice", String(Math.round(ub)));
+      fd.append("quantity", "0");
+      fd.append("alertLevel", "3");
+      fd.append("purchaseConfigs", JSON.stringify(buyList.map(c => ({ name: c.name, quantity: Number(c.qty) || 0, purchasePrice: Number(c.price) || 0 })).filter(c => c.quantity > 0)));
+      fd.append("sellConfigs", JSON.stringify(sc.map(c => ({ name: c.name, quantity: Number(c.qty) || 0, sellPrice: Number(c.price) || 0 })).filter(c => c.quantity > 0 && c.sellPrice > 0)));
+      if (imageUri) { const fn = imageUri.split("/").pop() || "p.jpg"; fd.append("image", { uri: imageUri, name: fn, type: `image/${fn.split(".").pop() || "jpg"}` } as any); }
+      await API.post("/products", fd, { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } });
+      Alert.alert("Produit créé", `${name} a été ajouté.`);
+      nav.goBack();
+    } catch (e: any) { Alert.alert("Erreur", e?.response?.data?.error || "Échec."); }
+    finally { setLoading(false); }
   };
 
   const fmt = (v: number) => v.toLocaleString("fr-FR");
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#fff" />
+    <View style={S.container}>
+      {/* HEADER + PROGRESS */}
+      <View style={S.headerRow}>
+        <TouchableOpacity onPress={() => (step === 1 ? nav.goBack() : setStep(step - 1))} style={S.backBtn}>
+          <Ionicons name={step === 1 ? "close" : "chevron-back"} size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Nouveau produit</Text>
-        <TouchableOpacity onPress={saveProduct} disabled={loading} style={styles.saveHeaderBtn}>
-          {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveHeaderText}>Enregistrer</Text>}
-        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={S.title}>Nouveau produit</Text>
+          <View style={S.progressRow}>
+            {[1, 2, 3, 4].map(s => (
+              <View key={s} style={[S.progressDot, step >= s && S.progressDotDone]} />
+            ))}
+            <Text style={S.progressText}>Étape {step} sur 4</Text>
+          </View>
+        </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
 
-        {/* ===== PART 1 : INFOS DE BASE ===== */}
-        <Text style={styles.sectionTitle}>Informations du produit</Text>
+        {/* ============================ STEP 1 ============================ */}
+        {step === 1 && (
+          <View style={S.stepWrap}>
+            <Text style={S.stepTitle}>1. Décrivez le produit</Text>
 
-        <Text style={styles.label}>Nom du produit *</Text>
-        <TextInput style={styles.input} placeholder="Ex: Coca-Cola 50cl" placeholderTextColor="#555" value={name} onChangeText={setName} />
+            <Text style={S.label}>Nom du produit</Text>
+            <TextInput style={S.input} placeholder='Ex : "Coca-Cola 50cl"' placeholderTextColor="#555" value={name} onChangeText={setName} />
 
-        <Text style={styles.label}>Catégorie</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShowCatPicker(true)}>
-          <Text style={{ color: "#fff" }}>{category}</Text>
-        </TouchableOpacity>
-        <Modal visible={showCatPicker} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Catégorie</Text>
-              {CATEGORIES.map((c) => (
-                <TouchableOpacity key={c} style={[styles.pickerItem, category === c && styles.pickerItemActive]} onPress={() => { setCategory(c); setBaseUnit((UNIT_PRESETS[c] || ["pièce"])[0]); setShowCatPicker(false); }}>
-                  <Text style={[styles.pickerText, category === c && styles.pickerTextActive]}>{c}</Text>
+            <Text style={S.label}>Catégorie</Text>
+            <TouchableOpacity style={S.input} onPress={() => setShowCatPicker(true)}>
+              <Text style={{ color: "#fff" }}>{category}</Text>
+            </TouchableOpacity>
+
+            <Text style={S.label}>Unité de mesure</Text>
+            <View style={S.unitRow}>
+              {units.map(u => (
+                <TouchableOpacity key={u} style={[S.unitChip, baseUnit === u && !customUnit && S.unitChipActive]} onPress={() => { setBaseUnit(u); setCustomUnit(""); }}>
+                  <Text style={[S.unitChipText, baseUnit === u && !customUnit && S.unitChipTextActive]}>{u}</Text>
                 </TouchableOpacity>
               ))}
+              <TextInput style={[S.unitChip, S.unitInputSmall, !!customUnit && S.unitChipActive]} placeholder="Autre" placeholderTextColor="#555" value={customUnit} onChangeText={setCustomUnit} />
             </View>
-          </View>
-        </Modal>
 
-        <Text style={styles.label}>Unité de base</Text>
-        <View style={styles.unitRow}>
-          {(UNIT_PRESETS[category] || ["pièce"]).map((u) => (
-            <TouchableOpacity key={u} style={[styles.unitChip, baseUnit === u && customUnit === "" && styles.unitChipActive]} onPress={() => { setBaseUnit(u); setCustomUnit(""); }}>
-              <Text style={[styles.unitChipText, baseUnit === u && customUnit === "" && styles.unitChipTextActive]}>{u}</Text>
-            </TouchableOpacity>
-          ))}
-          <TextInput style={[styles.unitChip, styles.unitInput, customUnit !== "" && styles.unitChipActive]} placeholder="Autre..." placeholderTextColor="#555" value={customUnit} onChangeText={setCustomUnit} />
-        </View>
-
-        <Text style={styles.label}>Prix de vente unitaire (FCFA)</Text>
-        <TextInput style={styles.input} placeholder="Ex: 500" placeholderTextColor="#555" keyboardType="numeric" value={simpleSellPrice} onChangeText={setSimpleSellPrice} />
-
-        <Text style={styles.label}>Prix d'achat unitaire (optionnel)</Text>
-        <TextInput style={styles.input} placeholder="Ex: 350" placeholderTextColor="#555" keyboardType="numeric" value={simplePurchasePrice} onChangeText={setSimplePurchasePrice} />
-
-        {/* Photo */}
-        <Text style={styles.label}>Photo (optionnel)</Text>
-        <TouchableOpacity style={styles.photoPicker} onPress={pickImage}>
-          {imageUri ? <Image source={{ uri: imageUri }} style={styles.photoPreview} /> : (
-            <View style={styles.photoPlaceholder}>
-              <Ionicons name="camera-outline" size={28} color="#555" />
-              <Text style={{ color: "#555", marginTop: 4 }}>Ajouter une photo</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* TOGGLE MODE AVANCÉ */}
-        <TouchableOpacity
-          style={styles.advancedToggle}
-          onPress={() => setShowAdvanced(!showAdvanced)}
-        >
-          <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={18} color="#A78BFA" />
-          <Text style={styles.advancedToggleText}>
-            {showAdvanced ? "Masquer les conditionnements" : "Ajouter des conditionnements d'achat / vente"}
-          </Text>
-        </TouchableOpacity>
-
-        {showAdvanced && (
-          <>
-            {/* ===== PART 2 : ACHATS ===== */}
-            <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>Comment achetez-vous ce produit ?</Text>
-            <Text style={styles.sectionHint}>Ajoutez vos conditionnements d'achat habituels.</Text>
-
-        {purchaseConfigs.map((c, i) => (
-          <View key={i} style={styles.configCard}>
-            <View style={styles.configHeader}>
-              <Text style={styles.configLabel}>Conditionnement {i + 1}</Text>
-              <TouchableOpacity onPress={() => removePurchaseConfig(i)}>
-                <Ionicons name="trash-outline" size={18} color="#ef4444" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.configRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Nom</Text>
-                <TextInput style={styles.smallInput} placeholder="Casier" placeholderTextColor="#555" value={c.name} onChangeText={(v) => updatePurchase(i, "name", v)} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Qté contient</Text>
-                <TextInput style={styles.smallInput} placeholder="24" placeholderTextColor="#555" keyboardType="numeric" value={c.quantity} onChangeText={(v) => updatePurchase(i, "quantity", v)} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Prix (FCFA)</Text>
-                <TextInput style={styles.smallInput} placeholder="12000" placeholderTextColor="#555" keyboardType="numeric" value={c.purchasePrice} onChangeText={(v) => updatePurchase(i, "purchasePrice", v)} />
-              </View>
-            </View>
-            {(c.presets || (PACKAGING_PRESETS[category] || PACKAGING_PRESETS.Divers)).map((p) => (
-              <TouchableOpacity key={p} style={styles.presetChip} onPress={() => updatePurchase(i, "name", p)}>
-                <Text style={styles.presetChipText}>{p}</Text>
-              </TouchableOpacity>
-            )).length > 0 ? (
-              <View style={styles.presetRow}>
-                {(PACKAGING_PRESETS[category] || PACKAGING_PRESETS.Divers).slice(0, 5).map((p) => (
-                  <TouchableOpacity key={p} style={[styles.presetChip, c.name === p && styles.presetChipActive]} onPress={() => updatePurchase(i, "name", p)}>
-                    <Text style={[styles.presetChipText, c.name === p && styles.presetChipTextActive]}>{p}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
-          </View>
-        ))}
-        <TouchableOpacity style={styles.addBtn} onPress={addPurchaseConfig}>
-          <Ionicons name="add-circle-outline" size={18} color="#A78BFA" />
-          <Text style={styles.addBtnText}>Ajouter un conditionnement d'achat</Text>
-        </TouchableOpacity>
-
-        {/* ===== PART 3 : VENTES ===== */}
-        <View style={styles.divider} />
-        <Text style={styles.sectionTitle}>Comment vendez-vous ce produit ?</Text>
-        <Text style={styles.sectionHint}>Ajoutez vos différents modes de vente.</Text>
-
-        {sellConfigs.map((c, i) => (
-          <View key={i} style={styles.configCard}>
-            <View style={styles.configHeader}>
-              <Text style={styles.configLabel}>Mode de vente {i + 1}</Text>
-              {sellConfigs.length > 1 && (
-                <TouchableOpacity onPress={() => removeSellConfig(i)}>
-                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                </TouchableOpacity>
+            <Text style={S.label}>Photo (facultatif)</Text>
+            <TouchableOpacity style={S.photoBtn} onPress={pickImage}>
+              {imageUri ? <Image source={{ uri: imageUri }} style={S.photo} /> : (
+                <View style={S.photoPlaceholder}>
+                  <Ionicons name="camera-outline" size={32} color="#555" />
+                  <Text style={{ color: "#555", marginTop: 4 }}>Ajouter</Text>
+                </View>
               )}
-            </View>
-            <View style={styles.configRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Nom</Text>
-                <TextInput style={styles.smallInput} placeholder="Bouteille" placeholderTextColor="#555" value={c.name} onChangeText={(v) => updateSell(i, "name", v)} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Qté ({effectiveUnit})</Text>
-                <TextInput style={styles.smallInput} placeholder="1" placeholderTextColor="#555" keyboardType="numeric" value={c.quantity} onChangeText={(v) => updateSell(i, "quantity", v)} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Prix (FCFA)</Text>
-                <TextInput style={styles.smallInput} placeholder="700" placeholderTextColor="#555" keyboardType="numeric" value={c.sellPrice} onChangeText={(v) => updateSell(i, "sellPrice", v)} />
-              </View>
-            </View>
+            </TouchableOpacity>
           </View>
-        ))}
-        <TouchableOpacity style={styles.addBtn} onPress={addSellConfig}>
-          <Ionicons name="add-circle-outline" size={18} color="#A78BFA" />
-          <Text style={styles.addBtnText}>Ajouter un mode de vente</Text>
-        </TouchableOpacity>
-
-        {/* ===== PART 4 : RÉSUMÉ ===== */}
-        {purchaseConfigs.length > 0 && sellConfigs.length > 0 ? (
-          <>
-            <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>Résumé</Text>
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Prix d'achat unitaire</Text>
-                <Text style={styles.summaryValue}>{fmt(Math.round(summary.unitBuyPrice))} FCFA / {effectiveUnit}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Prix de vente unitaire</Text>
-                <Text style={styles.summaryValue}>{fmt(Math.round(summary.unitSellPrice))} FCFA / {effectiveUnit}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Bénéfice unitaire</Text>
-                <Text style={[styles.summaryValue, { color: summary.profit >= 0 ? "#4ADE80" : "#ef4444" }]}>{fmt(Math.round(summary.profit))} FCFA</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Marge</Text>
-                <Text style={[styles.summaryValue, { color: "#A78BFA" }]}>{summary.margin}%</Text>
-              </View>
-            </View>
-          </>
-        ) : null}
-
-          </>
         )}
 
-        <View style={{ height: 40 }} />
+        {/* ============================ STEP 2 ============================ */}
+        {step === 2 && (
+          <View style={S.stepWrap}>
+            <Text style={S.stepTitle}>2. Vous achetez en…</Text>
+            <Text style={S.stepHint}>
+              Exemple : 🥤 Casier · 📦 Carton · 🛍 Sac · 📋 Palette
+            </Text>
+            <Text style={S.stepHint2}>Comment recevez-vous ce produit ?</Text>
+
+            {buyList.map((b, i) => (
+              <View key={i} style={S.configRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={S.configName}>{b.name}</Text>
+                  <Text style={S.configDetail}>Contient {b.qty} {effectiveUnit}s · Payé {fmt(Number(b.price))} FCFA</Text>
+                </View>
+                <TouchableOpacity onPress={() => removeBuy(i)}><Ionicons name="trash-outline" size={18} color="#ef4444" /></TouchableOpacity>
+              </View>
+            ))}
+
+            {!showBuyForm ? (
+              <TouchableOpacity style={S.addBtn} onPress={() => setShowBuyForm(true)}>
+                <Ionicons name="add-circle-outline" size={20} color="#A78BFA" />
+                <Text style={S.addBtnText}>Ajouter un conditionnement</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={S.formCard}>
+                <Text style={S.formLabel}>Type</Text>
+                <View style={S.presetRow}>
+                  {BUY_PRESETS.map(p => (
+                    <TouchableOpacity key={p.label} style={[S.presetChip, selectedBuyPreset === p.label && S.presetChipActive]} onPress={() => { setSelectedBuyPreset(p.label); setBuyCustomName(""); }}>
+                      <Text style={[S.presetChipText, selectedBuyPreset === p.label && S.presetChipTextActive]}>{p.emoji} {p.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {selectedBuyPreset === "Autre" && (
+                  <TextInput style={S.input} placeholder="Nom du conditionnement" placeholderTextColor="#555" value={buyCustomName} onChangeText={setBuyCustomName} />
+                )}
+                <Text style={S.formLabel}>Contient (en {effectiveUnit}s)</Text>
+                <TextInput style={S.input} placeholder="Ex: 24" placeholderTextColor="#555" keyboardType="numeric" value={buyQty} onChangeText={setBuyQty} />
+                <Text style={S.formLabel}>Prix payé (FCFA)</Text>
+                <TextInput style={S.input} placeholder="Ex: 12000" placeholderTextColor="#555" keyboardType="numeric" value={buyPrice} onChangeText={setBuyPrice} />
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity style={[S.btn, S.btnOutline, { flex: 1 }]} onPress={() => { setShowBuyForm(false); setSelectedBuyPreset(""); }}>
+                    <Text style={S.btnOutlineText}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[S.btn, { flex: 1 }]} onPress={addBuy}>
+                    <Text style={S.btnText}>Ajouter</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ============================ STEP 3 ============================ */}
+        {step === 3 && (
+          <View style={S.stepWrap}>
+            <Text style={S.stepTitle}>3. Vous vendez en…</Text>
+            <Text style={S.stepHint}>
+              Exemple : 1️⃣ À l'unité · 🥤 Casier · 🎁 Pack
+            </Text>
+            <Text style={S.stepHint2}>Comment vos clients achètent ce produit ?</Text>
+
+            {sellList.map((s, i) => (
+              <View key={i} style={S.configRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={S.configName}>{s.name}</Text>
+                  <Text style={S.configDetail}>{s.qty} {effectiveUnit}(s) · Vendu {fmt(Number(s.price))} FCFA</Text>
+                </View>
+                <TouchableOpacity onPress={() => removeSell(i)}><Ionicons name="trash-outline" size={18} color="#ef4444" /></TouchableOpacity>
+              </View>
+            ))}
+
+            {!showSellForm ? (
+              <TouchableOpacity style={S.addBtn} onPress={() => setShowSellForm(true)}>
+                <Ionicons name="add-circle-outline" size={20} color="#A78BFA" />
+                <Text style={S.addBtnText}>Ajouter un mode de vente</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={S.formCard}>
+                <Text style={S.formLabel}>Type</Text>
+                <View style={S.presetRow}>
+                  {SELL_PRESETS.map(p => (
+                    <TouchableOpacity key={p.label} style={[S.presetChip, selectedSellPreset === p.label && S.presetChipActive]} onPress={() => { setSelectedSellPreset(p.label); setSellCustomName(""); }}>
+                      <Text style={[S.presetChipText, selectedSellPreset === p.label && S.presetChipTextActive]}>{p.icon} {p.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {selectedSellPreset === "Autre" && (
+                  <TextInput style={S.input} placeholder="Nom du mode de vente" placeholderTextColor="#555" value={sellCustomName} onChangeText={setSellCustomName} />
+                )}
+                <Text style={S.formLabel}>Quantité (en {effectiveUnit}s)</Text>
+                <TextInput style={S.input} placeholder="Ex: 6" placeholderTextColor="#555" keyboardType="numeric" value={sellQty} onChangeText={setSellQty} />
+                <Text style={S.formLabel}>Prix de vente (FCFA)</Text>
+                <TextInput style={S.input} placeholder="Ex: 4500" placeholderTextColor="#555" keyboardType="numeric" value={sellPrice} onChangeText={setSellPrice} />
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity style={[S.btn, S.btnOutline, { flex: 1 }]} onPress={() => { setShowSellForm(false); setSelectedSellPreset(""); }}>
+                    <Text style={S.btnOutlineText}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[S.btn, { flex: 1 }]} onPress={addSell}>
+                    <Text style={S.btnText}>Ajouter</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ============================ STEP 4 ============================ */}
+        {step === 4 && (
+          <View style={S.stepWrap}>
+            <Text style={S.stepTitle}>4. Résumé</Text>
+            <View style={S.summaryCard}>
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Produit</Text><Text style={S.sumValue}>{name || "—"}</Text></View>
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Catégorie</Text><Text style={S.sumValue}>{category}</Text></View>
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Unité</Text><Text style={S.sumValue}>{effectiveUnit}</Text></View>
+              <View style={S.sumDiv} />
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Achat unitaire</Text><Text style={S.sumValue}>{fmt(Math.round(summary.ub))} FCFA</Text></View>
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Vente unitaire</Text><Text style={S.sumValue}>{fmt(Math.round(summary.us))} FCFA</Text></View>
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Bénéfice</Text><Text style={[S.sumValue, { color: summary.profit >= 0 ? "#4ADE80" : "#ef4444" }]}>{fmt(Math.round(summary.profit))} FCFA</Text></View>
+              <View style={S.summaryRow}><Text style={S.sumLabel}>Marge</Text><Text style={[S.sumValue, { color: "#A78BFA" }]}>{summary.margin}%</Text></View>
+            </View>
+            {buyList.length > 0 && (
+              <>
+                <Text style={[S.stepHint, { marginTop: 16 }]}>Conditionnements d'achat</Text>
+                {buyList.map((b, i) => (
+                  <Text key={i} style={S.sumSub}>• {b.name} : {b.qty} {effectiveUnit}s · {fmt(Number(b.price))} FCFA</Text>
+                ))}
+              </>
+            )}
+            {sellList.length > 0 && (
+              <>
+                <Text style={[S.stepHint, { marginTop: 12 }]}>Modes de vente</Text>
+                {sellList.map((s, i) => (
+                  <Text key={i} style={S.sumSub}>• {s.name} : {s.qty} {effectiveUnit}(s) · {fmt(Number(s.price))} FCFA</Text>
+                ))}
+              </>
+            )}
+          </View>
+        )}
       </ScrollView>
 
-      {/* FIXED FOOTER SAVE */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={[styles.saveBtn, loading && { opacity: 0.7 }]} onPress={saveProduct} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Enregistrer le produit</Text>}
-        </TouchableOpacity>
+      {/* FOOTER NAVIGATION */}
+      <View style={S.footer}>
+        {step < 4 ? (
+          <TouchableOpacity style={S.footerBtn} onPress={() => setStep(step + 1)}>
+            <Text style={S.footerBtnText}>Suivant</Text>
+            <Ionicons name="arrow-forward" size={18} color="#fff" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={[S.footerBtn, loading && { opacity: 0.7 }]} onPress={save} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={S.footerBtnText}>Créer le produit</Text>}
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Catégorie picker modal */}
+      <Modal visible={showCatPicker} transparent animationType="fade">
+        <View style={S.modalBg}><View style={S.modalCard}>
+          <Text style={S.modalTitle}>Catégorie</Text>
+          {CATEGORIES.map(c => (
+            <TouchableOpacity key={c} style={[S.pickerItem, category === c && S.pickerItemActive]} onPress={() => { setCategory(c); setBaseUnit((UNIT_BY_CAT[c] || ["pièce"])[0]); setShowCatPicker(false); }}>
+              <Text style={[S.pickerText, category === c && S.pickerTextActive]}>{c}</Text>
+            </TouchableOpacity>
+          ))}
+        </View></View>
+      </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0617", paddingTop: 55 },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, marginBottom: 14 },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, marginBottom: 10 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" },
-  title: { color: "#fff", fontSize: 22, fontWeight: "900", flex: 1 },
-  saveHeaderBtn: { backgroundColor: "#7C3AED", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  saveHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  saveBtn: { backgroundColor: "#7C3AED", paddingVertical: 16, borderRadius: 14, alignItems: "center" },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "800" },
-  footer: { paddingHorizontal: 20, paddingBottom: 30, paddingTop: 14, backgroundColor: "rgba(10,6,23,0.96)", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
+  title: { color: "#fff", fontSize: 20, fontWeight: "900" },
+  progressRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  progressDot: { width: 18, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.10)" },
+  progressDotDone: { backgroundColor: "#A78BFA", width: 22 },
+  progressText: { color: "#6B7280", fontSize: 11, marginLeft: 8 },
 
-  sectionTitle: { color: "#fff", fontSize: 17, fontWeight: "800", marginBottom: 4, paddingHorizontal: 20, marginTop: 16 },
-  sectionHint: { color: "#6B7280", fontSize: 12, marginBottom: 10, paddingHorizontal: 20 },
-  divider: { height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: 16, marginHorizontal: 20 },
+  stepWrap: { paddingHorizontal: 20 },
+  stepTitle: { color: "#fff", fontSize: 22, fontWeight: "900", marginBottom: 4, marginTop: 8 },
+  stepHint: { color: "#6B7280", fontSize: 13, marginBottom: 6 },
+  stepHint2: { color: "#A78BFA", fontSize: 14, fontWeight: "600", marginBottom: 12 },
 
-  label: { color: "#A8A3C2", fontSize: 13, fontWeight: "600", marginBottom: 6, marginTop: 10, paddingHorizontal: 20 },
-  input: { backgroundColor: "#1A152A", padding: 14, borderRadius: 12, color: "#fff", fontSize: 15, marginHorizontal: 20, marginBottom: 8 },
-
-  unitRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 20, marginBottom: 8 },
+  label: { color: "#A8A3C2", fontSize: 13, fontWeight: "600", marginBottom: 6, marginTop: 12 },
+  input: { backgroundColor: "#1A152A", padding: 14, borderRadius: 12, color: "#fff", fontSize: 15, marginBottom: 8 },
+  unitRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
   unitChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   unitChipActive: { backgroundColor: "rgba(167,139,250,0.15)", borderColor: "rgba(167,139,250,0.4)" },
   unitChipText: { color: "#A8A3C2", fontSize: 13, fontWeight: "600" },
   unitChipTextActive: { color: "#A78BFA" },
-  unitInput: { color: "#fff", minWidth: 80, textAlign: "center" },
+  unitInputSmall: { color: "#fff", minWidth: 70, textAlign: "center" },
+  photoBtn: { borderRadius: 14, overflow: "hidden", backgroundColor: "#1A152A", marginBottom: 8 },
+  photo: { width: "100%", height: 140, resizeMode: "cover" },
+  photoPlaceholder: { height: 90, alignItems: "center", justifyContent: "center" },
 
-  photoPicker: { borderRadius: 14, marginHorizontal: 20, overflow: "hidden", backgroundColor: "#1A152A", marginBottom: 8 },
-  photoPreview: { width: "100%", height: 160, resizeMode: "cover" },
-  photoPlaceholder: { height: 100, alignItems: "center", justifyContent: "center" },
-  advancedToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginTop: 4,
-  },
-  advancedToggleText: { color: "#A78BFA", fontSize: 13, fontWeight: "600" },
-
-  configCard: { backgroundColor: "#161228", borderRadius: 14, padding: 14, marginHorizontal: 20, marginBottom: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.04)" },
-  configHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  configLabel: { color: "#C6C0DD", fontSize: 13, fontWeight: "700" },
-  configRow: { flexDirection: "row", gap: 8 },
-  fieldLabel: { color: "#6B7280", fontSize: 10, fontWeight: "600", marginBottom: 4 },
-  smallInput: { backgroundColor: "#1E1638", paddingVertical: 10, paddingHorizontal: 10, borderRadius: 10, color: "#fff", fontSize: 13 },
-
-  presetRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
-  presetChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
-  presetChipActive: { backgroundColor: "rgba(167,139,250,0.15)", borderColor: "rgba(167,139,250,0.3)" },
-  presetChipText: { color: "#6B7280", fontSize: 11, fontWeight: "600" },
+  // Step 2-3
+  configRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#161228", padding: 14, borderRadius: 12, marginBottom: 8, gap: 10 },
+  configName: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  configDetail: { color: "#A8A3C2", fontSize: 12, marginTop: 2 },
+  addBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 },
+  addBtnText: { color: "#A78BFA", fontSize: 14, fontWeight: "700" },
+  formCard: { backgroundColor: "#161228", borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: "rgba(167,139,250,0.15)" },
+  formLabel: { color: "#A8A3C2", fontSize: 12, fontWeight: "600", marginBottom: 6, marginTop: 8 },
+  presetRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 },
+  presetChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  presetChipActive: { backgroundColor: "rgba(167,139,250,0.15)", borderColor: "rgba(167,139,250,0.4)" },
+  presetChipText: { color: "#A8A3C2", fontSize: 13, fontWeight: "600" },
   presetChipTextActive: { color: "#A78BFA" },
+  btn: { backgroundColor: "#7C3AED", paddingVertical: 14, borderRadius: 12, alignItems: "center" },
+  btnText: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  btnOutline: { backgroundColor: "transparent", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  btnOutlineText: { color: "#A8A3C2", fontSize: 15, fontWeight: "600" },
 
-  addBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
-  addBtnText: { color: "#A78BFA", fontSize: 13, fontWeight: "700" },
+  // Step 4
+  summaryCard: { backgroundColor: "#161228", borderRadius: 14, padding: 18, borderWidth: 1, borderColor: "rgba(167,139,250,0.15)" },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 7 },
+  sumLabel: { color: "#A8A3C2", fontSize: 14 },
+  sumValue: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  sumDiv: { height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: 4 },
+  sumSub: { color: "#9CA3AF", fontSize: 12, marginLeft: 4, marginTop: 2 },
 
-  summaryCard: { backgroundColor: "#161228", borderRadius: 14, padding: 16, marginHorizontal: 20, borderWidth: 1, borderColor: "rgba(167,139,250,0.15)" },
-  summaryRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
-  summaryLabel: { color: "#A8A3C2", fontSize: 13 },
-  summaryValue: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  // Footer
+  footer: { paddingHorizontal: 20, paddingBottom: 30, paddingTop: 14, backgroundColor: "rgba(10,6,23,0.96)", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
+  footerBtn: { backgroundColor: "#7C3AED", paddingVertical: 16, borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  footerBtnText: { color: "#fff", fontSize: 16, fontWeight: "800" },
 
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 30 },
-  modalContent: { backgroundColor: "#18122B", borderRadius: 16, padding: 20 },
+  // Modal
+  modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 30 },
+  modalCard: { backgroundColor: "#18122B", borderRadius: 16, padding: 20 },
   modalTitle: { color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 12 },
   pickerItem: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, marginBottom: 4 },
   pickerItemActive: { backgroundColor: "rgba(167,139,250,0.12)" },
