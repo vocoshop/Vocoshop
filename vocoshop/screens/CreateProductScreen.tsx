@@ -18,7 +18,7 @@ const CATEGORIES = [
 ];
 
 const UNIT_PRESETS: Record<string, string[]> = {
-  Boissons: ["bouteille", "canette", "litre", "verre", "gobelet"],
+  Boissons: ["bouteille", "canette", "litre", "verre", "gobelet", "casier", "carton"],
   Épicerie: ["kilogramme", "sachet", "paquet", "pièce", "litre"],
   Laitière: ["bouteille", "pot", "pièce", "litre"],
   Boucherie: ["kilogramme", "demi-kilo", "pièce"],
