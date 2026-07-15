@@ -150,6 +150,7 @@ export default function PhotoStockScreen() {
             buyQty: pkg?.contains || "",
             buyPrice: first.purchasePrice || "",
             stockQty: String(first.quantity || ""),
+            expirationDate: first.expirationDate || "",
           },
         });
         if (news.length > 1 || existings.length > 0) {
@@ -228,6 +229,7 @@ export default function PhotoStockScreen() {
             buyQty: pkg?.contains || "",
             buyPrice: first.purchasePrice || "",
             stockQty: String(first.quantity || ""),
+            expirationDate: first.expirationDate || "",
           },
         });
         if (newProducts.length > 1) {

@@ -43,6 +43,7 @@ export default function CreateProductScreen() {
       if (prefill.buyQty) setBuyQty(String(prefill.buyQty));
       if (prefill.buyPrice) setBuyPrice(String(prefill.buyPrice));
       if (prefill.stockQty) setStockQty(String(prefill.stockQty));
+      if (prefill.expirationDate) setExpirationDate(String(prefill.expirationDate));
     }
   }, []);
 
