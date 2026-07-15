@@ -129,8 +129,8 @@ export default function CreateProductScreen() {
         }).catch(() => {});
       }
       Alert.alert("Produit créé", name, [
-        { text: "Terminer", onPress: () => nav.goBack() },
-        { text: "Créer un autre", onPress: () => resetForm() },
+        { text: "Continuer", onPress: () => nav.navigate("PhotoStock") },
+        { text: "Terminer", onPress: () => nav.navigate("AddStock") },
       ]);
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.response?.data?.message || e?.message || "Échec.";
