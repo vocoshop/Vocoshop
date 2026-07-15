@@ -390,10 +390,18 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
             name: item.name.trim(),
             category: item.category || "",
             unit,
+            baseUnit: unit,
             sellPrice: Math.max(0, parseInt(item.sellPrice) || 0),
             purchasePrice: Math.max(0, parseInt(item.purchasePrice) || 0),
             quantity: qty,
             alertLevel: 3,
+            // Configs par défaut (seront à affiner plus tard)
+            purchaseConfigs: [],
+            sellConfigs: [{
+              name: "Unité",
+              quantity: 1,
+              sellPrice: Math.max(0, parseInt(item.sellPrice) || 0),
+            }],
           };
           if (item.expirationDate) {
             const expDate = new Date(item.expirationDate);
