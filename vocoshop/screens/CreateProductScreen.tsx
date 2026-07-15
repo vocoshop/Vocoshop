@@ -47,6 +47,7 @@ export default function CreateProductScreen() {
   const [baseUnit, setBaseUnit] = useState("pièce");
   const [customUnit, setCustomUnit] = useState("");
   const [initialStock, setInitialStock] = useState("");
+  const [expirationDate, setExpirationDate] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
@@ -124,6 +125,7 @@ export default function CreateProductScreen() {
       fd.append("sellPrice", String(Math.round(us)));
       fd.append("purchasePrice", String(Math.round(ub)));
       fd.append("quantity", initialStock || "0");
+      if (expirationDate.trim()) fd.append("expirationDate", expirationDate.trim());
       fd.append("alertLevel", "3");
       fd.append("purchaseConfigs", JSON.stringify(buyList.map(c => ({ name: c.name, quantity: Number(c.qty) || 0, purchasePrice: Number(c.price) || 0 })).filter(c => c.quantity > 0)));
       fd.append("sellConfigs", JSON.stringify(sc.map(c => ({ name: c.name, quantity: Number(c.qty) || 0, sellPrice: Number(c.price) || 0 })).filter(c => c.quantity > 0 && c.sellPrice > 0)));
@@ -177,6 +179,9 @@ export default function CreateProductScreen() {
 
             <Text style={S.label}>Stock initial (facultatif)</Text>
             <TextInput style={S.input} placeholder="Ex: 100" placeholderTextColor="#555" keyboardType="numeric" value={initialStock} onChangeText={setInitialStock} />
+
+            <Text style={S.label}>Date d'expiration (facultatif)</Text>
+            <TextInput style={S.input} placeholder="YYYY-MM-DD (ex: 2026-12-31)" placeholderTextColor="#555" value={expirationDate} onChangeText={setExpirationDate} autoCapitalize="none" />
 
             <Text style={S.label}>Photo (facultatif)</Text>
             <TouchableOpacity style={S.photoBtn} onPress={pickImage}>
