@@ -104,15 +104,16 @@ const { token } = useContext(AuthContext);
 
   // Plus gros conditionnement qui divise le stock
   const stockBreakdown = useMemo(() => {
-    if (!hasConfigs || currentStock <= 0) return null;
+    const cs = displayedProduct.quantity ?? 0;
+    if (!hasConfigs || cs <= 0) return null;
     const sorted = [...purchaseConfigs].sort((a, b) => b.quantity - a.quantity);
     for (const c of sorted) {
-      if (c.quantity > 1 && currentStock >= c.quantity && currentStock % c.quantity === 0) {
-        return { name: c.name, count: currentStock / c.quantity, qty: c.quantity };
+      if (c.quantity > 1 && cs >= c.quantity && cs % c.quantity === 0) {
+        return { name: c.name, count: cs / c.quantity, qty: c.quantity };
       }
     }
     return null;
-  }, [currentStock, purchaseConfigs, hasConfigs]);
+  }, [displayedProduct.quantity, purchaseConfigs, hasConfigs]);
 
 const headers = useMemo(
 () => ({

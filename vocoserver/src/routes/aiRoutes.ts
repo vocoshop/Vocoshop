@@ -300,7 +300,7 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
             ],
           },
         ],
-        max_tokens: 2048,
+        max_completion_tokens: 2048,
       }),
     });
 
