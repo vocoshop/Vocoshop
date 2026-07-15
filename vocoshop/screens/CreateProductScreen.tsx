@@ -63,9 +63,9 @@ export default function CreateProductScreen() {
   const sellLabel = sellCustomUnit.trim() || sellUnit || effectiveUnit;
   const buyLabel = buyCustomUnit.trim() || buyUnit || effectiveUnit;
 
-  const stockUnitLabel = stockUnit || effectiveUnit;
   const buyCfgQty = Number(buyQty || 1);
-  const finalStock = buyCfgQty > 1 ? Number(stockQty || 0) * buyCfgQty : Number(stockQty || 0);
+  const stockMultiplier = stockUnit && stockUnit === buyLabel ? buyCfgQty : 1;
+  const finalStock = Number(stockQty || 0) * stockMultiplier;
 
   const summary = useMemo(() => {
     const ub = buyCfgQty > 0 ? Number(buyPrice || 0) / buyCfgQty : 0;
@@ -331,8 +331,23 @@ export default function CreateProductScreen() {
           <TouchableOpacity style={[S.pickItem, !stockUnit && S.pickItemActive]} onPress={() => { setStockUnit(""); setShowStockUnitPicker(false); }}>
             <Text style={[S.pickText, !stockUnit && S.pickTextActive]}>{effectiveUnit} (unité de base)</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={[S.pickItem, stockUnit === "Casier" && S.pickItemActive]} onPress={() => { setStockUnit("Casier"); setShowStockUnitPicker(false); }}>
+            <Text style={[S.pickText, stockUnit === "Casier" && S.pickTextActive]}>Casier</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[S.pickItem, stockUnit === "Carton" && S.pickItemActive]} onPress={() => { setStockUnit("Carton"); setShowStockUnitPicker(false); }}>
+            <Text style={[S.pickText, stockUnit === "Carton" && S.pickTextActive]}>Carton</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[S.pickItem, stockUnit === "Sac" && S.pickItemActive]} onPress={() => { setStockUnit("Sac"); setShowStockUnitPicker(false); }}>
+            <Text style={[S.pickText, stockUnit === "Sac" && S.pickTextActive]}>Sac</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[S.pickItem, stockUnit === "Pack" && S.pickItemActive]} onPress={() => { setStockUnit("Pack"); setShowStockUnitPicker(false); }}>
+            <Text style={[S.pickText, stockUnit === "Pack" && S.pickTextActive]}>Pack</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[S.pickItem, stockUnit === "Palette" && S.pickItemActive]} onPress={() => { setStockUnit("Palette"); setShowStockUnitPicker(false); }}>
+            <Text style={[S.pickText, stockUnit === "Palette" && S.pickTextActive]}>Palette</Text>
+          </TouchableOpacity>
           <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-            <TextInput style={[S.input, { flex: 1, marginBottom: 0 }]} placeholder="Ex: Carton..." placeholderTextColor="#555" value={stockUnit} onChangeText={setStockUnit} />
+            <TextInput style={[S.input, { flex: 1, marginBottom: 0 }]} placeholder="Autre..." placeholderTextColor="#555" value={stockUnit} onChangeText={setStockUnit} />
             <TouchableOpacity style={[S.btnSm, { paddingVertical: 14, paddingHorizontal: 20 }]} onPress={() => setShowStockUnitPicker(false)}>
               <Text style={{ color: "#fff", fontWeight: "700" }}>OK</Text>
             </TouchableOpacity>
