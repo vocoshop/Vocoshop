@@ -1,32 +1,53 @@
 // models/Product.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
+export interface IPurchaseConfig {
+  name: string;          // "Casier", "Carton"
+  quantity: number;      // 24, 12
+  purchasePrice: number; // 12000, 6000
+}
+
+export interface ISellConfig {
+  name: string;          // "Bouteille", "Pack", "Casier"
+  quantity: number;      // 1, 6, 24
+  sellPrice: number;     // 700, 4500, 16000
+}
+
 export interface IProduct extends Document {
-storeId: string;
-name: string;
-category?: string;
+  storeId: string;
+  name: string;
+  category?: string;
 
-// 💰 Prix de vente (champ officiel)
-sellPrice: number;
+  // 💰 Prix de vente unitaire (dans l'unité de base)
+  sellPrice: number;
 
-// 🧾 Prix d'achat (utile pour marge)
-purchasePrice: number;
+  // 🧾 Prix d'achat unitaire (dans l'unité de base)
+  purchasePrice: number;
 
-quantity: number;
-alertLevel: number;
-barcode?: string;
+  quantity: number;
+  alertLevel: number;
+  barcode?: string;
 
-// ✅ Plusieurs dates d'expiration possibles (V1 sans gestion de lot)
-expirationDates: Date[];
+  // ✅ Plusieurs dates d'expiration possibles
+  expirationDates: Date[];
 
-// 🧠 Marge générée (sellPrice – purchasePrice)
-profitMargin?: number;
+  // 🧠 Marge générée (sellPrice – purchasePrice)
+  profitMargin?: number;
 
-// 📐 Unité de mesure (pièce, litre, kg, sachet, carton, etc.)
-unit?: string;
+  // 📐 Unité de base (bouteille, kg, L, pièce)
+  baseUnit?: string;
 
-// 🎙️ Alias vocaux pour la reconnaissance (prononciations alternatives, abréviations)
-aliases: string[];
+  // 📐 Unité de mesure (legacy)
+  unit?: string;
+
+  // 🎙️ Alias vocaux
+  aliases: string[];
+
+  // 📦 Conditionnements d'achat
+  purchaseConfigs: IPurchaseConfig[];
+
+  // 🛒 Modes de vente
+  sellConfigs: ISellConfig[];
 
 // 🏭 Fournisseur associé
 supplierId?: Types.ObjectId;
@@ -76,18 +97,44 @@ default: [],
 */
 unit: { type: String, default: "pièce", trim: true },
 
-/**
-* 🧠 Marge bénéficiaire
-*/
-profitMargin: { type: Number, default: 0 },
+    /**
+     * 📐 Unité de base (bouteille, kg, L, pièce)
+     */
+    baseUnit: { type: String, default: "", trim: true },
 
-/**
-* 🎙️ Alias vocaux — prononciations alternatives, abréviations, fautes courantes
-*/
-aliases: {
-type: [String],
-default: [],
-},
+    /**
+     * 🎙️ Alias vocaux
+     */
+    aliases: {
+      type: [String],
+      default: [],
+    },
+
+    /**
+     * 📦 Conditionnements d'achat
+     * Ex: [{ name: "Casier", quantity: 24, purchasePrice: 12000 }]
+     */
+    purchaseConfigs: {
+      type: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true, min: 1 },
+        purchasePrice: { type: Number, required: true, min: 0 },
+      }],
+      default: [],
+    },
+
+    /**
+     * 🛒 Modes de vente
+     * Ex: [{ name: "Bouteille", quantity: 1, sellPrice: 700 }]
+     */
+    sellConfigs: {
+      type: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true, min: 1 },
+        sellPrice: { type: Number, required: true, min: 0 },
+      }],
+      default: [],
+    },
 
     supplierId: { type: Schema.Types.ObjectId, ref: "Supplier", default: null, index: true },
 
@@ -100,10 +147,11 @@ default: [],
 🔄 AUTO-CALCUL DE LA MARGE À LA SAUVEGARDE
 ------------------------------------------------------------- */
 ProductSchema.pre("save", function (next) {
-const sell = this.sellPrice ?? 0;
-const purchase = this.purchasePrice ?? 0;
-this.profitMargin = sell - purchase;
-next();
+  const sell = this.sellPrice ?? 0;
+  const purchase = this.purchasePrice ?? 0;
+  this.profitMargin = sell - purchase;
+  if (!this.baseUnit && this.unit) this.baseUnit = this.unit;
+  next();
 });
 
 /* -------------------------------------------------------------

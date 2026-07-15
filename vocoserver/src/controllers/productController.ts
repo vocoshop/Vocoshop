@@ -62,20 +62,30 @@ const storeId = getStoreId(req as any);
 
 if (!storeId) return next(new ValidationError("storeId manquant"));
 
-const {
-  name,
-  category,
-  sellPrice,
-  price, // compat ancien champ
-  purchasePrice,
-  quantity,
-  alertLevel,
-  barcode,
-  expirationDate,
-  supplierId,
-} = req.body;
+  const {
+    name,
+    category,
+    sellPrice,
+    price,
+    purchasePrice,
+    quantity,
+    alertLevel,
+    barcode,
+    expirationDate,
+    supplierId,
+    baseUnit,
+    unit,
+    purchaseConfigs: purchaseConfigsRaw,
+    sellConfigs: sellConfigsRaw,
+  } = req.body;
 
-if (!name || String(name).trim() === "") {
+  // Parser les configs (viennent en JSON string dans multipart/form-data)
+  let purchaseConfigs: any[] = [];
+  let sellConfigs: any[] = [];
+  try { if (purchaseConfigsRaw) purchaseConfigs = JSON.parse(purchaseConfigsRaw); } catch {}
+  try { if (sellConfigsRaw) sellConfigs = JSON.parse(sellConfigsRaw); } catch {}
+
+  if (!name || String(name).trim() === "") {
 return next(new ValidationError("Le nom du produit est obligatoire"));
 }
 
@@ -112,18 +122,22 @@ req.body?.dateExpiration ??
 
 const parsedDate = parseDate(expRaw);
 
-const product = await Product.create({
-storeId,
-name: String(name).trim(),
-category: category ?? "",
-sellPrice: Number(finalSellPrice) || 0,
-purchasePrice: Number(purchasePrice) || 0,
-quantity: Number(quantity) || 0,
-alertLevel: Number(alertLevel) || 3,
-barcode: barcode ?? undefined,
-supplierId: supplierId ?? undefined,
-expirationDates: parsedDate ? [parsedDate] : [],
-});
+    const product = await Product.create({
+      storeId,
+      name: String(name).trim(),
+      category: category ?? "",
+      sellPrice: Number(finalSellPrice) || 0,
+      purchasePrice: Number(purchasePrice) || 0,
+      quantity: Number(quantity) || 0,
+      alertLevel: Number(alertLevel) || 3,
+      barcode: barcode ?? undefined,
+      supplierId: supplierId ?? undefined,
+      expirationDates: parsedDate ? [parsedDate] : [],
+      baseUnit: (baseUnit || unit || "pièce").trim(),
+      unit: (unit || baseUnit || "pièce").trim(),
+      purchaseConfigs,
+      sellConfigs,
+    });
 
 if (req.file) {
 product.imageUrl = `/uploads/products/${req.file.filename}`;
