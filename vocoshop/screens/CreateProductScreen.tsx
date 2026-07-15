@@ -114,8 +114,8 @@ export default function CreateProductScreen() {
         quantity: String(finalStock),
         alertLevel: "3",
         expirationDate: expirationDate.trim() || undefined,
-        purchaseConfigs: JSON.stringify(buyUnit ? [{ name: buyLabel, quantity: buyCfgQty, purchasePrice: Number(buyPrice) }] : []),
-        sellConfigs: JSON.stringify(sellUnit ? [{ name: sellLabel, quantity: 1, sellPrice: Number(sellPrice) }] : [{ name: effectiveUnit, quantity: 1, sellPrice: Number(sellPrice) }]),
+        purchaseConfigs: buyUnit ? [{ name: buyLabel, quantity: buyCfgQty, purchasePrice: Number(buyPrice) }] : [],
+        sellConfigs: sellUnit ? [{ name: sellLabel, quantity: 1, sellPrice: Number(sellPrice) }] : [{ name: effectiveUnit, quantity: 1, sellPrice: Number(sellPrice) }],
       };
       const res = await API.post("/products", payload, { headers: { Authorization: `Bearer ${token}` } });
 

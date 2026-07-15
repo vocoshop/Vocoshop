@@ -79,11 +79,17 @@ if (!storeId) return next(new ValidationError("storeId manquant"));
     sellConfigs: sellConfigsRaw,
   } = req.body;
 
-  // Parser les configs (viennent en JSON string dans multipart/form-data)
+  // Parser les configs (JSON body → déjà array, multipart → string)
   let purchaseConfigs: any[] = [];
   let sellConfigs: any[] = [];
-  try { if (purchaseConfigsRaw) purchaseConfigs = JSON.parse(purchaseConfigsRaw); } catch {}
-  try { if (sellConfigsRaw) sellConfigs = JSON.parse(sellConfigsRaw); } catch {}
+  if (purchaseConfigsRaw) {
+    if (Array.isArray(purchaseConfigsRaw)) purchaseConfigs = purchaseConfigsRaw;
+    else try { purchaseConfigs = JSON.parse(purchaseConfigsRaw); } catch {}
+  }
+  if (sellConfigsRaw) {
+    if (Array.isArray(sellConfigsRaw)) sellConfigs = sellConfigsRaw;
+    else try { sellConfigs = JSON.parse(sellConfigsRaw); } catch {}
+  }
 
   if (!name || String(name).trim() === "") {
 return next(new ValidationError("Le nom du produit est obligatoire"));
