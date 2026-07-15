@@ -92,7 +92,8 @@ export default function CreateProductScreen() {
       fd.append("baseUnit", effectiveUnit);
       fd.append("unit", effectiveUnit);
       fd.append("sellPrice", sellPrice);
-      fd.append("purchasePrice", buyPrice || "0");
+      const unitBuyPrice = buyCfgQty > 0 ? Number(buyPrice || 0) / buyCfgQty : 0;
+      fd.append("purchasePrice", String(Math.round(unitBuyPrice)));
       fd.append("quantity", String(finalStock));
       fd.append("alertLevel", "3");
       if (expirationDate.trim()) fd.append("expirationDate", expirationDate.trim());
