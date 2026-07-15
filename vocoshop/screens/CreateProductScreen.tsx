@@ -110,7 +110,7 @@ export default function CreateProductScreen() {
         baseUnit: effectiveUnit,
         unit: effectiveUnit,
         sellPrice,
-        purchasePrice: String(Math.round(unitBuyPrice)),
+        purchasePrice: String(Math.round(buyCfgQty > 0 ? Number(buyPrice || 0) / buyCfgQty : 0)),
         quantity: String(finalStock),
         alertLevel: "3",
         expirationDate: expirationDate.trim() || undefined,
