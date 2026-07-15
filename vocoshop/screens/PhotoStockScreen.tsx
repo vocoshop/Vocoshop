@@ -121,15 +121,49 @@ export default function PhotoStockScreen() {
       }));
 
       if (detected.length === 0) {
-        Alert.alert(
-          "Aucun produit détecté",
-          "L'IA n'a pas reconnu de produits. Essaye avec une meilleure photo."
-        );
+        Alert.alert("Aucun produit détecté", "L'IA n'a pas reconnu de produits. Essaye avec une meilleure photo.");
         return;
       }
 
-      setProducts(detected);
-      setMode("results");
+      // Séparer : existants (avec _id) et nouveaux
+      const existings = detected.filter((p: any) => p._id);
+      const news = detected.filter((p: any) => !p._id);
+
+      // Importer les existants directement
+      if (existings.length > 0) {
+        try {
+          await API.post("/ai/vision-products/import", { products: existings });
+        } catch {}
+      }
+
+      // Ouvrir l'écran de création pour le 1er nouveau produit
+      if (news.length > 0) {
+        const first = news[0];
+        const pkg = first.packaging;
+        navigation.navigate("CreateProduct", {
+          prefill: {
+            name: first.name || "",
+            category: first.category || "",
+            sellPrice: first.sellPrice || 0,
+            baseUnit: first.unit || "pièce",
+            buyUnit: pkg?.name || "",
+            buyQty: pkg?.contains || "",
+            buyPrice: first.purchasePrice || "",
+            stockQty: String(first.quantity || ""),
+          },
+        });
+        if (news.length > 1 || existings.length > 0) {
+          const msg = [];
+          if (existings.length > 0) msg.push(`${existings.length} produit(s) existant(s) mis à jour.`);
+          if (news.length > 1) msg.push(`${news.length - 1} autre(s) nouveau(x) à créer manuellement.`);
+          Alert.alert("Import partiel", msg.join("\n"));
+        }
+        return;
+      }
+
+      Alert.alert("Import terminé", `${existings.length} produit(s) mis à jour.`, [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
     } catch (err: any) {
       const msg =
         err?.response?.data?.error || "Erreur lors de l'analyse";
