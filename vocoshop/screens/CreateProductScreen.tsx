@@ -48,6 +48,7 @@ export default function CreateProductScreen() {
   const [customUnit, setCustomUnit] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [showCatPicker, setShowCatPicker] = useState(false);
+  const [showUnitPicker, setShowUnitPicker] = useState(false);
 
   // Step 2 — achats
   const [buyList, setBuyList] = useState<{ name: string; qty: string; price: string }[]>([]);
@@ -167,14 +168,9 @@ export default function CreateProductScreen() {
             </TouchableOpacity>
 
             <Text style={S.label}>Unité de mesure</Text>
-            <View style={S.unitRow}>
-              {units.map(u => (
-                <TouchableOpacity key={u} style={[S.unitChip, baseUnit === u && !customUnit && S.unitChipActive]} onPress={() => { setBaseUnit(u); setCustomUnit(""); }}>
-                  <Text style={[S.unitChipText, baseUnit === u && !customUnit && S.unitChipTextActive]}>{u}</Text>
-                </TouchableOpacity>
-              ))}
-              <TextInput style={[S.unitChip, S.unitInputSmall, !!customUnit && S.unitChipActive]} placeholder="Autre" placeholderTextColor="#555" value={customUnit} onChangeText={setCustomUnit} />
-            </View>
+            <TouchableOpacity style={S.input} onPress={() => setShowUnitPicker(true)}>
+              <Text style={{ color: "#fff" }}>{effectiveUnit}</Text>
+            </TouchableOpacity>
 
             <Text style={S.label}>Photo (facultatif)</Text>
             <TouchableOpacity style={S.photoBtn} onPress={pickImage}>
@@ -353,6 +349,24 @@ export default function CreateProductScreen() {
               <Text style={[S.pickerText, category === c && S.pickerTextActive]}>{c}</Text>
             </TouchableOpacity>
           ))}
+        </View></View>
+      </Modal>
+
+      {/* Unité picker modal */}
+      <Modal visible={showUnitPicker} transparent animationType="fade">
+        <View style={S.modalBg}><View style={S.modalCard}>
+          <Text style={S.modalTitle}>Unité de mesure</Text>
+          {units.map(u => (
+            <TouchableOpacity key={u} style={[S.pickerItem, baseUnit === u && !customUnit && S.pickerItemActive]} onPress={() => { setBaseUnit(u); setCustomUnit(""); setShowUnitPicker(false); }}>
+              <Text style={[S.pickerText, baseUnit === u && !customUnit && S.pickerTextActive]}>{u}</Text>
+            </TouchableOpacity>
+          ))}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <TextInput style={[S.input, { flex: 1, marginBottom: 0 }]} placeholder="Autre unité..." placeholderTextColor="#555" value={customUnit} onChangeText={setCustomUnit} />
+            <TouchableOpacity style={[S.btn, { paddingVertical: 14, paddingHorizontal: 20 }]} onPress={() => { if (customUnit.trim()) { setBaseUnit(""); setShowUnitPicker(false); } }}>
+              <Text style={S.btnText}>OK</Text>
+            </TouchableOpacity>
+          </View>
         </View></View>
       </Modal>
     </View>
