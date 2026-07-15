@@ -49,6 +49,8 @@ export default function CreateProductScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [showBuyTypePicker, setShowBuyTypePicker] = useState(false);
+  const [showSellTypePicker, setShowSellTypePicker] = useState(false);
 
   // Step 2 — achats
   const [buyList, setBuyList] = useState<{ name: string; qty: string; price: string }[]>([]);
@@ -211,12 +213,9 @@ export default function CreateProductScreen() {
             ) : (
               <View style={S.formCard}>
                 <Text style={S.formLabel}>Type</Text>
-                <View style={S.presetRow}>
-                  {BUY_PRESETS.map(p => (
-                    <TouchableOpacity key={p} style={[S.presetChip, selectedBuyPreset === p && S.presetChipActive]} onPress={() => { setSelectedBuyPreset(p); setBuyCustomName(""); }}>
-                      <Text style={[S.presetChipText, selectedBuyPreset === p && S.presetChipTextActive]}>{p}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <TouchableOpacity style={S.input} onPress={() => setShowBuyTypePicker(true)}>
+                  <Text style={{ color: selectedBuyPreset ? "#fff" : "#555" }}>{selectedBuyPreset || "Choisir..."}</Text>
+                </TouchableOpacity>
                 </View>
                 {selectedBuyPreset === "Autre" && (
                   <TextInput style={S.input} placeholder="Nom du conditionnement" placeholderTextColor="#555" value={buyCustomName} onChangeText={setBuyCustomName} />
@@ -265,13 +264,9 @@ export default function CreateProductScreen() {
             ) : (
               <View style={S.formCard}>
                 <Text style={S.formLabel}>Type</Text>
-                <View style={S.presetRow}>
-                  {SELL_PRESETS.map(p => (
-                    <TouchableOpacity key={p} style={[S.presetChip, selectedSellPreset === p && S.presetChipActive]} onPress={() => { setSelectedSellPreset(p); setSellCustomName(""); }}>
-                      <Text style={[S.presetChipText, selectedSellPreset === p && S.presetChipTextActive]}>{p}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <TouchableOpacity style={S.input} onPress={() => setShowSellTypePicker(true)}>
+                  <Text style={{ color: selectedSellPreset ? "#fff" : "#555" }}>{selectedSellPreset || "Choisir..."}</Text>
+                </TouchableOpacity>
                 {selectedSellPreset === "Autre" && (
                   <TextInput style={S.input} placeholder="Nom du mode de vente" placeholderTextColor="#555" value={sellCustomName} onChangeText={setSellCustomName} />
                 )}
@@ -367,6 +362,30 @@ export default function CreateProductScreen() {
               <Text style={S.btnText}>OK</Text>
             </TouchableOpacity>
           </View>
+        </View></View>
+      </Modal>
+
+      {/* Buy type picker */}
+      <Modal visible={showBuyTypePicker} transparent animationType="fade">
+        <View style={S.modalBg}><View style={S.modalCard}>
+          <Text style={S.modalTitle}>Type de conditionnement</Text>
+          {BUY_PRESETS.map(p => (
+            <TouchableOpacity key={p} style={[S.pickerItem, selectedBuyPreset === p && S.pickerItemActive]} onPress={() => { setSelectedBuyPreset(p); setBuyCustomName(""); setShowBuyTypePicker(false); }}>
+              <Text style={[S.pickerText, selectedBuyPreset === p && S.pickerTextActive]}>{p}</Text>
+            </TouchableOpacity>
+          ))}
+        </View></View>
+      </Modal>
+
+      {/* Sell type picker */}
+      <Modal visible={showSellTypePicker} transparent animationType="fade">
+        <View style={S.modalBg}><View style={S.modalCard}>
+          <Text style={S.modalTitle}>Type de vente</Text>
+          {SELL_PRESETS.map(p => (
+            <TouchableOpacity key={p} style={[S.pickerItem, selectedSellPreset === p && S.pickerItemActive]} onPress={() => { setSelectedSellPreset(p); setSellCustomName(""); setShowSellTypePicker(false); }}>
+              <Text style={[S.pickerText, selectedSellPreset === p && S.pickerTextActive]}>{p}</Text>
+            </TouchableOpacity>
+          ))}
         </View></View>
       </Modal>
     </View>
