@@ -102,19 +102,6 @@ const { token } = useContext(AuthContext);
     ? Number(quantity || 0) * selectedConfig.quantity
     : Number(quantity || 0);
 
-  // Plus gros conditionnement qui divise le stock
-  const stockBreakdown = useMemo(() => {
-    const cs = displayedProduct.quantity ?? 0;
-    if (!hasConfigs || cs <= 0) return null;
-    const sorted = [...purchaseConfigs].sort((a, b) => b.quantity - a.quantity);
-    for (const c of sorted) {
-      if (c.quantity > 1 && cs >= c.quantity && cs % c.quantity === 0) {
-        return { name: c.name, count: cs / c.quantity, qty: c.quantity };
-      }
-    }
-    return null;
-  }, [displayedProduct.quantity, purchaseConfigs, hasConfigs]);
-
 const headers = useMemo(
 () => ({
 Authorization: token ? `Bearer ${token}` : "",
@@ -127,8 +114,20 @@ currentProduct ||
 product ||
 ({ _id: realId || "", name: "Produit", quantity: 0 } as Product);
 
-const currentStock = displayedProduct.quantity ?? 0;
-const nearestExpiry = getNearestExpiry(displayedProduct.expirationDates);
+  const currentStock = displayedProduct.quantity ?? 0;
+  const nearestExpiry = getNearestExpiry(displayedProduct.expirationDates);
+
+  const stockBreakdown = useMemo(() => {
+    const cs = currentStock as number;
+    if (!hasConfigs || cs <= 0) return null;
+    const sorted = [...purchaseConfigs].sort((a, b) => b.quantity - a.quantity);
+    for (const c of sorted) {
+      if (c.quantity > 1 && cs >= c.quantity && cs % c.quantity === 0) {
+        return { name: c.name, count: cs / c.quantity, qty: c.quantity };
+      }
+    }
+    return null;
+  }, [currentStock, purchaseConfigs, hasConfigs]);
 
 const canLoad = Boolean(token && realId);
 
