@@ -253,12 +253,19 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "REGLE IMPORTANTE — DETECTER L'EMBALLAGE / CONDITIONNEMENT:\n" +
               "Si certaines photos montrent le produit a l'unite ET d'autres photos montrent un emballage (casier, carton, sac, pack...), remplis le champ 'packaging':\n" +
               "  - 'name' : le nom de l'emballage (Casier, Carton, Sac, Pack, Palette, Bouteille...)\n" +
-              "  - 'contains' : combien d'unites sont dans cet emballage (ex: 24 pour un casier de 24 bouteilles, 12 pour un carton, 50 pour un sac de 50kg)\n" +
-              "  - Si le poids est visible sur le sac (ex: '50 kg'), utilise cette valeur pour 'contains'\n" +
-              "  - Si l'emballage n'est pas visible, mets \"packaging\": null\n" +
+              "  - 'contains' : combien d'unites sont dans cet emballage (ex: 24 pour un casier de 24 bouteilles, 12 pour un carton)\n\n" +
+              "POUR LES SACS :\n" +
+              "  - Lis TOUS les textes imprimes sur le sac (poids, etiquette).\n" +
+              "  - Si '50 kg', '25 kg', '10 kg' est ecrit → 'contains' = 50, 25 ou 10\n" +
+              "  - Si 'Net Wt 50 KG', 'Poids Net 25kg' → extrais le nombre\n" +
+              "  - Le nom devient 'name': 'Sac' et 'contains': le poids en chiffres\n" +
+              "  - Ex: sac Dania marque '50 KG' → packaging: { name: 'Sac', contains: 50 }\n" +
+              "  - Ex: sac farine '25 kg net' → packaging: { name: 'Sac', contains: 25 }\n\n" +
               "Exemples:\n" +
               "  Photo unite: bouteille Coca 50cl | Photo casier: casier rouge 24 bouteilles → packaging: { name: \"Casier\", contains: 24 }\n" +
-              "  Photo unite: paquet de sucre 1kg | Photo sac: sac Dania 50kg → packaging: { name: \"Sac\", contains: 50 }\n\n" +
+              "  Photo unite: paquet de sucre 1kg | Photo sac: sac Dania '50 KG' → packaging: { name: \"Sac\", contains: 50 }\n" +
+              "  Photo sac seul: sac farine 'NET WT 25kg' → packaging: { name: \"Sac\", contains: 25 }\n" +
+              "  Photo unite: sachet lait 500g | Photo carton: carton 12 sachets → packaging: { name: \"Carton\", contains: 12 }\n\n" +
               "REGLE ABSOLUE — LA MARQUE FAIT PARTIE DU NOM:\n" +
               "Deux memes produits avec la MEME taille/poids mais de MARQUES DIFFERENTES sont des produits DIFFERENTS.\n" +
               "Le nom DOIT inclure la marque quand elle est visible.\n" +
@@ -282,7 +289,7 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "- Si la marque n'est PAS visible, mets juste \"Produit + Taille\" (ex: \"Riz parfume 1kg\")\n" +
               "- Meme si le format n'est pas ecrit, deduis-le de la forme de l'emballage (bouteille 50cl vs 1L, sachet 500g vs 1kg)\n" +
               "- Categorie en francais (ex: Boisson, Epicerie, Laitiere, Hygiene, Quincaillerie, etc.)\n" +
-              "- unit = l'unite de vente: piece, litre, kg, sachet, carton, bouteille, sac, rouleau, paquet, boite, pot, galon, tasse, portion\n" +
+              "- unit = l'unite de vente. Pour les sacs de farine/riz/sucre, mets 'kg' ou 'kilogramme'. Pour les bouteilles, mets 'piece' ou 'bouteille'. Pour les sachets, mets 'sachet' ou 'piece'.\n" +
               "- estimatedQuantity = la quantite estimee visible sur la photo (ex: 1 bouteille = 1, un pack de 6 = 6, un carton de 12 = 12, un lot de 20 savons = 20)\n" +
               "- suggestedExpirationDate = date d'expiration si visible sur l'emballage (format YYYY-MM-DD ou YYYY-MM, sinon chaine vide)\n" +
               "- suggestedSellPrice = prix de vente estime en FCFA (0 si inconnu)\n" +
