@@ -140,7 +140,7 @@ export default function PhotoStockScreen() {
       if (news.length > 0) {
         const first = news[0];
         const pkg = first.packaging;
-        navigation.navigate("CreateProduct", {
+        navigation.replace("CreateProduct", {
           prefill: {
             name: first.name || "",
             category: first.category || "",
