@@ -67,7 +67,7 @@ export default function PhotoStockScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: 0.7,
+        quality: 0.5,
       });
       const compressed = await compressImage(photo.uri);
       setCapturedPhotos((prev) => [...prev, compressed.base64]);
@@ -80,7 +80,7 @@ export default function PhotoStockScreen() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
-        quality: 0.7,
+        quality: 0.5,
         base64: true,
       });
       if (!result.canceled && result.assets?.[0]) {

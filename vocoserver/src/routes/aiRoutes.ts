@@ -226,7 +226,7 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
     // Prepare image content parts for OpenAI
     const imageParts = processedImages.map((img) => ({
       type: "image_url" as const,
-      image_url: { url: img, detail: "high" as const },
+      image_url: { url: img, detail: "low" as const },
     }));
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -300,7 +300,7 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
             ],
           },
         ],
-        max_tokens: 4096,
+        max_tokens: 2048,
       }),
     });
 
