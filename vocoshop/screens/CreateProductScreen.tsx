@@ -158,7 +158,7 @@ export default function CreateProductScreen() {
         <View style={S.divider} />
         <Text style={S.sectionTitle}>Vous l'achetez en...</Text>
         <TouchableOpacity style={S.input} onPress={() => setShowBuyUnitPicker(true)}>
-          <Text style={{ color: buyLabel !== effectiveUnit ? "#A78BFA" : "#fff" }}>{buyLabel}</Text>
+          <Text style={{ color: buyLabel !== effectiveUnit ? "#A78BFA" : "#fff" }}>1 {buyLabel} =</Text>
         </TouchableOpacity>
         <View style={S.row2}>
           <TextInput style={S.inputHalf} placeholder="Contient combien ?" placeholderTextColor="#555" keyboardType="numeric" value={buyQty} onChangeText={setBuyQty} />
@@ -178,12 +178,13 @@ export default function CreateProductScreen() {
         {/* STOCK */}
         <View style={S.divider} />
         <Text style={S.sectionTitle}>Stock actuel</Text>
+        <Text style={S.label}>Le stock est en...</Text>
         <TouchableOpacity style={S.input} onPress={() => setShowStockUnitPicker(true)}>
-          <Text style={{ color: stockUnit ? "#A78BFA" : "#fff" }}>{stockUnitLabel}</Text>
+          <Text style={{ color: stockUnit ? "#A78BFA" : "#fff" }}>{stockUnit || effectiveUnit}</Text>
         </TouchableOpacity>
         <View style={S.row2}>
           <TextInput style={S.inputHalf} placeholder="Quantité" placeholderTextColor="#555" keyboardType="numeric" value={stockQty} onChangeText={setStockQty} />
-          <Text style={{ color: "#6B7280", fontSize: 13, alignSelf: "center", marginHorizontal: 4 }}>{stockUnitLabel}(s)</Text>
+          <Text style={{ color: "#6B7280", fontSize: 13, alignSelf: "center", marginHorizontal: 4 }}>{stockUnit || effectiveUnit}(s)</Text>
         </View>
         {stockUnit && Number(stockQty) > 0 && (
           <Text style={S.hint2}>
