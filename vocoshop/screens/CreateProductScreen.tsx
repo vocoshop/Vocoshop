@@ -27,26 +27,12 @@ const UNIT_BY_CAT: Record<string, string[]> = {
   Divers: ["pièce", "kilogramme", "litre", "sachet"],
 };
 const BUY_PRESETS = [
-  { label: "Casier", icon: "🥤", emoji: "📦" },
-  { label: "Carton", icon: "📦", emoji: "📦" },
-  { label: "Sac", icon: "🛍", emoji: "🛍" },
-  { label: "Pack", icon: "🎁", emoji: "🎁" },
-  { label: "Palette", icon: "📋", emoji: "📋" },
-  { label: "Bouteille", icon: "🍾", emoji: "🍾" },
-  { label: "Sachet", icon: "🛍", emoji: "🛍" },
-  { label: "Boîte", icon: "📦", emoji: "📦" },
-  { label: "Lot", icon: "📦", emoji: "📦" },
-  { label: "Autre", icon: "✏️", emoji: "" },
+  "Casier", "Carton", "Sac", "Pack", "Palette",
+  "Bouteille", "Sachet", "Boîte", "Lot", "Autre",
 ];
 const SELL_PRESETS = [
-  { label: "À l'unité", icon: "1️⃣" },
-  { label: "Casier", icon: "🥤" },
-  { label: "Carton", icon: "📦" },
-  { label: "Pack", icon: "🎁" },
-  { label: "Sac", icon: "🛍" },
-  { label: "Lot", icon: "📦" },
-  { label: "Palette", icon: "📋" },
-  { label: "Autre", icon: "✏️" },
+  "À l'unité", "Casier", "Carton", "Pack", "Sac",
+  "Lot", "Palette", "Autre",
 ];
 
 export default function CreateProductScreen() {
@@ -207,7 +193,7 @@ export default function CreateProductScreen() {
           <View style={S.stepWrap}>
             <Text style={S.stepTitle}>2. Vous achetez en…</Text>
             <Text style={S.stepHint}>
-              Exemple : 🥤 Casier · 📦 Carton · 🛍 Sac · 📋 Palette
+              Exemple : Casier · Carton · Sac · Palette
             </Text>
             <Text style={S.stepHint2}>Comment recevez-vous ce produit ?</Text>
 
@@ -231,8 +217,8 @@ export default function CreateProductScreen() {
                 <Text style={S.formLabel}>Type</Text>
                 <View style={S.presetRow}>
                   {BUY_PRESETS.map(p => (
-                    <TouchableOpacity key={p.label} style={[S.presetChip, selectedBuyPreset === p.label && S.presetChipActive]} onPress={() => { setSelectedBuyPreset(p.label); setBuyCustomName(""); }}>
-                      <Text style={[S.presetChipText, selectedBuyPreset === p.label && S.presetChipTextActive]}>{p.emoji} {p.label}</Text>
+                    <TouchableOpacity key={p} style={[S.presetChip, selectedBuyPreset === p && S.presetChipActive]} onPress={() => { setSelectedBuyPreset(p); setBuyCustomName(""); }}>
+                      <Text style={[S.presetChipText, selectedBuyPreset === p && S.presetChipTextActive]}>{p}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -261,7 +247,7 @@ export default function CreateProductScreen() {
           <View style={S.stepWrap}>
             <Text style={S.stepTitle}>3. Vous vendez en…</Text>
             <Text style={S.stepHint}>
-              Exemple : 1️⃣ À l'unité · 🥤 Casier · 🎁 Pack
+              Exemple : À l'unité · Casier · Pack
             </Text>
             <Text style={S.stepHint2}>Comment vos clients achètent ce produit ?</Text>
 
@@ -285,8 +271,8 @@ export default function CreateProductScreen() {
                 <Text style={S.formLabel}>Type</Text>
                 <View style={S.presetRow}>
                   {SELL_PRESETS.map(p => (
-                    <TouchableOpacity key={p.label} style={[S.presetChip, selectedSellPreset === p.label && S.presetChipActive]} onPress={() => { setSelectedSellPreset(p.label); setSellCustomName(""); }}>
-                      <Text style={[S.presetChipText, selectedSellPreset === p.label && S.presetChipTextActive]}>{p.icon} {p.label}</Text>
+                    <TouchableOpacity key={p} style={[S.presetChip, selectedSellPreset === p && S.presetChipActive]} onPress={() => { setSelectedSellPreset(p); setSellCustomName(""); }}>
+                      <Text style={[S.presetChipText, selectedSellPreset === p && S.presetChipTextActive]}>{p}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
