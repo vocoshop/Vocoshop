@@ -117,6 +117,7 @@ export default function PhotoStockScreen() {
         sellPrice: p.suggestedSellPrice || 0,
         purchasePrice: p.suggestedPurchasePrice || 0,
         expirationDate: p.suggestedExpirationDate || "",
+        packaging: p.packaging || null,
       }));
 
       if (detected.length === 0) {
@@ -182,12 +183,17 @@ export default function PhotoStockScreen() {
       // Pour les nouveaux produits, ouvrir l'écran de création pré-rempli
       if (newProducts.length > 0) {
         const first = newProducts[0];
+        const pkg = first.packaging;
         navigation.navigate("CreateProduct", {
           prefill: {
             name: first.name || "",
             category: first.category || "",
             sellPrice: first.sellPrice || 0,
             baseUnit: first.unit || "pièce",
+            buyUnit: pkg?.name || "",
+            buyQty: pkg?.contains || "",
+            buyPrice: first.purchasePrice || "",
+            stockQty: String(first.quantity || ""),
           },
         });
         if (newProducts.length > 1) {

@@ -39,6 +39,10 @@ export default function CreateProductScreen() {
       if (prefill.category) setCategory(prefill.category);
       if (prefill.sellPrice) setSellPrice(String(prefill.sellPrice));
       if (prefill.baseUnit) setBaseUnit(prefill.baseUnit);
+      if (prefill.buyUnit) setBuyCustomUnit(prefill.buyUnit);
+      if (prefill.buyQty) setBuyQty(String(prefill.buyQty));
+      if (prefill.buyPrice) setBuyPrice(String(prefill.buyPrice));
+      if (prefill.stockQty) setStockQty(String(prefill.stockQty));
     }
   }, []);
 
