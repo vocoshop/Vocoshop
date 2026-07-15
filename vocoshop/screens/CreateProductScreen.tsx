@@ -56,9 +56,12 @@ export default function CreateProductScreen() {
   const [category, setCategory] = useState("Boissons");
   const [baseUnit, setBaseUnit] = useState("pièce");
   const [customUnit, setCustomUnit] = useState("");
+  const [simpleSellPrice, setSimpleSellPrice] = useState("");
+  const [simplePurchasePrice, setSimplePurchasePrice] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCatPicker, setShowCatPicker] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Part 2 — achats
   const [purchaseConfigs, setPurchaseConfigs] = useState<PurchaseConfig[]>([]);
@@ -131,14 +134,33 @@ export default function CreateProductScreen() {
     if (!name.trim()) return Alert.alert("Erreur", "Nom du produit requis.");
     if (!token) return Alert.alert("Erreur", "Session invalide.");
 
-    const sellCfg = sellConfigs.find(c => Number(c.sellPrice) > 0 && Number(c.quantity) > 0);
-    if (!sellCfg) return Alert.alert("Erreur", "Ajoutez au moins un mode de vente avec un prix.");
+    // Prix de base (mode simple)
+    if (!simpleSellPrice || Number(simpleSellPrice) <= 0) {
+      return Alert.alert("Erreur", "Veuillez entrer un prix de vente.");
+    }
+    const baseSellPrice = Number(simpleSellPrice);
+    const basePurchasePrice = Number(simplePurchasePrice || 0);
 
-    const unitSellPrice = Number(sellCfg.sellPrice) / Math.max(1, Number(sellCfg.quantity));
-    const buyCfg = purchaseConfigs.find(c => Number(c.purchasePrice) > 0 && Number(c.quantity) > 0);
-    const unitBuyPrice = buyCfg
-      ? Number(buyCfg.purchasePrice) / Math.max(1, Number(buyCfg.quantity))
-      : 0;
+    // Mode avancé : calculer depuis les configs
+    let unitSellPrice = baseSellPrice;
+    let unitBuyPrice = basePurchasePrice;
+    let finalSellConfigs = sellConfigs;
+    let finalPurchaseConfigs = purchaseConfigs;
+
+    if (showAdvanced && sellConfigs.length > 0) {
+      const sellCfg = sellConfigs.find(c => Number(c.sellPrice) > 0 && Number(c.quantity) > 0);
+      if (sellCfg) unitSellPrice = Number(sellCfg.sellPrice) / Math.max(1, Number(sellCfg.quantity));
+      finalSellConfigs = sellConfigs.filter(c => Number(c.quantity) > 0 && Number(c.sellPrice) > 0);
+    } else {
+      // Mode simple : config par défaut
+      finalSellConfigs = [{ name: "Unité", quantity: 1, sellPrice: String(baseSellPrice) }];
+    }
+
+    if (showAdvanced && purchaseConfigs.length > 0) {
+      const buyCfg = purchaseConfigs.find(c => Number(c.purchasePrice) > 0 && Number(c.quantity) > 0);
+      if (buyCfg) unitBuyPrice = Number(buyCfg.purchasePrice) / Math.max(1, Number(buyCfg.quantity));
+      finalPurchaseConfigs = purchaseConfigs.filter(c => Number(c.quantity) > 0 && Number(c.purchasePrice) > 0);
+    }
 
     try {
       setLoading(true);
@@ -151,12 +173,14 @@ export default function CreateProductScreen() {
       formData.append("purchasePrice", String(Math.round(unitBuyPrice)));
       formData.append("quantity", "0");
       formData.append("alertLevel", "3");
-      formData.append("purchaseConfigs", JSON.stringify(purchaseConfigs.map(c => ({
+      const finalPC = finalPurchaseConfigs.map((c: any) => ({
         name: c.name, quantity: Number(c.quantity) || 0, purchasePrice: Number(c.purchasePrice) || 0,
-      })).filter(c => c.quantity > 0)));
-      formData.append("sellConfigs", JSON.stringify(sellConfigs.map(c => ({
+      })).filter((c: any) => c.quantity > 0);
+      const finalSC = finalSellConfigs.map((c: any) => ({
         name: c.name, quantity: Number(c.quantity) || 0, sellPrice: Number(c.sellPrice) || 0,
-      })).filter(c => c.quantity > 0 && c.sellPrice > 0)));
+      })).filter((c: any) => c.quantity > 0 && c.sellPrice > 0);
+      formData.append("purchaseConfigs", JSON.stringify(finalPC));
+      formData.append("sellConfigs", JSON.stringify(finalSC));
 
       if (imageUri) {
         const filename = imageUri.split("/").pop() || "photo.jpg";
@@ -223,6 +247,12 @@ export default function CreateProductScreen() {
           <TextInput style={[styles.unitChip, styles.unitInput, customUnit !== "" && styles.unitChipActive]} placeholder="Autre..." placeholderTextColor="#555" value={customUnit} onChangeText={setCustomUnit} />
         </View>
 
+        <Text style={styles.label}>Prix de vente unitaire (FCFA)</Text>
+        <TextInput style={styles.input} placeholder="Ex: 500" placeholderTextColor="#555" keyboardType="numeric" value={simpleSellPrice} onChangeText={setSimpleSellPrice} />
+
+        <Text style={styles.label}>Prix d'achat unitaire (optionnel)</Text>
+        <TextInput style={styles.input} placeholder="Ex: 350" placeholderTextColor="#555" keyboardType="numeric" value={simplePurchasePrice} onChangeText={setSimplePurchasePrice} />
+
         {/* Photo */}
         <Text style={styles.label}>Photo (optionnel)</Text>
         <TouchableOpacity style={styles.photoPicker} onPress={pickImage}>
@@ -234,10 +264,23 @@ export default function CreateProductScreen() {
           )}
         </TouchableOpacity>
 
-        {/* ===== PART 2 : ACHATS ===== */}
-        <View style={styles.divider} />
-        <Text style={styles.sectionTitle}>Comment achetez-vous ce produit ?</Text>
-        <Text style={styles.sectionHint}>Ajoutez vos conditionnements d'achat habituels.</Text>
+        {/* TOGGLE MODE AVANCÉ */}
+        <TouchableOpacity
+          style={styles.advancedToggle}
+          onPress={() => setShowAdvanced(!showAdvanced)}
+        >
+          <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={18} color="#A78BFA" />
+          <Text style={styles.advancedToggleText}>
+            {showAdvanced ? "Masquer les conditionnements" : "Ajouter des conditionnements d'achat / vente"}
+          </Text>
+        </TouchableOpacity>
+
+        {showAdvanced && (
+          <>
+            {/* ===== PART 2 : ACHATS ===== */}
+            <View style={styles.divider} />
+            <Text style={styles.sectionTitle}>Comment achetez-vous ce produit ?</Text>
+            <Text style={styles.sectionHint}>Ajoutez vos conditionnements d'achat habituels.</Text>
 
         {purchaseConfigs.map((c, i) => (
           <View key={i} style={styles.configCard}>
@@ -343,6 +386,9 @@ export default function CreateProductScreen() {
           </>
         ) : null}
 
+          </>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -384,6 +430,15 @@ const styles = StyleSheet.create({
   photoPicker: { borderRadius: 14, marginHorizontal: 20, overflow: "hidden", backgroundColor: "#1A152A", marginBottom: 8 },
   photoPreview: { width: "100%", height: 160, resizeMode: "cover" },
   photoPlaceholder: { height: 100, alignItems: "center", justifyContent: "center" },
+  advancedToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  advancedToggleText: { color: "#A78BFA", fontSize: 13, fontWeight: "600" },
 
   configCard: { backgroundColor: "#161228", borderRadius: 14, padding: 14, marginHorizontal: 20, marginBottom: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.04)" },
   configHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
