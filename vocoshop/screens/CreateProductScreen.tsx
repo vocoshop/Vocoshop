@@ -103,29 +103,31 @@ export default function CreateProductScreen() {
     if (!token) return Alert.alert("", "Session invalide.");
     try {
       setLoading(true);
-      const fd = new FormData();
-      fd.append("name", name.trim());
-      fd.append("category", category);
-      fd.append("baseUnit", effectiveUnit);
-      fd.append("unit", effectiveUnit);
-      fd.append("sellPrice", sellPrice);
-      const unitBuyPrice = buyCfgQty > 0 ? Number(buyPrice || 0) / buyCfgQty : 0;
-      fd.append("purchasePrice", String(unitBuyPrice));
-      fd.append("quantity", String(finalStock));
-      fd.append("alertLevel", "3");
-      if (expirationDate.trim()) fd.append("expirationDate", expirationDate.trim());
-      if (buyUnit && Number(buyPrice) > 0) {
-        fd.append("purchaseConfigs", JSON.stringify([{ name: buyLabel, quantity: buyCfgQty, purchasePrice: Number(buyPrice) }]));
-      } else {
-        fd.append("purchaseConfigs", "[]");
+      // Envoi JSON rapide (sans image)
+      const payload: any = {
+        name: name.trim(),
+        category,
+        baseUnit: effectiveUnit,
+        unit: effectiveUnit,
+        sellPrice,
+        purchasePrice: String(Math.round(unitBuyPrice)),
+        quantity: String(finalStock),
+        alertLevel: "3",
+        expirationDate: expirationDate.trim() || undefined,
+        purchaseConfigs: JSON.stringify(buyUnit ? [{ name: buyLabel, quantity: buyCfgQty, purchasePrice: Number(buyPrice) }] : []),
+        sellConfigs: JSON.stringify(sellUnit ? [{ name: sellLabel, quantity: 1, sellPrice: Number(sellPrice) }] : [{ name: effectiveUnit, quantity: 1, sellPrice: Number(sellPrice) }]),
+      };
+      const res = await API.post("/products", payload, { headers: { Authorization: `Bearer ${token}` } });
+
+      // Upload photo en arrière-plan
+      if (imageUri && res.data?._id) {
+        const fd = new FormData();
+        const fn = imageUri.split("/").pop() || "p.jpg";
+        fd.append("image", { uri: imageUri, name: fn, type: `image/${fn.split(".").pop() || "jpg"}` } as any);
+        API.patch(`/products/${res.data._id}`, fd, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+        }).catch(() => {});
       }
-      if (sellUnit && Number(sellPrice) > 0) {
-        fd.append("sellConfigs", JSON.stringify([{ name: sellLabel, quantity: 1, sellPrice: Number(sellPrice) }]));
-      } else {
-        fd.append("sellConfigs", JSON.stringify([{ name: effectiveUnit, quantity: 1, sellPrice: Number(sellPrice) }]));
-      }
-      if (imageUri) { const fn = imageUri.split("/").pop() || "p.jpg"; fd.append("image", { uri: imageUri, name: fn, type: `image/${fn.split(".").pop() || "jpg"}` } as any); }
-      await API.post("/products", fd, { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } });
       Alert.alert("Produit créé", name);
       nav.goBack();
     } catch (e: any) { Alert.alert("Erreur", e?.response?.data?.error || "Échec."); }
