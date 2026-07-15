@@ -102,6 +102,18 @@ const { token } = useContext(AuthContext);
     ? Number(quantity || 0) * selectedConfig.quantity
     : Number(quantity || 0);
 
+  // Plus gros conditionnement qui divise le stock
+  const stockBreakdown = useMemo(() => {
+    if (!hasConfigs || currentStock <= 0) return null;
+    const sorted = [...purchaseConfigs].sort((a, b) => b.quantity - a.quantity);
+    for (const c of sorted) {
+      if (c.quantity > 1 && currentStock >= c.quantity && currentStock % c.quantity === 0) {
+        return { name: c.name, count: currentStock / c.quantity, qty: c.quantity };
+      }
+    }
+    return null;
+  }, [currentStock, purchaseConfigs, hasConfigs]);
+
 const headers = useMemo(
 () => ({
 Authorization: token ? `Bearer ${token}` : "",
@@ -285,7 +297,14 @@ const offlineNow = isOffline();
         <Text style={styles.value}>{displayedProduct.category || "Non definie"}</Text>
 
         <Text style={styles.label}>Stock actuel</Text>
-        <Text style={styles.value}>{currentStock}</Text>
+        <Text style={styles.value}>
+          {currentStock} {baseUnit}s
+          {stockBreakdown && (
+            <Text style={{ color: "#A78BFA", fontWeight: "600" }}>
+              {" "}({stockBreakdown.count} {stockBreakdown.name.toLowerCase()}s)
+            </Text>
+          )}
+        </Text>
 
         {/* Expiration */}
         <Text style={styles.label}>Prochaine date d'expiration</Text>
@@ -313,9 +332,14 @@ const offlineNow = isOffline();
                     {c.name} ({c.quantity} {baseUnit}s)
                   </Text>
                   {c.purchasePrice > 0 && (
-                    <Text style={[styles.configChipSub, selectedConfig?.name === c.name && styles.configChipTextActive]}>
-                      {c.purchasePrice.toLocaleString()} FCFA
-                    </Text>
+                    <>
+                      <Text style={[styles.configChipSub, selectedConfig?.name === c.name && styles.configChipTextActive]}>
+                        {c.purchasePrice.toLocaleString()} FCFA
+                      </Text>
+                      <Text style={[styles.configChipUnit, selectedConfig?.name === c.name && styles.configChipTextActive]}>
+                        ≈ {Math.round(c.purchasePrice / c.quantity).toLocaleString()} FCFA/{baseUnit}
+                      </Text>
+                    </>
                   )}
                 </TouchableOpacity>
               ))}
@@ -433,6 +457,7 @@ marginTop: 8,
   configChipText: { color: "#A8A3C2", fontSize: 13, fontWeight: "600" },
   configChipTextActive: { color: "#A78BFA" },
   configChipSub: { color: "#6B7280", fontSize: 11, marginTop: 2 },
+  configChipUnit: { color: "#4ADE80", fontSize: 10, marginTop: 1, fontWeight: "600" },
   conversionText: {
     color: "#4ADE80",
     fontSize: 13,
