@@ -268,6 +268,14 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "  - L'unite de base du produit devient 'litre'.\n" +
               "  - Ex: bidon huile '25 L' → packaging: { name: 'Bidon', contains: 25 }, unit: 'litre'\n" +
               "  - Ex: bidon eau '20 Litres' → packaging: { name: 'Bidon', contains: 20 }, unit: 'litre'\n\n" +
+              "POUR LES CARTONS (LAIT, JUS, CONSERVES, OEUFS...) :\n" +
+              "  - Un carton est une boite en carton qui contient plusieurs unites.\n" +
+              "  - Lis les inscriptions imprimees sur le dessus ou le cote : '12 x 1L', '24 x 20cl', '6 bouteilles', '30 oeufs', '48 unites'.\n" +
+              "  - Extrais le NOMBRE avant le 'x' → c'est 'contains'.\n" +
+              "  - Si seul le nombre est visible sans 'x' (ex: '12 unites', 'contenant 24'), utilise ce nombre.\n" +
+              "  - Ex: carton lait '12 x 1L' → packaging: { name: 'Carton', contains: 12 }\n" +
+              "  - Ex: carton jus '24 x 20cl' → packaging: { name: 'Carton', contains: 24 }\n" +
+              "  - Ex: carton oeufs marque '30 oeufs' → packaging: { name: 'Carton', contains: 30 }\n\n" +
               "POUR LES CARTONS (BOUCHERIE, VOLAILLE, POISSON...) :\n" +
               "  - Un carton de viande/poisson affiche souvent son poids : '10 kg', '15 kg', '20 kg', '5 kg'.\n" +
               "  - 'name' = 'Carton', 'contains' = le poids en chiffres.\n" +
@@ -285,7 +293,9 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
               "  Photo unite: bouteille Coca 50cl | Photo casier: casier rouge 24 bouteilles → packaging: { name: \"Casier\", contains: 24 }\n" +
               "  Photo unite: paquet de sucre 1kg | Photo sac: sac Dania '50 KG' → packaging: { name: \"Sac\", contains: 50 }\n" +
               "  Photo sac seul: sac farine 'NET WT 25kg' → packaging: { name: \"Sac\", contains: 25 }\n" +
-              "  Photo unite: sachet lait 500g | Photo carton: carton 12 sachets → packaging: { name: \"Carton\", contains: 12 }\n\n" +
+              "  Photo unite: sachet lait 500g | Photo carton: carton 12 sachets → packaging: { name: \"Carton\", contains: 12 }\n" +
+              "  Photo unite: brique jus 20cl | Photo carton: carton '24 x 20cl' → packaging: { name: \"Carton\", contains: 24 }\n" +
+              "  Photo carton seul: carton oeufs '30 oeufs' → packaging: { name: \"Carton\", contains: 30 }\n\n" +
               "REGLE ABSOLUE — LA MARQUE FAIT PARTIE DU NOM:\n" +
               "Deux memes produits avec la MEME taille/poids mais de MARQUES DIFFERENTES sont des produits DIFFERENTS.\n" +
               "Le nom DOIT inclure la marque quand elle est visible.\n" +
