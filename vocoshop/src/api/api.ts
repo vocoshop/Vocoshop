@@ -1,6 +1,6 @@
 // src/api/api.ts
 
-import axios from "axios";
+import axios, { InternalAxiosRequestConfig } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { navigate } from "./navigation/navigationRef";
@@ -13,8 +13,8 @@ import { navigate } from "./navigation/navigationRef";
  * - Utiliser EXPO_PUBLIC_API_URL en production
  */
 const envUrl = process.env.EXPO_PUBLIC_API_URL;
-const extraUrl = (Constants.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL;
-const manifestUrl = (Constants as any)?.manifest?.extra?.EXPO_PUBLIC_API_URL;
+const extraUrl = (Constants.expoConfig as Record<string, any>)?.extra?.EXPO_PUBLIC_API_URL;
+const manifestUrl = (Constants as Record<string, any>)?.manifest?.extra?.EXPO_PUBLIC_API_URL;
 export const API_BASE = envUrl || extraUrl || manifestUrl || "https://vocoshop.onrender.com";
 if (__DEV__) console.warn("🔗 API_BASE =", API_BASE);
 
@@ -30,7 +30,7 @@ const API = axios.create({
 🔐 REQUEST INTERCEPTOR — TOKEN AUTO
 ===================================================== */
 API.interceptors.request.use(
-async (config: any) => {
+async (config: InternalAxiosRequestConfig) => {
 try {
 const token = await AsyncStorage.getItem("token");
 

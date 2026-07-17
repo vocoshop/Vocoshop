@@ -57,7 +57,7 @@ export async function enqueueJob(params: EnqueueParams): Promise<OfflineJob> {
     body: params.body,
   });
 
-  const list: any[] = await loadQueue();
+  const list: OfflineJob[] = await loadQueue();
 
   // 🔥 PROTECTION ANTI DUPLICATE
   const alreadyExists = list.find(
@@ -172,7 +172,7 @@ export async function processQueue(opts?: { max?: number }): Promise<{
   try {
     const max = typeof opts?.max === "number" ? opts!.max : 50;
 
-    let list: any[] = await loadQueue();
+    let list: OfflineJob[] = await loadQueue();
     if (list.length === 0) return { processed: 0, failed: 0, skipped: 0, remaining: 0 };
 
     let processed = 0;

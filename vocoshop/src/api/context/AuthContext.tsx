@@ -14,6 +14,7 @@ import Constants from "expo-constants";
 import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 
 import API from "../api";
+import { User } from "../types/user";
 
 /* =====================================================
 TYPES
@@ -21,7 +22,7 @@ TYPES
 interface LoginResponse {
 token: string;
 storeId: string;
-user: any;
+user: User;
 storeType?: string;
 isOnboarded?: boolean;
 otpSkipped?: boolean;
@@ -30,7 +31,7 @@ otpSkipped?: boolean;
 type ApplySessionPayload = {
 token: string;
 storeId: string;
-user?: any;
+user?: User | null;
 storeType?: string | null;
 isOnboarded?: boolean;
 };
@@ -71,7 +72,7 @@ type LoginResponseData = {
 };
 
 interface AuthContextType {
-user: any;
+user: User | null;
 token: string | null;
 storeId: string | null;
 loading: boolean;
@@ -135,8 +136,8 @@ if (existing && existing.trim()) return existing.trim();
 let id = "";
 
 try {
-const fn = (Application as any)?.getIosIdForVendorAsync;
-if (Platform.OS === "ios" && typeof fn === "function") {
+const fn = typeof Application?.getIosIdForVendorAsync === "function" ? Application.getIosIdForVendorAsync : null;
+if (Platform.OS === "ios" && fn) {
 const v = await fn();
 id = String(v || "").trim();
 }
@@ -165,8 +166,8 @@ return id;
 /* =====================================================
 PROVIDER
 ===================================================== */
-export const AuthProvider = ({ children }: any) => {
-const [user, setUser] = useState<any>(null);
+export const AuthProvider = ({ children }: React.PropsWithChildren) => {
+const [user, setUser] = useState<User | null>(null);
 const [token, setToken] = useState<string | null>(null);
 const [storeId, setStoreId] = useState<string | null>(null);
 const [loading, setLoading] = useState(true);
@@ -241,7 +242,7 @@ if (typeof p.isOnboarded === "boolean") {
 OFFLINE LISTENER
 ===================================================== */
 useEffect(() => {
-let unsub: any = null;
+let unsub: (() => void) | null = null;
 let mounted = true;
 
 const normalizeOnline = (state: NetInfoState) => {
@@ -403,7 +404,7 @@ options?: VerifyOtpOptions
 try {
 const deviceId = await getStableDeviceId();
 
-const payload: any = { phone, code, deviceId };
+const payload: Record<string, string | boolean> = { phone, code, deviceId };
 if (options?.forceRelink === true) payload.forceRelink = true;
 
 const res = await API.post<LoginResponse>("/otp/verify", payload);
