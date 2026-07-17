@@ -91,9 +91,9 @@ export default function CreateProductScreen() {
   }, [sellPrice, buyPrice, buyCfgQty]);
 
   const pickImage = async () => {
-    const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!p.granted) return Alert.alert("Permission refusée");
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
+    const p = await ImagePicker.requestCameraPermissionsAsync();
+    if (!p.granted) return Alert.alert("Permission refusée", "Active la caméra dans les réglages.");
+    const r = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
     if (!r.canceled) setImageUri(r.assets[0].uri);
   };
 
