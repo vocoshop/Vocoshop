@@ -6,12 +6,12 @@ TextInput,
 TouchableOpacity,
 StyleSheet,
 ActivityIndicator,
-  Alert,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Animated,
-  Easing,
+Alert,
+ScrollView,
+KeyboardAvoidingView,
+Platform,
+Animated,
+Easing,
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -42,12 +42,12 @@ const [callingCode, setCallingCode] = useState(route?.params?.preselectedPhone
 );
   const [selectedStoreName, setSelectedStoreName] = useState(route?.params?.selectedStoreName || "");
   const [reauth, setReauth] = useState(!!route?.params?.reauth);
-  const [showForgot, setShowForgot] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [recoveryCode, setRecoveryCode] = useState("");
-  const [forgotLoading, setForgotLoading] = useState(false);
 
-const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
 
 const fadeAnim = useRef(new Animated.Value(1)).current;
 const slideAnim = useRef(new Animated.Value(0)).current;
@@ -80,7 +80,7 @@ const animateToStep = (target: "phone" | "password") => {
     }
   }, [route?.params?.preselectedPhone]);
 
-  // Reauth : session expirï¿½e, on va direct au mot de passe
+  // Reauth : session expirée, on va direct au mot de passe
   useEffect(() => {
     if (reauth) {
       (async () => {
@@ -132,7 +132,7 @@ const continueWithPhone = async () => {
   if (loading) return;
   const cleanPhone = buildFullPhone();
   if (!cleanPhone || cleanPhone.length < 8) {
-    Alert.alert("", "Entre un numï¿½ro.");
+    Alert.alert("", "Entre un numéro.");
     return;
   }
   try {
@@ -173,13 +173,13 @@ setLoading(true);
 setErrorMsg("");
     try {
       await loginWithPassword(cleanPhone, pwd);
-      // Sauvegarder le tï¿½lï¿½phone pour le reauth
+      // Sauvegarder le téléphone pour le reauth
       await AsyncStorage.setItem("voco_last_phone", cleanPhone);
-      // Vï¿½rifier si une invitation propriï¿½taire est en attente
+      // Vérifier si une invitation propriétaire est en attente
 try {
 const invRes = await API.get("/invitations/pending", { params: { phone: cleanPhone } });
 if ((invRes.data as any)?.hasInvitation) {
-// Rï¿½cupï¿½rer le token depuis la notif ou stockage local
+// Récupérer le token depuis la notif ou stockage local
 const tk = await AsyncStorage.getItem("token");
 navigation.reset({
 index: 0,
@@ -188,82 +188,43 @@ routes: [{ name: "AcceptInvitation", params: { phone: cleanPhone, token: tk ? "p
 return;
 }
 } catch {}
-    navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
-  } catch (e: any) {
-    setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
-  } finally {
-    setLoading(false);
-  }
+navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
+} catch (e: any) {
+setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
+} finally {
+setLoading(false);
+}
   };
 
-  const resetPassword = async () => {
+  const doResetPassword = async () => {
     const cleanPhone = buildFullPhone();
-    if (!cleanPhone || cleanPhone.length < 8) return Alert.alert("", "Entre un numï¿½ro valide.");
-    if (!recoveryCode || recoveryCode.length < 4) return Alert.alert("", "Entre le code de rï¿½cupï¿½ration.");
-    if (!newPassword || newPassword.length !== 6) return Alert.alert("", "Le mot de passe doit contenir 6 chiffres.");
+    if (!recoveryCode || !newPassword) return Alert.alert("", "Remplis tous les champs.");
+    if (newPassword.length !== 6) return Alert.alert("", "Le mot de passe doit contenir 6 chiffres.");
     setForgotLoading(true);
     try {
       await API.post("/auth/reset-password", { phone: cleanPhone, recoveryCode, newPassword });
-      Alert.alert("Succï¿½s", "Mot de passe rï¿½initialisï¿½. Connectez-vous.", [
-        { text: "OK", onPress: () => { setShowForgot(false); setNewPassword(""); setRecoveryCode(""); animateToStep("password"); } }
+      Alert.alert("Succès", "Mot de passe réinitialisé. Connectez-vous.", [
+        { text: "OK", onPress: () => { setShowForgot(false); setRecoveryCode(""); setNewPassword(""); } }
       ]);
     } catch (e: any) {
-      Alert.alert("Erreur", e?.response?.data?.error || "ï¿½chec.");
+      Alert.alert("Erreur", e?.response?.data?.error || "Échec.");
     } finally { setForgotLoading(false); }
   };
 
-return (
+  return (
 <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
           <Text style={styles.title}>
-            {reauth ? "Session expirï¿½e" : step === "phone" ? "Bienvenue sur Vocoshop" : "Bienvenue"}
+            {reauth ? "Session expirée" : step === "phone" ? "Bienvenue sur Vocoshop" : "Bienvenue"}
           </Text>
 
           <Text style={styles.subtitle}>
-            {reauth ? "Inactivitï¿½ prolongï¿½e. Entrez votre mot de passe." :
-             step === "phone" ? "La gestion simple et intelligente de votre activitï¿½." : "Entrez votre code secret 6 chiffres"}
+            {reauth ? "Inactivité prolongée. Entrez votre mot de passe." :
+             step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
           </Text>
-
-          {showForgot ? (
-            <View>
-              <Text style={{ color: "#A78BFA", fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: 16 }}>
-                Rï¿½initialiser le mot de passe
-              </Text>
-              <TextInput
-                style={styles.forgotInput}
-                placeholder="Code de rï¿½cupï¿½ration"
-                placeholderTextColor="#777"
-                keyboardType="numeric"
-                value={recoveryCode}
-                onChangeText={setRecoveryCode}
-                autoFocus
-              />
-              <TextInput
-                style={styles.forgotInput}
-                placeholder="Nouveau mot de passe (6 chiffres)"
-                placeholderTextColor="#777"
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={6}
-                value={newPassword}
-                onChangeText={setNewPassword}
-              />
-              <TouchableOpacity
-                style={[styles.btn, forgotLoading && { opacity: 0.5 }]}
-                onPress={resetPassword}
-                disabled={forgotLoading}
-              >
-                {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Rï¿½initialiser</Text>}
-              </TouchableOpacity>
-              <TouchableOpacity style={{ marginTop: 12 }} onPress={() => setShowForgot(false)}>
-                <Text style={{ color: "#6B7280", textAlign: "center" }}>Annuler</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
 
 {step === "phone" ? (
 
@@ -292,7 +253,7 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.phoneCustomInput}
 />
 </View>
-                <Text style={styles.infoText}>Entrez votre numï¿½ro de tï¿½lï¿½phone pour commencer.</Text>
+                <Text style={styles.infoText}>Entrez votre numéro de téléphone pour commencer.</Text>
 {!!errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} onPress={continueWithPhone} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Continuer</Text>}
@@ -335,19 +296,28 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Se connecter</Text>}
 </TouchableOpacity>
 
-        <TouchableOpacity style={styles.backBtn} onPress={() => { setForgotStep(""); setOtpCode(""); setNewPassword(""); resetForm(); }}>
-          <Text style={styles.backBtnText}>Changer de numï¿½ro</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={resetForm}>
+          <Text style={styles.backBtnText}>Changer de numéro</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setShowForgot(true)}>
+        <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setShowForgot(!showForgot)}>
           <Text style={{ color: "#A78BFA", fontSize: 13, fontWeight: "600", textAlign: "center" }}>
-            {forgotLoading ? "Envoi du code..." : "Mot de passe oubliï¿½ ?"}
+            {showForgot ? "Annuler" : "Mot de passe oublié ?"}
           </Text>
         </TouchableOpacity>
 
-</View>
-)}
-          )}
+        {showForgot && (
+          <View style={{ marginTop: 16 }}>
+            <TextInput style={styles.forgotInput} placeholder="Code de récupération" placeholderTextColor="#777" keyboardType="numeric" value={recoveryCode} onChangeText={setRecoveryCode} />
+            <TextInput style={styles.forgotInput} placeholder="Nouveau mot de passe (6 chiffres)" placeholderTextColor="#777" keyboardType="numeric" secureTextEntry maxLength={6} value={newPassword} onChangeText={setNewPassword} />
+            <TouchableOpacity style={[styles.btn, forgotLoading && { opacity: 0.5 }]} onPress={doResetPassword} disabled={forgotLoading}>
+              {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Réinitialiser</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+
+      </View>
+    )}
 
         </Animated.View>
 </ScrollView>
