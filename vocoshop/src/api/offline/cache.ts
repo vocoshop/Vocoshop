@@ -57,7 +57,7 @@ export async function getRaw(key: string): Promise<any | null> {
   }
 }
 
-export async function setRaw(key: string, value: any): Promise<void> {
+export async function setRaw<T = any>(key: string, value: T): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(value));
 }
 
@@ -296,7 +296,7 @@ export async function getCacheStats(): Promise<{
 }> {
   const allKeys = await AsyncStorage.getAllKeys();
   const cacheKeys = allKeys.filter((k) => k.startsWith(CACHE_PREFIX));
-  const entries: any[] = [];
+  const entries: { key: string; age: number; stale: boolean; version: number }[] = [];
   let totalSize = 0;
 
   for (const key of cacheKeys) {
