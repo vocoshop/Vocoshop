@@ -108,14 +108,16 @@ const exists = await Store.findOne({ phone: phoneNorm }).select("_id").lean();
     }).select("_id").lean();
     if (!sponsor) return next(new ValidationError("Code de parrainage invalide"));
   }
-const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const recoveryCode = String(Math.floor(100000 + Math.random() * 900000)); // 6 chiffres
 
-const ownershipStatus = isOwner === false ? "pending_invite" : "active";
+  const ownershipStatus = isOwner === false ? "pending_invite" : "active";
 
-const store = await Store.create({
-phone: phoneNorm,
-passwordHash,
-storeName: typeof storeName === "string" ? storeName.trim() : "",
+  const store = await Store.create({
+    phone: phoneNorm,
+    passwordHash,
+    recoveryCode,
+    storeName: typeof storeName === "string" ? storeName.trim() : "",
 ownerName: typeof ownerName === "string" ? ownerName.trim() : undefined,
 ownerPhone: typeof ownerPhone === "string" ? ownerPhone.trim() : undefined,
 deviceId: deviceId || null,
@@ -138,11 +140,12 @@ trialEnd,
 
   const token = generateToken(store._id.toString(), store.phone);
 
-return res.json({
-message: "Compte cree",
-storeId: store._id,
-token,
-isOnboarded: typeof (store as any).isOnboarded === "boolean"
+  return res.json({
+    message: "Compte cree",
+    storeId: store._id,
+    token,
+    recoveryCode,
+    isOnboarded: typeof (store as any).isOnboarded === "boolean"
 ? !!(store as any).isOnboarded
 : !!(store.storeName && String(store.storeName).trim().length > 0),
 phoneVerified: false,
@@ -294,20 +297,22 @@ const token = generateToken(store._id.toString(), store.phone);
 });
 
 /* =====================================================
-  MOT DE PASSE OUBLIÉ — Réinitialisation simplifiée
+  MOT DE PASSE OUBLIÉ — Réinitialisation avec code de récupération
   POST /api/auth/reset-password
-  Body: { phone, newPassword }
-  (sans OTP en attendant le fournisseur SMS)
+  Body: { phone, recoveryCode, newPassword }
 ===================================================== */
 export const resetPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const phone = normalizePhone(req.body?.phone);
+  const recoveryCode = safeTrim(req.body?.recoveryCode);
   const newPassword = safeTrim(req.body?.newPassword);
 
   if (!phone) return next(new ValidationError("Téléphone requis"));
+  if (!recoveryCode) return next(new ValidationError("Code de récupération requis"));
   if (!newPassword || newPassword.length !== 6) return next(new ValidationError("Le mot de passe doit contenir 6 chiffres"));
 
   const store = await Store.findOne({ phone });
   if (!store) return next(new NotFoundError("Aucun compte avec ce numéro"));
+  if (store.recoveryCode !== recoveryCode) return next(new ValidationError("Code de récupération incorrect"));
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
   store.passwordHash = passwordHash;

@@ -23,7 +23,8 @@ deviceId?: string;
 deviceLastChangedAt?: Date | null;
 deviceChangeCount: number;
 
-passwordHash?: string | null;
+  passwordHash?: string | null;
+  recoveryCode?: string | null;
 
 shopId: string;
 
@@ -121,7 +122,8 @@ deviceId: { type: String, trim: true },
 deviceLastChangedAt: { type: Date, default: null },
 deviceChangeCount: { type: Number, default: 0 },
 
-passwordHash: { type: String, default: null },
+  passwordHash: { type: String, default: null },
+  recoveryCode: { type: String, default: null },
 
 shopId: {
 type: String,
