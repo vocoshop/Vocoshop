@@ -222,7 +222,7 @@ setLoading(false);
           </Text>
 
           <Text style={styles.subtitle}>
-            {showForgot ? "Entrez votre code de récupération et un nouveau mot de passe." :
+            {showForgot ? "Entrez votre code de récupération (6 chiffres) et votre nouveau mot de passe." :
              reauth ? "Inactivité prolongée. Entrez votre mot de passe." :
              step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
           </Text>
@@ -313,9 +313,6 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 
         {showForgot && (
           <View style={{ marginTop: 16 }}>
-            <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, textAlign: "center", marginBottom: 16, lineHeight: 18 }}>
-              Saisis le code de récupération (6 chiffres) reçu à l'inscription, puis choisis un nouveau mot de passe.
-            </Text>
 
             <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", paddingHorizontal: 14, marginBottom: 10 }}>
               <Text style={{ fontSize: 16, marginRight: 10 }}>🔑</Text>
