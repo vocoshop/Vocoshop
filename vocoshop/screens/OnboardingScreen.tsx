@@ -224,7 +224,7 @@ try {
     setSaveStep("Configuration de la boutique");
     setSaveProgress(50);
     if (authHeader) {
-      const payload: any = { storeName: cleanStoreName };
+      const payload: Record<string, string> = { storeName: cleanStoreName };
       if (cleanCity) payload.city = cleanCity;
       if (cleanAgentCode) payload.agentCode = cleanAgentCode;
       await updateStoreOnboarding(payload, { Authorization: authHeader });
@@ -273,7 +273,7 @@ try {
 
     setSaveStep("Mise à jour de la boutique");
     setSaveProgress(50);
-    const payload: any = { storeName: cleanStoreName, city: cleanCity };
+    const payload: Record<string, string> = { storeName: cleanStoreName, city: cleanCity };
     if (cleanAgentCode) payload.agentCode = cleanAgentCode;
     if (cleanReferralCode) payload.referralCode = cleanReferralCode;
     if (cleanOwnerName) payload.ownerName = cleanOwnerName;

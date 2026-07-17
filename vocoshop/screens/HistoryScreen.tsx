@@ -65,7 +65,7 @@ minute: "2-digit",
 
 // Regroupement par mois
 const groupByMonth = () => {
-const groups: any = {};
+const groups: Record<string, any[]> = {};
 const allHistory = [...history, ...serverHistory];
 allHistory.forEach((item) => {
 const date = new Date(item.date || item.createdAt);
@@ -106,7 +106,7 @@ onPress={() => navigation.goBack()}
 {/* Mois */}
 <Text style={styles.monthTitle}>{monthKey}</Text>
 
-{groupedHistory[monthKey].map((item: any) => (
+{groupedHistory[monthKey].map((item) => (
 <TouchableOpacity
 key={item.id}
 style={styles.card}

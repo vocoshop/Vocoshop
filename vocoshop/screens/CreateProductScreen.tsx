@@ -109,7 +109,7 @@ export default function CreateProductScreen() {
     if (!token) return Alert.alert("", "Session invalide.");
     try {
       setLoading(true);
-      const payload: any = {
+      const payload: Record<string, any> = {
         name: name.trim(),
         category,
         baseUnit: effectiveUnit,

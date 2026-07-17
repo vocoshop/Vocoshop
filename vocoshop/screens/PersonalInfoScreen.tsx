@@ -92,7 +92,7 @@ return;
 setLoading(true);
 
 // ✅ IMPORTANT: on n’envoie plus agentCode depuis l’app (verrou total)
-const payload: any = {
+const payload = {
 storeName: cleanStoreName,
 city: cleanCity,
 };

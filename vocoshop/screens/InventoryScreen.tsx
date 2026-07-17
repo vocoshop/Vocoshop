@@ -353,7 +353,7 @@ const sessionRes = await API.get(`/inventory/session/${sid}`, {
 headers: safeHeaders(),
 });
 
-const session = sessionRes.data as { lines?: any[] };
+const session = sessionRes.data as { lines?: { productId?: { _id?: string; name?: string; category?: string; price?: number }; productName?: string; category?: string; countedQuantity?: number }[] };
 const lines = Array.isArray(session?.lines) ? session.lines : [];
 
 const key = `inventory_history_${storeId}`;
@@ -364,7 +364,7 @@ list.unshift({
 id: Date.now().toString(),
 date: new Date().toISOString(),
 count: lines.length,
-products: lines.map((l: any) => ({
+products: lines.map((l) => ({
 id: l.productId?._id || l.productId,
 name: l.productName || l.productId?.name,
 category: l.category || l.productId?.category,

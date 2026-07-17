@@ -525,7 +525,11 @@ if (cart.length === 0) return Alert.alert("Erreur", "Votre panier est vide.");
 try {
 setSendingOrder(true);
 
-const payload: any = {
+const payload: {
+items: { productId: string; productName: string; quantity: number; unitPrice: number }[];
+totalEstimated: number;
+supplierId?: string;
+} = {
 items: cart.map((c) => ({
 productId: c.product._id,
 productName: c.product.name,
@@ -1055,7 +1059,7 @@ await onRefresh();
 }}
 />
 }
-renderItem={({ item }: any) => {
+renderItem={({ item }: { item: Supplier }) => {
 const isNone = !item._id;
 const active = isNone ? !selectedSupplierId : selectedSupplierId === item._id;
 

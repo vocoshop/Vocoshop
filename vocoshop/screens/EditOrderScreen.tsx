@@ -89,7 +89,7 @@ if (!orderId) return;
 try {
 setSaving(true);
 
-const payload: any = {
+const payload = {
 note,
 ...(next || {}),
 };
