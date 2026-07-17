@@ -78,7 +78,11 @@ const [editingQty, setEditingQty] = useState<string | null>(null);
     (async () => {
       try {
         const flag = await AsyncStorage.getItem("voco_auto_closed");
-        if (flag === "true") {
+        if (flag && flag !== "true") {
+          // flag = reportId → ouvrir le bilan directement
+          await AsyncStorage.removeItem("voco_auto_closed");
+          navigation.navigate("ReportDetail", { reportId: flag });
+        } else if (flag === "true") {
           await AsyncStorage.removeItem("voco_auto_closed");
           Alert.alert(
             "Journée clôturée",

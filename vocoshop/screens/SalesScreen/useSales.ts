@@ -303,7 +303,8 @@ const today = new Date().toISOString().split("T")[0];
       try {
         const res = await API.post("/sales/close-day", {}, { headers });
         if (res.data?.report) {
-          await AsyncStorage.setItem("voco_auto_closed", "true");
+          const reportId = res.data.report._id;
+          await AsyncStorage.setItem("voco_auto_closed", reportId || "true");
         }
       } catch (e) { console.log("⚠️ auto-close day:", e); }
       resetDayOpen();
