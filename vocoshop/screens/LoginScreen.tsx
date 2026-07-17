@@ -299,17 +299,7 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Se connecter</Text>}
           </TouchableOpacity>
 
-        </>}
-
-          <TouchableOpacity style={styles.backBtn} onPress={() => { setShowForgot(false); setRecoveryCode(""); setNewPassword(""); resetForm(); }}>
-            <Text style={styles.backBtnText}>Changer de numéro</Text>
-          </TouchableOpacity>
-
-        <TouchableOpacity style={{ marginTop: showForgot ? 16 : 20 }} onPress={() => { setShowForgot(!showForgot); setRecoveryCode(""); setNewPassword(""); }}>
-          <Text style={{ color: "#A78BFA", fontSize: 14, fontWeight: "600", textAlign: "center" }}>
-            {showForgot ? "← Retour à la connexion" : "Mot de passe oublié ?"}
-          </Text>
-        </TouchableOpacity>
+          </>}
 
         {showForgot && (
           <View style={{ marginTop: 16 }}>
@@ -329,6 +319,16 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
             </TouchableOpacity>
           </View>
         )}
+
+          <TouchableOpacity style={styles.backBtn} onPress={() => { setShowForgot(false); setRecoveryCode(""); setNewPassword(""); resetForm(); }}>
+            <Text style={styles.backBtnText}>Changer de numéro</Text>
+          </TouchableOpacity>
+
+        <TouchableOpacity style={{ marginTop: showForgot ? 16 : 20 }} onPress={() => { setShowForgot(!showForgot); setRecoveryCode(""); setNewPassword(""); }}>
+          <Text style={{ color: "#A78BFA", fontSize: 14, fontWeight: "600", textAlign: "center" }}>
+            {showForgot ? "← Retour à la connexion" : "Mot de passe oublié ?"}
+          </Text>
+        </TouchableOpacity>
 
       </View>
     )}
