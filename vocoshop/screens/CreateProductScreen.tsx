@@ -8,6 +8,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
+import { isOnline } from "../src/api/utils/network";
+import { runOrQueue } from "../src/api/offline/queue";
 
 const CATEGORIES = [
   "Boissons", "Épicerie", "Laitière", "Boucherie", "Hygiène",
@@ -103,7 +105,6 @@ export default function CreateProductScreen() {
     if (!token) return Alert.alert("", "Session invalide.");
     try {
       setLoading(true);
-      // Envoi JSON rapide (sans image)
       const payload: any = {
         name: name.trim(),
         category,
@@ -117,6 +118,23 @@ export default function CreateProductScreen() {
         purchaseConfigs: buyUnit ? [{ name: buyLabel, quantity: buyCfgQty, purchasePrice: Number(buyPrice) }] : [],
         sellConfigs: sellUnit ? [{ name: sellLabel, quantity: 1, sellPrice: Number(sellPrice) }] : [{ name: effectiveUnit, quantity: 1, sellPrice: Number(sellPrice) }],
       };
+
+      if (!isOnline()) {
+        // --- OFFLINE : on queue ---
+        await runOrQueue({
+          title: "Création produit",
+          method: "POST",
+          url: "/products",
+          body: payload,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        Alert.alert("Hors-ligne ✅", "Produit enregistré. La synchronisation se fera automatiquement.", [
+          { text: "OK", onPress: () => nav.navigate("AddStock") },
+        ]);
+        return;
+      }
+
+      // --- ONLINE : normal ---
       const res = await API.post("/products", payload, { headers: { Authorization: `Bearer ${token}` } });
 
       // Upload photo en arrière-plan
