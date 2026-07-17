@@ -7,7 +7,6 @@ import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
 import { safeTrim } from "../utils/helpers";
-import OTP from "../models/Otp";
 
 function makePhoneVariants(phone: string): string[] {
   const variants = [phone];
@@ -295,33 +294,24 @@ const token = generateToken(store._id.toString(), store.phone);
 });
 
 /* =====================================================
-  MOT DE PASSE OUBLIÉ — Réinitialisation
+  MOT DE PASSE OUBLIÉ — Réinitialisation simplifiée
   POST /api/auth/reset-password
-  Body: { phone, code, newPassword }
+  Body: { phone, newPassword }
+  (sans OTP en attendant le fournisseur SMS)
 ===================================================== */
 export const resetPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const phone = normalizePhone(req.body?.phone);
-  const code = safeTrim(req.body?.code);
   const newPassword = safeTrim(req.body?.newPassword);
 
-  if (!phone || !code) return next(new ValidationError("Téléphone et code requis"));
+  if (!phone) return next(new ValidationError("Téléphone requis"));
   if (!newPassword || newPassword.length !== 6) return next(new ValidationError("Le mot de passe doit contenir 6 chiffres"));
 
-  // Vérifier OTP
-  const otp = await OTP.findOne({ phone, code, expiresAt: { $gte: new Date() } });
-  if (!otp) return next(new ValidationError("Code incorrect ou expiré"));
-
-  // Trouver le store
   const store = await Store.findOne({ phone });
-  if (!store) return next(new NotFoundError("Compte introuvable"));
+  if (!store) return next(new NotFoundError("Aucun compte avec ce numéro"));
 
-  // Mettre à jour le mot de passe
   const passwordHash = await bcrypt.hash(newPassword, 10);
   store.passwordHash = passwordHash;
   await store.save();
-
-  // Supprimer l'OTP
-  await OTP.deleteOne({ _id: otp._id });
 
   return res.json({ message: "Mot de passe réinitialisé avec succès" });
 });
