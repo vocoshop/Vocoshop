@@ -136,14 +136,17 @@ import { LanguageProvider } from "./src/api/context/LanguageContext";
 import { initSyncEngine } from "./src/api/offline/syncEngine";
 import { initOcrSyncEngine } from "./src/api/ocr/ocrOfflineQueue";
 
-const Stack = createStackNavigator();
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "./src/api/types/navigation";
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 /**
 * EntryGate ULTRA BÉTON (fix loop onboarding):
 * - relit token/isOnboarded À CHAQUE FOCUS sur Entry
 * - fallback serveur /store/me si isOnboarded local false
 */
-function EntryGate({ navigation }: any) {
+function EntryGate({ navigation }: NativeStackScreenProps<RootStackParamList, "Entry">) {
 const { token, loading, tryAutoLogin } = useContext(AuthContext);
 
 const [bootLoading, setBootLoading] = useState(true);
