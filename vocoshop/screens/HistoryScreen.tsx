@@ -13,7 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import API from "../src/api/api";
 
 export default function HistoryScreen({ route }: any) {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const storeId = route.params?.storeId;
 const [history, setHistory] = useState<any[]>([]);
 const [serverHistory, setServerHistory] = useState<any[]>([]);

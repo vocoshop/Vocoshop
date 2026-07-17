@@ -54,8 +54,8 @@ type DailyReport = {
 };
 
 export default function ReportDetailScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const route = useRoute();
   const { reportId } = (route.params || {}) as RouteParams;
 
   const { token, storeId } = useContext(AuthContext);

@@ -7,7 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import { AuthContext } from "../src/api/context/AuthContext";
 
 export default function ManageShopScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { user } = useContext(AuthContext);
 
 const role = user?.role || "employee";

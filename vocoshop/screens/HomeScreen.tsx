@@ -24,7 +24,7 @@ export default function HomeScreen() {
   const { subscription } = useSubscription();
   const { t } = useLanguage();
 
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const rawPerms = user?.permissions;

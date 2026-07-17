@@ -14,7 +14,7 @@ import { useNotifications } from "../src/api/context/NotificationContext";
 
 export default function NotificationScreen() {
 
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 
 const {
 notifications,

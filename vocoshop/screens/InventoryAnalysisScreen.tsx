@@ -36,7 +36,7 @@ list: InventoryItem[];
 }
 
 export default function InventoryAnalysisScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [summary, setSummary] = useState<Summary | null>(null);

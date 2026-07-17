@@ -44,8 +44,8 @@ return { label: "En cours", icon: "time-outline" as const, color: "#FACC15" };
 }
 
 export default function InventorySessionDetailScreen() {
-const route = useRoute<any>();
-const navigation = useNavigation<any>();
+const route = useRoute();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const sessionId: string | undefined = route.params?.sessionId;

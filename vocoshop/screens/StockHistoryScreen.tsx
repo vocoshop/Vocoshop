@@ -14,7 +14,7 @@ import { AuthContext } from "../src/api/context/AuthContext";
 import { useNavigation } from "@react-navigation/native";
 
 export default function StockHistoryScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [list, setList] = useState<any[]>([]);

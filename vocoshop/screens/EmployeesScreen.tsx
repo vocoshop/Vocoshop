@@ -17,7 +17,7 @@ import { AuthContext } from "../src/api/context/AuthContext";
 import { Employee, listEmployees, toggleEmployee } from "../src/api/services/employeeService";
 
 export default function EmployeesScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { getAuthHeaders, isReady } = useContext(AuthContext);
 
 // ⚠️ IMPORTANT: ne pas figer headers trop tôt si token arrive après

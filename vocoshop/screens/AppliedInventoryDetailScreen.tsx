@@ -27,8 +27,8 @@ appliedAt?: string | Date;
 };
 
 export default function AppliedInventoryDetailScreen() {
-const route = useRoute<any>();
-const navigation = useNavigation<any>();
+const route = useRoute();
+const navigation = useNavigation();
 const { token } = useContext(AuthContext);
 
 // ✅ sessionId peut venir de "sessionId" (normal) ou "_id" (fallback)

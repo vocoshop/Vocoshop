@@ -41,8 +41,8 @@ status?: string;
 };
 
 export default function AddProductScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 
 const {
 token,

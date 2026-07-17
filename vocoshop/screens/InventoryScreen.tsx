@@ -58,7 +58,7 @@ category?: string;
 };
 
 export default function InventoryScreen({ navigation }: any) {
-const route = useRoute<any>();
+const route = useRoute();
 
 const {
 token,

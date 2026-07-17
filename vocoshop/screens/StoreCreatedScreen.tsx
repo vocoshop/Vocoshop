@@ -14,8 +14,8 @@ import * as Clipboard from "expo-clipboard";
 import API from "../src/api/api";
 
 export default function StoreCreatedScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const route = useRoute();
 
   const shareLink = route.params?.shareLink || "";
   const storeName = route.params?.storeName || "ta boutique";

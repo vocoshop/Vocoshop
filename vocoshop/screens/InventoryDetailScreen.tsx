@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 export default function InventoryDetailScreen({ route }: any) {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { data } = route.params;
 
 if (!data || !data.products || data.products.length === 0) {

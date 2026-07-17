@@ -29,7 +29,7 @@ note?: string;
 }
 
 export default function SuppliersScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const headers = useMemo(

@@ -47,8 +47,8 @@ supplierId: string;
 };
 
 export default function SupplierDetailScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 const { supplierId } = (route.params || {}) as RouteParams;
 
 const { token, storeId } = useContext(AuthContext);

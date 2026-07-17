@@ -13,8 +13,8 @@ const CANCEL_PREFIX = "https://www.vocoshop.app/paiement/cancel";
 type Status = "loading" | "paying" | "success" | "cancelled" | "error";
 
 export default function YabetooWebViewScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const route = useRoute();
   const { refreshSubscription } = useSubscription();
   const checkoutUrl: string = route.params?.checkoutUrl || "";
   const customerName: string = route.params?.customerName || "";

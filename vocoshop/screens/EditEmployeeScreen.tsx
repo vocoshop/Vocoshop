@@ -10,8 +10,8 @@ import { Employee, EmployeePermissions, updateEmployee, toggleEmployee, deleteEm
 type RouteParams = { employee: Employee };
 
 export default function EditEmployeeScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 const { employee } = (route.params || {}) as RouteParams;
 
 const { getAuthHeaders } = useContext(AuthContext);

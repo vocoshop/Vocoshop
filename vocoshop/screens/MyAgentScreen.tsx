@@ -1,4 +1,4 @@
-ï»¿// screens/MyAgentScreen.tsx
+// screens/MyAgentScreen.tsx
 import React, { useCallback, useMemo, useState, useContext } from "react";
 import {
 View,
@@ -23,7 +23,7 @@ type MyAgentResponse,
 } from "../src/api/services/storeService";
 
 export default function MyAgentScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token } = useContext(AuthContext);
 
 const [loading, setLoading] = useState(true);
@@ -68,7 +68,7 @@ const code = useMemo(() => String(agent?.code || "").trim(), [agent]);
 const photoUrl = useMemo(() => String(agent?.photoUrl || "").trim(), [agent]);
 
 // affichage masque + contact proxy
-const displayPhone = useMemo(() => String(agent?.displayPhone || "â€”").trim(), [agent]);
+const displayPhone = useMemo(() => String(agent?.displayPhone || "—").trim(), [agent]);
 const contactPhone = useMemo(() => String(agent?.contactPhone || "").trim(), [agent]);
 
 const openCall = async () => {
@@ -136,8 +136,8 @@ Astuce : lors de l'onboarding, renseigne un code agent valide pour lier la bouti
 
 <View style={{ flex: 1 }}>
 <Text style={styles.name}>{name || "Agent Vocoshop"}</Text>
-<Text style={styles.meta}>Code agent : {code || "â€”"}</Text>
-<Text style={styles.meta}>Telephone : {displayPhone || "â€”"}</Text>
+<Text style={styles.meta}>Code agent : {code || "—"}</Text>
+<Text style={styles.meta}>Telephone : {displayPhone || "—"}</Text>
 
 {!agent.isActive && <Text style={styles.badgeDanger}>Agent indisponible</Text>}
 </View>

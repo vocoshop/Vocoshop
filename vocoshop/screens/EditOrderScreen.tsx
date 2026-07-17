@@ -30,8 +30,8 @@ createdAt?: string;
 };
 
 export default function EditOrderScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 const { orderId } = (route.params || {}) as { orderId?: string };
 
 const { token, storeId } = useContext(AuthContext);

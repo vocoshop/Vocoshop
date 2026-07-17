@@ -62,7 +62,7 @@ reports: ReportItem[];
 SCREEN
 ===================================================== */
 export default function ReportScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [today, setToday] = useState<TodaySummary | null>(null);

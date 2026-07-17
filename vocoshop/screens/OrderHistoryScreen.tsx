@@ -82,7 +82,7 @@ return "#22C55E"; // vert
 SCREEN
 --------------------------------------------*/
 export default function OrderHistoryScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [orders, setOrders] = useState<Order[]>([]);

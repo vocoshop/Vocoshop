@@ -201,7 +201,7 @@ activeOpacity={0.9}
 
 /* ================== SCREEN ================== */
 export default function MyShopScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token } = useContext(AuthContext);
 
 const headers = useMemo(

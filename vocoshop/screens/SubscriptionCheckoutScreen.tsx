@@ -27,7 +27,7 @@ import { Alert } from "react-native";
 
 export default function SubscriptionCheckoutScreen() {
 
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { refreshSubscription } = useSubscription();
 const { token } = useContext(AuthContext);
 

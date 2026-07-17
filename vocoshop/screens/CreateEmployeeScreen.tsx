@@ -70,7 +70,7 @@ await Share.share({ message });
 }
 
 export default function CreateEmployeeScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { getAuthHeaders, isReady } = useContext(AuthContext);
 const headers = useMemo(() => getAuthHeaders(), [getAuthHeaders]);
 

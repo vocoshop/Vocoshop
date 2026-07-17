@@ -54,7 +54,7 @@ interface ScanItem {
 }
 
 export default function OcrScanScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const cameraRef = useRef<any>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhotos, setCapturedPhotos] = useState<{ uri: string; base64: string }[]>([]);

@@ -224,7 +224,7 @@ return p.allReceived || o?.status === "received" ? "Réception complète" : "Ré
 SCREEN
 --------------------------------------------*/
 export default function CommanderScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const headers = useMemo(
@@ -237,7 +237,7 @@ Authorization: token ? `Bearer ${token}` : "",
 
 const canLoad = !!token && !!storeId;
 
-const route = useRoute<any>();
+const route = useRoute();
 const preselectedSupplierId = route.params?.supplierId;
 
 // Tabs

@@ -58,8 +58,8 @@ return { date: parsed[0], isExpired: true };
 }
 
 export default function HealthStockScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 const { mode = "low" } = (route.params || {}) as RouteParams;
 
 const { token, storeId } = useContext(AuthContext);

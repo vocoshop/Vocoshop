@@ -23,8 +23,8 @@ interface Product {
 }
 
 export default function SupplierProductsScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const route = useRoute();
   const { supplierId, supplierName } = route.params || {};
 
   const { token, storeId } = useContext(AuthContext);

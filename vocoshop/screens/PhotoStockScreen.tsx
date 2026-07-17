@@ -52,7 +52,7 @@ interface DetectedProduct {
 }
 
 export default function PhotoStockScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const cameraRef = useRef<any>(null);
   const [permission, requestPermission] = useCameraPermissions();
 

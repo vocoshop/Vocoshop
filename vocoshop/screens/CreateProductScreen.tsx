@@ -28,8 +28,8 @@ const UNIT_BY_CAT: Record<string, string[]> = {
 };
 
 export default function CreateProductScreen() {
-  const nav = useNavigation<any>();
-  const route = useRoute<any>();
+  const nav = useNavigation();
+  const route = useRoute();
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
 

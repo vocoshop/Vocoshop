@@ -44,7 +44,7 @@ const EMPTY_PARTNER: Partner = {
 };
 
 export default function GestionPartenaires() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);

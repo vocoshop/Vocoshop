@@ -24,7 +24,7 @@ import OfflineBanner from "../../src/api/components/OfflineBanner";
 import SyncIndicator from "../../src/api/components/SyncIndicator";
 
 export default function SalesScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 
 const {
 loading,

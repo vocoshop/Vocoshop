@@ -11,8 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 export default function StockDayDetailScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 const { date, items } = route.params as { date: string; items: any[] };
 
 return (

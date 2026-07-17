@@ -28,8 +28,8 @@ note?: string;
 }
 
 export default function EditSupplierScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 const supplierId: string | undefined = route.params?.supplierId;
 
 const { token, storeId } = useContext(AuthContext);

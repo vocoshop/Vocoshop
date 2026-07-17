@@ -13,7 +13,7 @@ import { useSubscription } from "../src/api/context/SubscriptionContext";
 
 export default function SubscriptionPayScreen() {
 
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { subscription } = useSubscription();
 
 const [loading, setLoading] = React.useState(false);

@@ -140,7 +140,7 @@ SCREEN
 ===================================================== */
 
 export default function MyReportsScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [monthCursor, setMonthCursor] = useState<Date>(() =>

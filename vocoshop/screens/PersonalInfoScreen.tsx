@@ -18,7 +18,7 @@ import { AuthContext } from "../src/api/context/AuthContext";
 import { getMyStoreProfile, updateStoreOnboarding } from "../src/api/services/storeService";
 
 export default function PersonalInfoScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token } = useContext(AuthContext);
 
 // ✅ champs éditables

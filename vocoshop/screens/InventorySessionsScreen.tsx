@@ -64,7 +64,7 @@ const FILTER_TABS = [
 ];
 
 export default function InventorySessionsScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const auth = useContext(AuthContext);
   const token = auth?.token ?? null;
   const storeId = auth?.storeId ?? null;

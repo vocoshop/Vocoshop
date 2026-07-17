@@ -30,7 +30,7 @@ import { PushService } from "../src/api/services/pushService";
 const NOTIF_KEY = "vocos_notif_enabled";
 
 export default function ProfileScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, logout, user } = useContext(AuthContext);
 const { subscription } = useSubscription();
 const { unreadCount } = useNotifications();

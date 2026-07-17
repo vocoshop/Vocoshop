@@ -47,8 +47,8 @@ interface Product {
 }
 
 export default function OcrValidationScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const route = useRoute();
   const scan: ScanData = route.params?.scan;
 
   const [lines, setLines] = useState<OcrLine[]>(scan?.lines || []);

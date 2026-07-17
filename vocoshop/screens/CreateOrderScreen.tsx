@@ -19,7 +19,7 @@ id?: string;
 };
 
 export default function CreateOrderScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [loading, setLoading] = useState(false);

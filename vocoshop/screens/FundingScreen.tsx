@@ -76,7 +76,7 @@ const OBJECTIFS = [
 ];
 
 export default function FundingScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const { token } = useContext(AuthContext);
 
   const [score, setScore] = useState(0);

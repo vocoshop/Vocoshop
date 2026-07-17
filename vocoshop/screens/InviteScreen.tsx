@@ -24,8 +24,8 @@ storeType?: string;
 };
 
 export default function InviteScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 
 const { applySession } = useContext(AuthContext);
 

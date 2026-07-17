@@ -36,7 +36,7 @@ list: InventoryImpactItem[];
 }
 
 export default function InventoryImpactScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [summary, setSummary] = useState<InventoryImpactSummary | null>(null);

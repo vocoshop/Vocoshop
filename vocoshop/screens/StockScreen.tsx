@@ -16,7 +16,7 @@ import API from "../src/api/api";
 type PermKey = "inventory" | "sales" | "reports" | "orders" | "employees";
 
 export default function StockScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { user, token } = useContext(AuthContext);
 const [alertCount, setAlertCount] = useState(0);
 

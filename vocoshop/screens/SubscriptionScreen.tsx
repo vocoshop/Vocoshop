@@ -16,7 +16,7 @@ import API from "../src/api/api";
 
 export default function SubscriptionScreen() {
 
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const { subscription, refreshSubscription } = useSubscription();
 
   const [invoices,setInvoices] = useState<any[]>([]);

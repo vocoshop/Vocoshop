@@ -32,7 +32,7 @@ return label.charAt(0).toUpperCase() + label.slice(1);
 
 export default function InvoiceListScreen(){
 
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const route:any = useRoute();
 
 /* =====================================================

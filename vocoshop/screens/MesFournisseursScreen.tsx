@@ -41,7 +41,7 @@ interface Supplier {
 }
 
 export default function MesFournisseursScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const { token, storeId } = useContext(AuthContext);
 
   const headers = useMemo(

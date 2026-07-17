@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function SubscriptionBlockedScreen({ isGrace = false, graceDaysLeft = 0 }: Props) {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
 
   return (
     <View style={styles.container}>

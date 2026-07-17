@@ -111,8 +111,8 @@ return `Réception partielle • ${p.pct}%`;
 
 /* -------------------- SCREEN -------------------- */
 export default function OrderDetailScreen() {
-const navigation = useNavigation<any>();
-const route = useRoute<any>();
+const navigation = useNavigation();
+const route = useRoute();
 const { orderId } = (route.params || {}) as RouteParams;
 
 const { token, storeId } = useContext(AuthContext);

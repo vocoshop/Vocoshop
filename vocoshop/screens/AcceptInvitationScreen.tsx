@@ -1,4 +1,4 @@
-ï»¿import { useState, useEffect, useContext, useCallback } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,8 @@ import { AuthContext } from "../src/api/context/AuthContext";
 import API from "../src/api/api";
 
 export default function AcceptInvitationScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const route = useRoute();
   const { token: authToken } = useContext(AuthContext);
 
   const token = route.params?.token;
@@ -39,10 +39,10 @@ export default function AcceptInvitationScreen() {
       if ((res.data as any)?.hasInvitation) {
         setInvitation((res.data as any).invitation);
       } else {
-        setError("Aucune invitation en attente pour ce numÃ©ro");
+        setError("Aucune invitation en attente pour ce numéro");
       }
     } catch {
-      setError("Impossible de vÃ©rifier l'invitation");
+      setError("Impossible de vérifier l'invitation");
     } finally {
       setLoading(false);
     }
@@ -53,8 +53,8 @@ export default function AcceptInvitationScreen() {
     try {
       await API.post("/invitations/accept", { token });
       Alert.alert(
-        "FÃ©licitations !",
-        "Tu es maintenant propriÃ©taire de la boutique. Tu peux accÃ©der Ã  toutes les fonctionnalitÃ©s.",
+        "Félicitations !",
+        "Tu es maintenant propriétaire de la boutique. Tu peux accéder à toutes les fonctionnalités.",
         [{ text: "Continuer", onPress: () => navigation.reset({ index: 0, routes: [{ name: "Entry" }] }) }]
       );
     } catch (e: any) {
@@ -68,7 +68,7 @@ export default function AcceptInvitationScreen() {
     setLoading(true);
     try {
       await API.post("/invitations/decline", { token });
-      Alert.alert("Invitation refusÃ©e", "Tu peux continuer Ã  utiliser l'application normalement.");
+      Alert.alert("Invitation refusée", "Tu peux continuer à utiliser l'application normalement.");
       navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
     } catch {
       setLoading(false);
@@ -79,7 +79,7 @@ export default function AcceptInvitationScreen() {
     return (
       <View style={styles.container}>
         <ActivityIndicator color="#8A4DFF" size="large" />
-        <Text style={styles.loadingText}>VÃ©rification de l'invitation...</Text>
+        <Text style={styles.loadingText}>Vérification de l'invitation...</Text>
       </View>
     );
   }
@@ -107,7 +107,7 @@ export default function AcceptInvitationScreen() {
         <Text style={styles.title}>Une boutique t'attend !</Text>
 
         <Text style={styles.subtitle}>
-          {invitation?.ownerName || "Quelqu'un"} a crÃ©Ã© une boutique pour toi sur Vocoshop.
+          {invitation?.ownerName || "Quelqu'un"} a créé une boutique pour toi sur Vocoshop.
         </Text>
 
         <View style={styles.infoBox}>
@@ -129,7 +129,7 @@ export default function AcceptInvitationScreen() {
           )}
         </View>
 
-        <Text style={styles.question}>Souhaites-tu devenir propriÃ©taire de cette boutique ?</Text>
+        <Text style={styles.question}>Souhaites-tu devenir propriétaire de cette boutique ?</Text>
 
         <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} disabled={loading}>
           {loading ? (
@@ -137,7 +137,7 @@ export default function AcceptInvitationScreen() {
           ) : (
             <>
               <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
-              <Text style={styles.acceptBtnText}>Accepter la propriÃ©tÃ©</Text>
+              <Text style={styles.acceptBtnText}>Accepter la propriété</Text>
             </>
           )}
         </TouchableOpacity>

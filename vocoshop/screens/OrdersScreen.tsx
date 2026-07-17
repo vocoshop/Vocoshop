@@ -22,7 +22,7 @@ createdAt: string;
 };
 
 export default function OrdersScreen() {
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const { token, storeId } = useContext(AuthContext);
 
 const [orders, setOrders] = useState<OrderItem[]>([]);

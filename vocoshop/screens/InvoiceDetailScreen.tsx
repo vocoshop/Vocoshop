@@ -17,7 +17,7 @@ import { Buffer } from "buffer";
 
 export default function InvoiceDetailScreen(){
 
-const navigation = useNavigation<any>();
+const navigation = useNavigation();
 const route:any = useRoute();
 
 const invoice = route?.params?.invoice;
