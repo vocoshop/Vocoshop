@@ -292,7 +292,7 @@ function buildSharedReportPdf(params: {
       if (qrSvg && typeof qrSvg === "string") {
         doc.fontSize(6).fillColor("#999").text("(QR code disponible sur la version web)", left);
       }
-    } catch {}
+  } catch (qrErr) { console.warn("QR code PDF generation", qrErr); }
     doc.moveDown(0.5);
   }
 
@@ -750,7 +750,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
         compareReports = await DailyReport.find({ storeId, date: { $gte: cr.from, $lte: cr.to } }).sort({ date: 1 }).lean();
         compareRevenue = (compareReports as any[]).reduce((s, r) => s + safeNum(r?.totalRevenue), 0);
         compareProfit = (compareReports as any[]).reduce((s, r) => s + safeNum(r?.grossProfit), 0);
-      } catch {}
+      } catch (cmpErr) { console.warn("compare month report", cmpErr); }
     }
 
     const merchantName = escapeHtml(String((store as any)?.storeName || link.storeName || "Commerce"));
@@ -805,7 +805,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     try {
       const qr = await QRCode.toDataURL(`https://vocoshop.onrender.com/api/public/report/verify/${token}`, { width: 160, margin: 2, color: { dark: "#A78BFA", light: "#0A0617" } });
       qrDataUri = qr;
-    } catch {}
+    } catch (qrErr2) { console.warn("QR code web", qrErr2); }
 
     const baseUrl = getPublicBaseUrl(req);
     const verifyUrl = `${baseUrl}/api/public/report/verify/${token}`;
@@ -1135,7 +1135,7 @@ export const downloadSharedReportPdf = async (req: Request, res: Response) => {
         { _id: link._id },
         { $inc: { downloadsCount: 1 }, $set: { lastDownloadedAt: new Date() } }
       );
-    } catch {}
+    } catch (dlErr) { console.warn("downloadsCount update", dlErr); }
 
     const reports = await DailyReport.find({
       storeId,
@@ -1236,7 +1236,7 @@ export const verifySharedReport = asyncHandler(async (req: Request, res: Respons
         anchoredAt: anchors[0].createdAt,
       };
     }
-  } catch {}
+  } catch (bcErr) { console.warn("blockchain verify", bcErr); }
 
   const verification = {
     valid: active,

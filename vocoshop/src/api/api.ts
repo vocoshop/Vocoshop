@@ -78,7 +78,7 @@ isRedirectingSubscription = true;
 
 try {
 navigate("SubscriptionBlocked");
-} catch {}
+} catch (e) { console.warn("Navigation SubscriptionBlocked", e); }
 
 // reset léger après navigation
 setTimeout(() => {
@@ -96,12 +96,12 @@ isRedirectingSubscription = false;
         // Inactivité prolongée → demander mot de passe seulement
         try {
           navigate("Login", { reauth: true });
-        } catch {}
+        } catch (e) { console.warn("Navigation reauth", e); }
       } else {
         console.log("🔐 Token invalide — logout automatique");
         try {
           navigate("Login");
-        } catch {}
+        } catch (e) { console.warn("Navigation logout", e); }
       }
     }
 

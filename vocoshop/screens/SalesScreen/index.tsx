@@ -69,7 +69,7 @@ const [editingQty, setEditingQty] = useState<string | null>(null);
         if (items.length > 0) {
           setHasSalesToday(true);
         }
-      } catch (e) {}
+      } catch (e) { console.warn("check today sales", e); }
     })();
   }, []);
 
@@ -98,7 +98,7 @@ const [editingQty, setEditingQty] = useState<string | null>(null);
             ]
           );
         }
-      } catch (_) {}
+      } catch (_) { console.warn("auto-close flag", _); }
     })();
   }, []);
 

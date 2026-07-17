@@ -147,7 +147,7 @@ sessionIdRef.current = clean;
 setInventorySessionId(clean);
 return clean;
 }
-} catch {}
+} catch (e) { console.warn("inventory session from cache", e); }
 
 return null;
 }, [inventorySessionId, setInventorySessionId]);

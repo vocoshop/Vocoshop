@@ -246,7 +246,7 @@ const clean = sidStorage.trim();
 setInventorySessionId(clean);
 return clean;
 }
-} catch {}
+} catch (e) { console.warn("inventory session from storage", e); }
 
 // 3) backend
 try {

@@ -358,7 +358,7 @@ export async function logConflict(conflict: ConflictInfo): Promise<void> {
     // Garder les 50 derniers
     const trimmed = history.slice(0, 50);
     await AsyncStorage.setItem(CONFLICT_HISTORY_KEY, JSON.stringify(trimmed));
-  } catch {}
+  } catch (e) { console.warn("logConflict", e); }
 }
 
 export async function getConflictHistory(): Promise<any[]> {

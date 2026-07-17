@@ -8,5 +8,5 @@ export const onRealtimeEvent = (fn: Listener) => { listeners.add(fn); return () 
 
 export const emitActivity = (type: string, label: string, detail: string, meta?: any) => {
   const payload = { type, label, detail, meta, _time: new Date().toISOString() };
-  listeners.forEach((fn) => { try { fn(payload); } catch {} });
+  listeners.forEach((fn) => { try { fn(payload); } catch (e) { console.warn("realtime listener", e); } });
 };

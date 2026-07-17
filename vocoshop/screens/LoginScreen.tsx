@@ -90,7 +90,7 @@ const animateToStep = (target: "phone" | "password") => {
             setPhone(savedPhone);
             setStep("password");
           }
-        } catch (_) {}
+        } catch (_) { console.warn("reauth load phone", _); }
       })();
     }
   }, [reauth]);
@@ -187,7 +187,7 @@ routes: [{ name: "AcceptInvitation", params: { phone: cleanPhone, token: tk ? "p
 });
 return;
 }
-} catch {}
+} catch (e) { console.warn("invitations/pending", e); }
 navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
 } catch (e: any) {
 setErrorMsg(e?.response?.data?.error || "Erreur de connexion");

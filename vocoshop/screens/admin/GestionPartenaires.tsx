@@ -124,7 +124,7 @@ export default function GestionPartenaires() {
     try {
       await API.put(`/admin/partners/${p._id}`, { active: !p.active });
       load();
-    } catch {}
+    } catch (e) { console.warn("toggle partner", e); }
   };
 
   if (loading) {

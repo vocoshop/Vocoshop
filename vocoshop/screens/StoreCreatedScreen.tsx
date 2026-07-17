@@ -41,7 +41,7 @@ export default function StoreCreatedScreen() {
           ? `${message}\n\nLien d'invitation : ${shareLink}`
           : message,
       });
-    } catch {}
+    } catch (e) { console.warn("share", e); }
   };
 
   const handleCopyLink = async () => {

@@ -123,7 +123,7 @@ try {
 const saved = await AsyncStorage.getItem(NOTIF_KEY);
 if (saved === "0") setNotifEnabled(false);
 if (saved === "1") setNotifEnabled(true);
-} catch (e) {}
+} catch (e) { console.warn("loadNotifPref", e); }
 })();
   }, []);
 
@@ -138,7 +138,7 @@ if (saved === "1") setNotifEnabled(true);
           setHasMultipleStores(true);
           setOwnerStores(data.stores);
         }
-      } catch (_) {} finally {
+      } catch (_) { console.warn("load owner stores", _); } finally {
         setLoadingStores(false);
       }
     })();
@@ -165,7 +165,7 @@ loadStoreProfile();
         if (pushToken) await PushService.unregisterToken(pushToken);
         Alert.alert("Notifications désactivées", "Vous ne recevrez plus d'alertes.");
       }
-    } catch (e) {}
+    } catch (e) { console.warn("toggleNotif", e); }
   };
 
   const onShareCode = async () => {
@@ -177,7 +177,7 @@ loadStoreProfile();
           `📲 Telecharge l'app ici : https://vocoshop.onrender.com/download\n\n` +
           `👉 VocoShop — Vendez. Gerer. Grandissez.`,
       });
-    } catch (e) {}
+    } catch (e) { console.warn("shareCode", e); }
   };
 
   const onLogout = useCallback(() => {
@@ -430,7 +430,7 @@ activeOpacity={0.85}
 onPress={async () => {
 try {
 await Share.share({ message: referralCode });
-} catch {}
+} catch (e) { console.warn("share referral code", e); }
 }}
 >
 <Text style={styles.referralInfoLabel}>Mon code</Text>

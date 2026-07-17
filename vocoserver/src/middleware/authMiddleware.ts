@@ -59,8 +59,8 @@ $or: [
 ],
 },
 { $set: { lastActiveAt: now } }
-).catch(() => {});
-} catch {}
+).catch((err: any) => console.warn("authMiddleware updateActivity", err?.message));
+} catch (err) { console.warn("authMiddleware activity", err); }
 }
 
 export default async function authMiddleware(

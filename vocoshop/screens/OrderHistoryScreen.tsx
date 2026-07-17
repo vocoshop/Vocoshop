@@ -110,7 +110,7 @@ if (routeNames.includes(screenName)) {
 navigation.navigate(screenName, params);
 return true;
 }
-} catch {}
+} catch (e) { console.warn("safeNavigate", e); }
 return false;
 },
 [navigation]

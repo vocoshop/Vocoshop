@@ -313,7 +313,7 @@ export async function getCacheStats(): Promise<{
           version: parsed.version || 0,
         });
       }
-    } catch {}
+    } catch (e) { console.warn("cache getDebugInfo item", e); }
   }
 
   return { keys: cacheKeys, totalSize, entries };

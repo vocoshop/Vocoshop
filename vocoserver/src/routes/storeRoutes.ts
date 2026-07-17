@@ -43,7 +43,7 @@ if (user.storeId) {
       ownershipStatus = store.ownershipStatus || "active";
       storeName = store.storeName || "";
     }
-  } catch {}
+  } catch (err) { console.warn("store routes owner lookup", err); }
 }
 
 res.json({ ...user, ownershipStatus, storeName });

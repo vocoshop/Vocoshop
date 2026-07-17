@@ -22,9 +22,9 @@ if (storeId) {
 Store.updateOne(
 { _id: storeId },
 { $set: { lastActiveAt: new Date() } }
-).catch(() => {});
+).catch((err: any) => console.warn("storeActivityTracker update", err?.message));
 }
-} catch {}
+} catch (err) { console.warn("storeActivityTracker", err); }
 
 next();
 };

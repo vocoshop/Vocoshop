@@ -140,20 +140,20 @@ if (Platform.OS === "ios" && typeof fn === "function") {
 const v = await fn();
 id = String(v || "").trim();
 }
-} catch {}
+} catch (e) { console.warn("getIosIdForVendorAsync", e); }
 
 if (!id && Platform.OS === "android") {
 try {
 const a = (Application as any)?.androidId;
 id = String(a || "").trim();
-} catch {}
+} catch (e) { console.warn("androidId", e); }
 }
 
 if (!id) {
 try {
 const c = (Constants as any)?.installationId;
 id = String(c || "").trim();
-} catch {}
+} catch (e) { console.warn("installationId", e); }
 }
 
 if (!id) id = makePseudoId();
@@ -194,7 +194,7 @@ if (data) {
 setUser(data);
 await AsyncStorage.setItem("user", JSON.stringify(data));
 }
-    } catch {} // les permissions en cache restent valables
+    } catch (e) { console.warn("refreshUser failed, using cache", e?.response?.data || e); } // les permissions en cache restent valables
 }, []);
 
 const getAuthHeaders = useCallback(() => {

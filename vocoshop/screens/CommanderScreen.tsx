@@ -1051,7 +1051,7 @@ refreshing={false}
 onRefresh={async () => {
 try {
 await onRefresh();
-} catch {}
+} catch (e) { console.warn("refresh suppliers", e); }
 }}
 />
 }

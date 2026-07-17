@@ -100,7 +100,7 @@ export default function HomeScreen() {
   }, [token, storeId, canInventory]);
 
   const closeDailyOverlay = useCallback(async () => {
-    try { if (storeId) { const today = getTodayKey(); const key = `voco:lastDailyOverlay:${storeId}`; await AsyncStorage.setItem(key, today); } } catch {}
+    try { if (storeId) { const today = getTodayKey(); const key = `voco:lastDailyOverlay:${storeId}`; await AsyncStorage.setItem(key, today); } } catch (e) { console.warn("closeDailyOverlay", e); }
     setShowDailyOverlay(false);
   }, [storeId]);
 

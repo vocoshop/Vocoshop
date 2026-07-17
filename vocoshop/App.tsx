@@ -166,8 +166,8 @@ let mounted = true;
 
 const boot = async () => {
 try {
-await readLocalFlags();
-} catch {}
+      await readLocalFlags();
+} catch (e) { console.warn("readLocalFlags", e); }
 
 if (mounted) {
 setBootLoading(false); // ✅ IMPORTANT — débloque EntryGate

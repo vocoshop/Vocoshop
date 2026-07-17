@@ -84,11 +84,11 @@ if (!storeId) return next(new ValidationError("storeId manquant"));
   let sellConfigs: any[] = [];
   if (purchaseConfigsRaw) {
     if (Array.isArray(purchaseConfigsRaw)) purchaseConfigs = purchaseConfigsRaw;
-    else try { purchaseConfigs = JSON.parse(purchaseConfigsRaw); } catch {}
+    else try { purchaseConfigs = JSON.parse(purchaseConfigsRaw); } catch (e) { console.warn("purchaseConfigs parse", e); }
   }
   if (sellConfigsRaw) {
     if (Array.isArray(sellConfigsRaw)) sellConfigs = sellConfigsRaw;
-    else try { sellConfigs = JSON.parse(sellConfigsRaw); } catch {}
+    else try { sellConfigs = JSON.parse(sellConfigsRaw); } catch (e) { console.warn("sellConfigs parse", e); }
   }
 
   if (!name || String(name).trim() === "") {

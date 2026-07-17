@@ -149,7 +149,7 @@ export default function PhotoStockScreen() {
       if (existings.length > 0) {
         try {
           await API.post("/ai/vision-products/import", { products: existings });
-        } catch {}
+        } catch (e) { console.warn("import existing products", e); }
       }
 
       // Ouvrir l'écran de création pour le 1er nouveau produit

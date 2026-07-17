@@ -54,7 +54,7 @@ const profile = await getMyStoreProfile({
 Authorization: `Bearer ${token}`,
 });
 setCustomerName(profile.ownerName || profile.shopName || "");
-} catch {}
+} catch (e) { console.warn("load profile for checkout", e); }
 })();
 }, [token]);
 

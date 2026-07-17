@@ -19,6 +19,6 @@ const unsubscribeNet = initNetworkListener();
 return () => {
 try {
 (unsubscribeNet as any)?.();
-} catch {}
+} catch (e) { console.warn("cleanup network listener", e); }
 };
 }
