@@ -218,11 +218,12 @@ setLoading(false);
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
           <Text style={styles.title}>
-            {reauth ? "Session expirée" : step === "phone" ? "Bienvenue sur Vocoshop" : "Bienvenue"}
+            {showForgot ? "Mot de passe oublié" : reauth ? "Session expirée" : step === "phone" ? "Bienvenue sur Vocoshop" : "Bienvenue"}
           </Text>
 
           <Text style={styles.subtitle}>
-            {reauth ? "Inactivité prolongée. Entrez votre mot de passe." :
+            {showForgot ? "Entrez votre code de récupération et un nouveau mot de passe." :
+             reauth ? "Inactivité prolongée. Entrez votre mot de passe." :
              step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
           </Text>
 
@@ -262,9 +263,11 @@ style={styles.phoneCustomInput}
 
 ) : (
 
-<View style={styles.formCard}>
+        <View style={styles.formCard}>
 
-<TouchableOpacity activeOpacity={1} onPress={() => hiddenRef.current?.focus()}>
+          {!showForgot && <>
+
+          <TouchableOpacity activeOpacity={1} onPress={() => hiddenRef.current?.focus()}>
 <TextInput
 ref={hiddenRef}
 style={styles.hiddenInput}
@@ -296,9 +299,11 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Se connecter</Text>}
 </TouchableOpacity>
 
-        <TouchableOpacity style={styles.backBtn} onPress={resetForm}>
-          <Text style={styles.backBtnText}>Changer de numéro</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.backBtn} onPress={resetForm}>
+            <Text style={styles.backBtnText}>Changer de numéro</Text>
+          </TouchableOpacity>
+
+        </>}
 
         <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setShowForgot(!showForgot)}>
           <Text style={{ color: "#A78BFA", fontSize: 13, fontWeight: "600", textAlign: "center" }}>
