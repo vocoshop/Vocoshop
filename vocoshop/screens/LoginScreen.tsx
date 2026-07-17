@@ -295,26 +295,38 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 </View>
 )}
 
-<TouchableOpacity style={[styles.btn, (loading || !password) && { opacity: 0.5 }]} onPress={handleSubmit} disabled={loading || !password}>
-{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Se connecter</Text>}
-</TouchableOpacity>
-
-          <TouchableOpacity style={styles.backBtn} onPress={resetForm}>
-            <Text style={styles.backBtnText}>Changer de numéro</Text>
+          <TouchableOpacity style={[styles.btn, (loading || !password) && { opacity: 0.5 }]} onPress={handleSubmit} disabled={loading || !password}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Se connecter</Text>}
           </TouchableOpacity>
 
         </>}
 
-        <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setShowForgot(!showForgot)}>
-          <Text style={{ color: "#A78BFA", fontSize: 13, fontWeight: "600", textAlign: "center" }}>
-            {showForgot ? "Annuler" : "Mot de passe oublié ?"}
+          <TouchableOpacity style={styles.backBtn} onPress={() => { setShowForgot(false); setRecoveryCode(""); setNewPassword(""); resetForm(); }}>
+            <Text style={styles.backBtnText}>Changer de numéro</Text>
+          </TouchableOpacity>
+
+        <TouchableOpacity style={{ marginTop: showForgot ? 16 : 20 }} onPress={() => { setShowForgot(!showForgot); setRecoveryCode(""); setNewPassword(""); }}>
+          <Text style={{ color: "#A78BFA", fontSize: 14, fontWeight: "600", textAlign: "center" }}>
+            {showForgot ? "← Retour à la connexion" : "Mot de passe oublié ?"}
           </Text>
         </TouchableOpacity>
 
         {showForgot && (
           <View style={{ marginTop: 16 }}>
-            <TextInput style={styles.forgotInput} placeholder="Code de récupération" placeholderTextColor="#777" keyboardType="numeric" value={recoveryCode} onChangeText={setRecoveryCode} />
-            <TextInput style={styles.forgotInput} placeholder="Nouveau mot de passe (6 chiffres)" placeholderTextColor="#777" keyboardType="numeric" secureTextEntry maxLength={6} value={newPassword} onChangeText={setNewPassword} />
+            <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, textAlign: "center", marginBottom: 16, lineHeight: 18 }}>
+              Saisis le code de récupération (6 chiffres) reçu à l'inscription, puis choisis un nouveau mot de passe.
+            </Text>
+
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", paddingHorizontal: 14, marginBottom: 10 }}>
+              <Text style={{ fontSize: 16, marginRight: 10 }}>🔑</Text>
+              <TextInput style={{ flex: 1, color: "#fff", fontSize: 16, paddingVertical: 14 }} placeholder="Code de récupération" placeholderTextColor="#777" keyboardType="numeric" value={recoveryCode} onChangeText={setRecoveryCode} />
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", paddingHorizontal: 14, marginBottom: 14 }}>
+              <Text style={{ fontSize: 16, marginRight: 10 }}>🔒</Text>
+              <TextInput style={{ flex: 1, color: "#fff", fontSize: 16, paddingVertical: 14 }} placeholder="Nouveau mot de passe (6 chiffres)" placeholderTextColor="#777" keyboardType="numeric" secureTextEntry maxLength={6} value={newPassword} onChangeText={setNewPassword} />
+            </View>
+
             <TouchableOpacity style={[styles.btn, forgotLoading && { opacity: 0.5 }]} onPress={doResetPassword} disabled={forgotLoading}>
               {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Réinitialiser</Text>}
             </TouchableOpacity>
@@ -379,4 +391,4 @@ lockTitle: { color: "#fff", fontWeight: "900", fontSize: 14, marginBottom: 4 },
 
 lockText: { color: "rgba(255,255,255,0.75)", fontSize: 13 },
 
-errorText: { color: "#FF5B5B", fontSize: 13, textAlign: "center", marginBottom: 10 }, forgotInput: { backgroundColor: "#1A1A22", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", borderRadius: 12, padding: 14, color: "#fff", fontSize: 16, marginBottom: 10 }, });
+errorText: { color: "#FF5B5B", fontSize: 13, textAlign: "center", marginBottom: 10 }, });
