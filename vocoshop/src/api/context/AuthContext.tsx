@@ -61,12 +61,13 @@ stores?: StoreInfo[];
 };
 
 type LoginResponseData = {
-message: string;
-storeId: string;
-token: string;
-isOnboarded: boolean;
-phoneVerified: boolean;
-subscriptionActive: boolean;
+  message: string;
+  storeId: string;
+  token: string;
+  isOnboarded: boolean;
+  phoneVerified: boolean;
+  subscriptionActive: boolean;
+  recoveryCode?: string;
 };
 
 interface AuthContextType {

@@ -197,7 +197,7 @@ try {
     setSaveStep("Création de la boutique");
     setSaveProgress(20);
     const cleanPhone = safeTrim(phoneInput) || incomingPhone;
-    await registerWithPassword(
+    const regResult = await registerWithPassword(
       cleanPhone,
       cleanPassword,
       cleanStoreName,
@@ -205,6 +205,15 @@ try {
       cleanOwnerPhone,
       cleanReferralCode || undefined,
     );
+
+    // Afficher le code de récupération
+    if (regResult?.recoveryCode) {
+      Alert.alert(
+        "⚠️ Code de récupération",
+        `Votre code de récupération est : ${regResult.recoveryCode}\n\nNotez-le précieusement. Il vous sera demandé pour réinitialiser votre mot de passe.`,
+        [{ text: "J'ai bien noté" }]
+      );
+    }
 
     let authHeader = headers.Authorization;
     if (!authHeader) {
