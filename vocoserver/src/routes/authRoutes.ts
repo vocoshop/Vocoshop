@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerStore, loginStore, checkPhone, getOwnerStores, ownerSelectStore, autoLogin } from "../controllers/authController";
+import { registerStore, loginStore, checkPhone, getOwnerStores, ownerSelectStore, autoLogin, resetPassword } from "../controllers/authController";
 import { authLimiter } from "../middleware/rateLimiter";
 import { validate, storeRegistrationSchema } from "../middleware/validate";
 import authMiddleware from "../middleware/authMiddleware";
@@ -12,5 +12,6 @@ router.post("/check-phone", checkPhone);
 router.get("/owner-stores", authMiddleware, getOwnerStores);
 router.post("/owner-select-store", ownerSelectStore);
 router.post("/auto-login", autoLogin);
+router.post("/reset-password", resetPassword);
 
 export default router;

@@ -11,7 +11,8 @@ ScrollView,
 KeyboardAvoidingView,
 Platform,
 Animated,
-Easing,
+  Easing,
+  Alert,
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -42,6 +43,10 @@ const [callingCode, setCallingCode] = useState(route?.params?.preselectedPhone
 );
   const [selectedStoreName, setSelectedStoreName] = useState(route?.params?.selectedStoreName || "");
   const [reauth, setReauth] = useState(!!route?.params?.reauth);
+  const [forgotStep, setForgotStep] = useState<"" | "otp" | "newPassword">("");
+  const [otpCode, setOtpCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
 
 const [errorMsg, setErrorMsg] = useState("");
 
@@ -184,13 +189,45 @@ routes: [{ name: "AcceptInvitation", params: { phone: cleanPhone, token: tk ? "p
 return;
 }
 } catch {}
-navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
-} catch (e: any) {
-setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
-} finally {
-setLoading(false);
-}
-};
+    navigation.reset({ index: 0, routes: [{ name: "Entry" }] });
+  } catch (e: any) {
+    setErrorMsg(e?.response?.data?.error || "Erreur de connexion");
+  } finally {
+    setLoading(false);
+  }
+  };
+
+  const startForgotPassword = async () => {
+    const cleanPhone = buildFullPhone();
+    if (!cleanPhone || cleanPhone.length < 8) {
+      Alert.alert("", "Entre un numéro valide.");
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await API.post("/otp/request", { phone: cleanPhone });
+      setForgotStep("otp");
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.response?.data?.error || "Impossible d'envoyer le code.");
+    } finally { setForgotLoading(false); }
+  };
+
+  const verifyOtpAndReset = async () => {
+    if (!otpCode || otpCode.length < 4) return Alert.alert("", "Entre le code reçu.");
+    if (!newPassword || newPassword.length !== 6) return Alert.alert("", "Le mot de passe doit contenir 6 chiffres.");
+    const cleanPhone = buildFullPhone();
+    setForgotLoading(true);
+    try {
+      await API.post("/auth/reset-password", { phone: cleanPhone, code: otpCode, newPassword });
+      Alert.alert("Succès", "Mot de passe réinitialisé. Connectez-vous.");
+      setForgotStep("");
+      setOtpCode("");
+      setNewPassword("");
+      animateToStep("password");
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.response?.data?.error || "Échec.");
+    } finally { setForgotLoading(false); }
+  };
 
 return (
 <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -206,6 +243,46 @@ return (
             {reauth ? "Inactivité prolongée. Entrez votre mot de passe." :
              step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
           </Text>
+
+          {forgotStep ? (
+            <View>
+              <Text style={{ color: "#A78BFA", fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: 16 }}>
+                {forgotStep === "otp" ? `Code envoyé au ${buildFullPhone()}` : "Nouveau mot de passe"}
+              </Text>
+              {forgotStep === "otp" ? (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Code reçu par SMS"
+                  placeholderTextColor="#777"
+                  keyboardType="numeric"
+                  value={otpCode}
+                  onChangeText={setOtpCode}
+                  autoFocus
+                />
+              ) : null}
+              <TextInput
+                style={styles.input}
+                placeholder={forgotStep === "otp" ? "Nouveau mot de passe (6 chiffres)" : "Nouveau mot de passe (6 chiffres)"}
+                placeholderTextColor="#777"
+                keyboardType="numeric"
+                secureTextEntry
+                maxLength={6}
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+              <TouchableOpacity
+                style={[styles.btn, forgotLoading && { opacity: 0.5 }]}
+                onPress={verifyOtpAndReset}
+                disabled={forgotLoading}
+              >
+                {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Réinitialiser</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={{ marginTop: 12 }} onPress={() => setForgotStep("")}>
+                <Text style={{ color: "#6B7280", textAlign: "center" }}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
 
 {step === "phone" ? (
 
@@ -277,12 +354,19 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Se connecter</Text>}
 </TouchableOpacity>
 
-<TouchableOpacity style={styles.backBtn} onPress={resetForm}>
-<Text style={styles.backBtnText}>Changer de numéro</Text>
-</TouchableOpacity>
+        <TouchableOpacity style={styles.backBtn} onPress={() => { setForgotStep(""); setOtpCode(""); setNewPassword(""); resetForm(); }}>
+          <Text style={styles.backBtnText}>Changer de numéro</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={{ marginTop: 20 }} onPress={startForgotPassword}>
+          <Text style={{ color: "#A78BFA", fontSize: 13, fontWeight: "600", textAlign: "center" }}>
+            {forgotLoading ? "Envoi du code..." : "Mot de passe oublié ?"}
+          </Text>
+        </TouchableOpacity>
 
 </View>
 )}
+          )}
 
         </Animated.View>
 </ScrollView>

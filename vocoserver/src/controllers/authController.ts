@@ -6,6 +6,8 @@ import Store from "../models/Store";
 import Subscription from "../models/Subscription";
 import jwt from "jsonwebtoken";
 import { normalizePhone } from "../utils/phone";
+import { safeTrim } from "../utils/helpers";
+import OTP from "../models/Otp";
 
 function makePhoneVariants(phone: string): string[] {
   const variants = [phone];
@@ -283,11 +285,43 @@ if (!phoneNorm || !storeId) return next(new ValidationError("Numéro et boutique
 
 const token = generateToken(store._id.toString(), store.phone);
 
-return res.json({
-storeId: store._id,
-token,
-isOnboarded: !!(store.storeName && String(store.storeName).trim().length > 0),
-phoneVerified: store.phoneVerified || false,
-subscriptionActive: store.subscriptionActive || false,
+  return res.json({
+    storeId: store._id,
+    token,
+    isOnboarded: !!(store.storeName && String(store.storeName).trim().length > 0),
+    phoneVerified: store.phoneVerified || false,
+    subscriptionActive: store.subscriptionActive || false,
+  });
 });
+
+/* =====================================================
+  MOT DE PASSE OUBLIÉ — Réinitialisation
+  POST /api/auth/reset-password
+  Body: { phone, code, newPassword }
+===================================================== */
+export const resetPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const phone = normalizePhone(req.body?.phone);
+  const code = safeTrim(req.body?.code);
+  const newPassword = safeTrim(req.body?.newPassword);
+
+  if (!phone || !code) return next(new ValidationError("Téléphone et code requis"));
+  if (!newPassword || newPassword.length !== 6) return next(new ValidationError("Le mot de passe doit contenir 6 chiffres"));
+
+  // Vérifier OTP
+  const otp = await OTP.findOne({ phone, code, expiresAt: { $gte: new Date() } });
+  if (!otp) return next(new ValidationError("Code incorrect ou expiré"));
+
+  // Trouver le store
+  const store = await Store.findOne({ phone });
+  if (!store) return next(new NotFoundError("Compte introuvable"));
+
+  // Mettre à jour le mot de passe
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  store.passwordHash = passwordHash;
+  await store.save();
+
+  // Supprimer l'OTP
+  await OTP.deleteOne({ _id: otp._id });
+
+  return res.json({ message: "Mot de passe réinitialisé avec succès" });
 });
