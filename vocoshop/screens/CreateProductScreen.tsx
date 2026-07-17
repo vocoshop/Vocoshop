@@ -93,7 +93,7 @@ export default function CreateProductScreen() {
   const pickImage = async () => {
     const p = await ImagePicker.requestCameraPermissionsAsync();
     if (!p.granted) return Alert.alert("Permission refusée", "Active la caméra dans les réglages.");
-    const r = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
+    const r = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.7 });
     if (!r.canceled) setImageUri(r.assets[0].uri);
   };
 
