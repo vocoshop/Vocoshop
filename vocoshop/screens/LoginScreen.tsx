@@ -80,7 +80,7 @@ const animateToStep = (target: "phone" | "password") => {
     }
   }, [route?.params?.preselectedPhone]);
 
-  // Reauth : session expir�e, on va direct au mot de passe
+  // Reauth : session expirée, on va direct au mot de passe
   useEffect(() => {
     if (reauth) {
       (async () => {
@@ -132,7 +132,7 @@ const continueWithPhone = async () => {
   if (loading) return;
   const cleanPhone = buildFullPhone();
   if (!cleanPhone || cleanPhone.length < 8) {
-    Alert.alert("", "Entre un num�ro.");
+    Alert.alert("", "Entre un numéro.");
     return;
   }
   try {
@@ -173,13 +173,13 @@ setLoading(true);
 setErrorMsg("");
     try {
       await loginWithPassword(cleanPhone, pwd);
-      // Sauvegarder le t�l�phone pour le reauth
+      // Sauvegarder le téléphone pour le reauth
       await AsyncStorage.setItem("voco_last_phone", cleanPhone);
-      // V�rifier si une invitation propri�taire est en attente
+      // Vérifier si une invitation propriétaire est en attente
 try {
 const invRes = await API.get("/invitations/pending", { params: { phone: cleanPhone } });
 if ((invRes.data as any)?.hasInvitation) {
-// R�cup�rer le token depuis la notif ou stockage local
+// Récupérer le token depuis la notif ou stockage local
 const tk = await AsyncStorage.getItem("token");
 navigation.reset({
 index: 0,
@@ -203,11 +203,11 @@ setLoading(false);
     setForgotLoading(true);
     try {
       await API.post("/auth/reset-password", { phone: cleanPhone, recoveryCode, newPassword });
-      Alert.alert("Succ�s", "Mot de passe r�initialis�. Connectez-vous.", [
+      Alert.alert("Succés", "Mot de passe réinitialisé. Connectez-vous.", [
         { text: "OK", onPress: () => { setShowForgot(false); setRecoveryCode(""); setNewPassword(""); } }
       ]);
     } catch (e: any) {
-      Alert.alert("Erreur", e?.response?.data?.error || "�chec.");
+      Alert.alert("Erreur", e?.response?.data?.error || "échec.");
     } finally { setForgotLoading(false); }
   };
 
@@ -222,8 +222,8 @@ setLoading(false);
           </Text>
 
           <Text style={styles.subtitle}>
-            {reauth ? "Inactivit� prolong�e. Entrez votre mot de passe." :
-             step === "phone" ? "La gestion simple et intelligente de votre activit�." : "Entrez votre code secret 6 chiffres"}
+            {reauth ? "Inactivité prolongée. Entrez votre mot de passe." :
+             step === "phone" ? "La gestion simple et intelligente de votre activité." : "Entrez votre code secret 6 chiffres"}
           </Text>
 
 {step === "phone" ? (
@@ -253,7 +253,7 @@ placeholderTextColor="rgba(255,255,255,0.35)"
 style={styles.phoneCustomInput}
 />
 </View>
-                <Text style={styles.infoText}>Entrez votre num�ro de t�l�phone pour commencer.</Text>
+                <Text style={styles.infoText}>Entrez votre numéro de téléphone pour commencer.</Text>
 {!!errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} onPress={continueWithPhone} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Continuer</Text>}
@@ -297,21 +297,21 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 </TouchableOpacity>
 
         <TouchableOpacity style={styles.backBtn} onPress={resetForm}>
-          <Text style={styles.backBtnText}>Changer de num�ro</Text>
+          <Text style={styles.backBtnText}>Changer de numéro</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setShowForgot(!showForgot)}>
           <Text style={{ color: "#A78BFA", fontSize: 13, fontWeight: "600", textAlign: "center" }}>
-            {showForgot ? "Annuler" : "Mot de passe oubli� ?"}
+            {showForgot ? "Annuler" : "Mot de passe oublié ?"}
           </Text>
         </TouchableOpacity>
 
         {showForgot && (
           <View style={{ marginTop: 16 }}>
-            <TextInput style={styles.forgotInput} placeholder="Code de r�cup�ration" placeholderTextColor="#777" keyboardType="numeric" value={recoveryCode} onChangeText={setRecoveryCode} />
+            <TextInput style={styles.forgotInput} placeholder="Code de récupération" placeholderTextColor="#777" keyboardType="numeric" value={recoveryCode} onChangeText={setRecoveryCode} />
             <TextInput style={styles.forgotInput} placeholder="Nouveau mot de passe (6 chiffres)" placeholderTextColor="#777" keyboardType="numeric" secureTextEntry maxLength={6} value={newPassword} onChangeText={setNewPassword} />
             <TouchableOpacity style={[styles.btn, forgotLoading && { opacity: 0.5 }]} onPress={doResetPassword} disabled={forgotLoading}>
-              {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>R�initialiser</Text>}
+              {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Réinitialiser</Text>}
             </TouchableOpacity>
           </View>
         )}
