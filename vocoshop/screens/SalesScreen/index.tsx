@@ -88,7 +88,7 @@ const [editingQty, setEditingQty] = useState<string | null>(null);
               {
                 text: "Voir le bilan",
                 onPress: () => {
-                  navigation.navigate("Report");
+                  navigation.navigate("MyReports");
                 },
               },
             ]
