@@ -35,6 +35,7 @@ export default function CreateProductScreen() {
 
   // Pré-remplissage depuis photo/OCR
   const prefill = route?.params?.prefill;
+  const photoBase64 = route?.params?.photoBase64;
   useEffect(() => {
     if (prefill) {
       if (prefill.name) setName(prefill.name);
@@ -46,6 +47,9 @@ export default function CreateProductScreen() {
       if (prefill.buyPrice) setBuyPrice(String(prefill.buyPrice));
       if (prefill.stockQty) setStockQty(String(prefill.stockQty));
       if (prefill.expirationDate) setExpirationDate(String(prefill.expirationDate));
+    }
+    if (photoBase64) {
+      setImageUri(`data:image/jpeg;base64,${photoBase64}`);
     }
   }, []);
 

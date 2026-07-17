@@ -18,6 +18,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import API from "../src/api/api";
 import { compressImage } from "../src/utils/imageProcessing";
+import { isOnline } from "../src/api/utils/network";
 
 const UNIT_OPTIONS = [
   "pièce",
@@ -98,6 +99,21 @@ export default function PhotoStockScreen() {
 
   const analyzePhotos = useCallback(async () => {
     if (capturedPhotos.length === 0) return;
+
+    // Hors-ligne → création manuelle sans IA
+    if (!isOnline()) {
+      setAnalyzing(false);
+      const firstPhoto = capturedPhotos[0];
+      navigation.replace("CreateProduct", {
+        prefill: { name: "", category: "", sellPrice: 0, baseUnit: "pièce" },
+        photoBase64: firstPhoto,
+      });
+      if (capturedPhotos.length > 1) {
+        Alert.alert("Hors-ligne", `${capturedPhotos.length} photo(s) non analysées. Reviens plus tard avec Internet pour l'IA.`);
+      }
+      return;
+    }
+
     setAnalyzing(true);
     try {
       const images = capturedPhotos.map(
