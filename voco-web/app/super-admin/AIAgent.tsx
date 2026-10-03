@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 type Message = { role: 'user' | 'assistant'; content: string; type?: string };
+type PendingConfirmation = { token: string; action: string };
 
 const QUICK_ACTIONS = [
   { label: 'Analyse plateforme', query: 'Analyse de la plateforme' },
@@ -21,6 +22,7 @@ export default function AIAgent() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
   const [minimized, setMinimized] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -28,40 +30,73 @@ export default function AIAgent() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const postMessage = async (body: Record<string, unknown>) => {
+    const token = localStorage.getItem('adminToken');
+    const res = await fetch(`${API}/ai/admin-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Je n'ai pas pu traiter votre demande.");
+    return data;
+  };
+
   const sendMessage = async (msgText?: string) => {
-    const userMsg = msgText || input.trim();
+    const userMsg = (msgText || input).trim();
     if (!userMsg || loading) return;
     setInput('');
+    setPendingConfirmation(null);
     setMessages(m => [...m, { role: 'user', content: userMsg }]);
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('adminToken');
       const contextMessages = messages
         .filter(m => m.type !== 'intro')
         .slice(-8)
-        .map((m, i) => ({
+        .map((m) => ({
           role: m.role === 'user' ? 'user' : 'model',
           parts: [{ text: m.content }],
         }));
       contextMessages.push({ role: 'user', parts: [{ text: userMsg }] });
 
-      const res = await fetch(`${API}/ai/admin-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ messages: contextMessages }),
-      });
-
-      const data = await res.json().catch(() => ({}));
+      const data = await postMessage({ messages: contextMessages });
       const reply = data.reply || "Je n'ai pas pu traiter votre demande.";
       setMessages(m => [...m, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages(m => [...m, { role: 'assistant', content: 'Désolé, je rencontre un problème de connexion.' }]);
+      if (data.confirmationRequired && typeof data.confirmationToken === 'string') {
+        setPendingConfirmation({ token: data.confirmationToken, action: data.action || '' });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Désolé, je rencontre un problème de connexion.';
+      setMessages(m => [...m, { role: 'assistant', content: message }]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const confirmPendingAction = async () => {
+    if (!pendingConfirmation || loading) return;
+    setLoading(true);
+    try {
+      const data = await postMessage({ confirmationToken: pendingConfirmation.token });
+      setMessages(m => [...m, { role: 'assistant', content: data.reply || data.result?.message || "Action terminée." }]);
+      setPendingConfirmation(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Désolé, je rencontre un problème de connexion.';
+      setMessages(m => [...m, { role: 'assistant', content: message }]);
+      setPendingConfirmation(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelPendingAction = () => {
+    if (!pendingConfirmation) return;
+    setPendingConfirmation(null);
+    setMessages(m => [...m, { role: 'assistant', content: 'Action annulée.' }]);
   };
 
   if (!open) {
@@ -174,6 +209,23 @@ export default function AIAgent() {
             {loading && (
               <div style={{ padding: '10px 14px', borderRadius: 12, background: '#27272a', fontSize: 13, color: '#71717a', alignSelf: 'flex-start', display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span style={{ animation: 'pulse 1s infinite' }}>●</span> VocoAI réfléchit...
+              </div>
+            )}
+
+            {!loading && pendingConfirmation && (
+              <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-start' }}>
+                <button
+                  onClick={confirmPendingAction}
+                  style={{ padding: '7px 12px', background: '#a855f7', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: 12 }}
+                >
+                  Confirmer
+                </button>
+                <button
+                  onClick={cancelPendingAction}
+                  style={{ padding: '7px 12px', background: '#3f3f46', border: 'none', borderRadius: 8, color: '#fafafa', cursor: 'pointer', fontSize: 12 }}
+                >
+                  Annuler
+                </button>
               </div>
             )}
 
