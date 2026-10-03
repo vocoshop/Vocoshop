@@ -4,7 +4,7 @@ import { seedPlatformConfig } from "../services/seedPlatformConfig";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { ValidationError, NotFoundError } from "../utils/AppError";
 
-export const getConfig = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+export const getConfig = asyncHandler(async (req: Request, res: Response) => {
   const category = String(req.query.category || "").trim();
   const filter = category ? { category } : {};
   const configs = await PlatformConfig.find(filter).sort({ category: 1, label: 1 }).lean();

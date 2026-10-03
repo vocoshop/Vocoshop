@@ -18,6 +18,18 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function sanitizeHeaders(headers?: Record<string, string>): Record<string, string> | undefined {
+  if (!headers) return undefined;
+  const safe: Record<string, string> = {};
+  for (const [name, value] of Object.entries(headers)) {
+    if (!/^(authorization|cookie|set-cookie|proxy-authorization|x-auth-token|x-store-id)$/i.test(name)) {
+      safe[name] = value;
+    }
+  }
+  return Object.keys(safe).length > 0 ? safe : undefined;
+}
+
+
 /* =====================================================
 FINGERPRINT V4 — ANTI DUPLICATE
 ===================================================== */
@@ -89,7 +101,7 @@ export async function enqueueJob(params: EnqueueParams): Promise<OfflineJob> {
     method: params.method,
     url: params.url,
     body: params.body,
-    headers: params.headers,
+    headers: sanitizeHeaders(params.headers),
     tries: 0,
     status: "pending",
     fingerprint,
@@ -110,6 +122,7 @@ REPLAY SINGLE JOB (avec gestion de conflit)
 
 async function replay(job: OfflineJob): Promise<{ ok: boolean; conflict?: any; error?: string }> {
   const method = job.method.toUpperCase();
+  const headers = sanitizeHeaders(job.headers);
 
   // 🔥 CONFLICT DETECTION AVANT REPLAY
   const conflictInfo = await detectConflict(job);
@@ -127,16 +140,16 @@ async function replay(job: OfflineJob): Promise<{ ok: boolean; conflict?: any; e
 
   try {
     if (method === "POST") {
-      await API.post(job.url, job.body ?? {}, { headers: job.headers });
+      await API.post(job.url, job.body ?? {}, { headers });
     } else if (method === "PUT") {
-      await API.put(job.url, job.body ?? {}, { headers: job.headers });
+      await API.put(job.url, job.body ?? {}, { headers });
     } else if (method === "PATCH") {
-      await API.patch(job.url, job.body ?? {}, { headers: job.headers });
+      await API.patch(job.url, job.body ?? {}, { headers });
     } else if (method === "DELETE") {
       await API.request({
         method: "DELETE",
         url: job.url,
-        headers: job.headers,
+        headers,
         data: job.body ?? {},
       });
     } else {
@@ -266,7 +279,7 @@ export async function runOrQueue(
       method: params.method,
       url: params.url,
       body: params.body,
-      headers: params.headers,
+headers: sanitizeHeaders(params.headers),
       tries: 0,
       status: "processing",
     });

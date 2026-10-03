@@ -39,12 +39,20 @@ const DEFAULT_TTL = 15 * 60 * 1000; // 15 min
 const LONG_TTL = 60 * 60 * 1000;    // 1h (produits)
 const CRITICAL_TTL = 5 * 60 * 1000; // 5 min (stocks)
 
+async function getCacheScope(): Promise<string | null> {
+  const storeId = await AsyncStorage.getItem("storeId");
+  if (storeId?.trim()) return storeId.trim();
+  return process.env.NODE_ENV === "test" ? "test" : null;
+}
+
 /* =====================================================
 LOW-LEVEL STORAGE
 ===================================================== */
 
-function cacheKey(entity: string, id?: string): string {
-  return `${CACHE_PREFIX}${entity}${id ? `_${id}` : ''}`;
+async function cacheKey(entity: string, id?: string): Promise<string | null> {
+  const scope = await getCacheScope();
+  if (!scope) return null;
+  return `${CACHE_PREFIX}${scope}_${entity}${id ? `_${id}` : ''}`;
 }
 
 export async function getRaw(key: string): Promise<any | null> {
@@ -74,8 +82,9 @@ export async function cacheSet<T>(
   data: T,
   config: CacheConfig = {}
 ): Promise<CacheEntry<T>> {
-  const key = cacheKey(entity);
-  const now = Date.now();
+const key = await cacheKey(entity);
+if (!key) throw new Error("SESSION_REQUIRED");
+const now = Date.now();
   const ttl = config.ttl ?? DEFAULT_TTL;
 
   const entry: CacheEntry<T> = {
@@ -91,8 +100,9 @@ export async function cacheSet<T>(
 }
 
 export async function cacheGet<T>(entity: string, id?: string): Promise<CachedResult<T> | null> {
-  const key = cacheKey(entity, id);
-  const raw = await getRaw(key);
+const key = await cacheKey(entity, id);
+if (!key) return null;
+const raw = await getRaw(key);
   if (!raw) return null;
 
   const entry = raw as CacheEntry<T>;
@@ -109,8 +119,8 @@ export async function cacheGet<T>(entity: string, id?: string): Promise<CachedRe
 }
 
 export async function cacheInvalidate(entity: string, id?: string): Promise<void> {
-  const key = cacheKey(entity, id);
-  await removeRaw(key);
+const key = await cacheKey(entity, id);
+if (key) await removeRaw(key);
 }
 
 export async function cacheClear(entity?: string): Promise<void> {
@@ -294,8 +304,11 @@ export async function getCacheStats(): Promise<{
   totalSize: number;
   entries: { key: string; age: number; stale: boolean; version: number }[];
 }> {
-  const allKeys = await AsyncStorage.getAllKeys();
-  const cacheKeys = allKeys.filter((k) => k.startsWith(CACHE_PREFIX));
+const scope = await getCacheScope();
+if (!scope) return { keys: [], totalSize: 0, entries: [] };
+const scopePrefix = `${CACHE_PREFIX}${scope}_`;
+const allKeys = await AsyncStorage.getAllKeys();
+const cacheKeys = allKeys.filter((k) => k.startsWith(scopePrefix));
   const entries: { key: string; age: number; stale: boolean; version: number }[] = [];
   let totalSize = 0;
 
@@ -307,7 +320,7 @@ export async function getCacheStats(): Promise<{
         const parsed = JSON.parse(raw);
         const now = Date.now();
         entries.push({
-          key: key.replace(CACHE_PREFIX, ""),
+          key: key.replace(scopePrefix, ""),
           age: Math.round((now - (parsed.cachedAt || now)) / 1000),
           stale: now > (parsed.expiresAt || now),
           version: parsed.version || 0,

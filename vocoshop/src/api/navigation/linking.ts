@@ -6,7 +6,6 @@ export const linking = {
     Linking.createURL(""),
     "vocoshop://",
     "exp://172.20.10.11:8081",
-    "https://unglozed-supermetropolitan-tamar.ngrok-free.dev",
   ],
   config: {
     screens: {

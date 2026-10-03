@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { AuthContext } from "../src/api/context/AuthContext";
 import API from "../src/api/api";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 
 interface Partner {
   _id: string;
@@ -166,8 +167,8 @@ export default function FundingScreen() {
   );
 
   const runSimulation = useCallback(() => {
-    const amount = parseInt(simAmount.replace(/\s/g, ""), 10);
-    const months = parseInt(simDuration, 10);
+    const amount = parseFrenchNumber(simAmount);
+    const months = parseFrenchNumber(simDuration);
     if (!amount || !months) return;
 
     const rate = 0.035;
@@ -196,7 +197,7 @@ export default function FundingScreen() {
     try {
       await API.post("/funding/demandes", {
         partnerId: demandePartenaire,
-        amount: parseInt(demandeMontant.replace(/\s/g, ""), 10),
+        amount: parseFrenchNumber(demandeMontant),
         objective: demandeObjectif,
         phone: demandePhone,
         address: demandeAddress,

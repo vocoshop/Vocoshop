@@ -37,7 +37,18 @@ timestamps: true,
 }
 );
 
+/* =====================================================
+🔍 INDEX HISTORIQUE STOCK
+===================================================== */
+
+/* Historique d'une boutique, du plus récent au plus ancien */
+StockHistorySchema.index({ storeId: 1, appliedAt: -1 });
+/* Historique d'une session d'inventaire */
+StockHistorySchema.index({ sessionId: 1, storeId: 1 });
+/* Regroupements par produit sur une fenêtre de dates */
+StockHistorySchema.index({ storeId: 1, productId: 1, appliedAt: -1 });
+
 export default mongoose.model<IStockHistory>(
-"StockHistory",
-StockHistorySchema
+  "StockHistory",
+  StockHistorySchema
 );

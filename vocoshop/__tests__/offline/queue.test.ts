@@ -1,5 +1,7 @@
 // __tests__/offline/queue.test.ts
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 jest.mock("../../src/api/api", () => ({
   __esModule: true,
   default: {
@@ -85,9 +87,10 @@ describe('offline/queue', () => {
       expect(job.id).toBeDefined();
       expect(job.status).toBe('pending');
       expect(job.method).toBe('POST');
-      expect(job.url).toBe('/stocks/stock_123');
+expect(job.url).toBe('/stocks/stock_123');
+expect(job.headers).toBeUndefined();
 
-      const queue = await loadQueue();
+const queue = await loadQueue();
       expect(queue).toHaveLength(1);
     });
 
@@ -138,6 +141,23 @@ describe('offline/queue', () => {
       expect(job.entity).toBe('product');
       expect(job.entityId).toBe('prod_1');
     });
+  });
+
+  it('isole les jobs par boutique', async () => {
+    await AsyncStorage.setItem('storeId', 'store-a');
+    await enqueueJob({ method: 'POST', url: '/store-a', body: { value: 1 } });
+
+    await AsyncStorage.setItem('storeId', 'store-b');
+    expect(await getQueueSize()).toBe(0);
+    await enqueueJob({ method: 'POST', url: '/store-b', body: { value: 2 } });
+
+    await AsyncStorage.setItem('storeId', 'store-a');
+    expect((await loadQueue()).map((job) => job.url)).toEqual(['/store-a']);
+
+    await clearQueue();
+    await AsyncStorage.setItem('storeId', 'store-b');
+    await clearQueue();
+    await AsyncStorage.removeItem('storeId');
   });
 
   /* =====================================================

@@ -14,6 +14,88 @@ import { getStoreId } from "../utils/storeId";
 
 const router = express.Router();
 
+const MAX_CHAT_MESSAGES = 20;
+const MAX_CHAT_MESSAGE_BYTES = 12000;
+const MAX_COMMAND_LENGTH = 80;
+const MAX_COMMAND_PARAMS_BYTES = 4096;
+const MAX_CONFIRMATION_TOKEN_LENGTH = 8192;
+const MAX_VISION_IMAGES = 6;
+const MAX_VISION_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_VISION_IMAGE_DATA_LENGTH = 7 * 1024 * 1024;
+const MAX_PRODUCTS_PER_IMPORT = 100;
+const MAX_PRODUCT_NAME_LENGTH = 200;
+const MAX_CATEGORY_LENGTH = 100;
+
+const ACTION_LABELS: Record<string, string> = {
+  suspendre_boutique: "suspendre une boutique",
+  suspend_store: "suspendre une boutique",
+  activer_boutique: "activer une boutique",
+  activate_store: "activer une boutique",
+  approuver_agent: "approuver un agent",
+  approve_agent: "approuver un agent",
+  rejeter_agent: "rejeter un agent",
+  reject_agent: "rejeter un agent",
+  suspendre_agent: "suspendre un agent",
+  suspend_agent: "suspendre un agent",
+  etendre_abonnement: "étendre un abonnement",
+  extend_subscription: "étendre un abonnement",
+  envoyer_notification: "envoyer une notification",
+  send_notification: "envoyer une notification",
+  suspendre_par_agent: "suspendre les boutiques d'un agent",
+  suspend_by_agent: "suspendre les boutiques d'un agent",
+};
+
+function isRecord(value: any): value is Record<string, any> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function jsonBytes(value: any): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(value) || "", "utf8");
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+function messageText(message: any): string {
+  if (typeof message?.content === "string") return message.content;
+  if (Array.isArray(message?.content)) {
+    return message.content
+      .map((part: any) => (typeof part === "string" ? part : typeof part?.text === "string" ? part.text : ""))
+      .join("");
+  }
+  return typeof message?.parts?.[0]?.text === "string" ? message.parts[0].text : "";
+}
+
+function validChatMessages(messages: any): messages is any[] {
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_CHAT_MESSAGES) return false;
+  return messages.every((message: any) => {
+    if (!isRecord(message) || !["user", "model", "assistant"].includes(message.role)) return false;
+    if (jsonBytes(message) > MAX_CHAT_MESSAGE_BYTES) return false;
+    return messageText(message).length <= 4000;
+  });
+}
+
+function validVisionImage(image: any): boolean {
+  if (typeof image !== "string" || image.length === 0 || image.length > MAX_VISION_IMAGE_DATA_LENGTH) return false;
+  const separator = image.indexOf(",");
+  if (separator < 0) return false;
+  if (!/^data:image\/[a-z0-9.+-]+;base64$/i.test(image.slice(0, separator))) return false;
+  const encoded = image.slice(separator + 1).replace(/\s/g, "");
+  if (!encoded || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) return false;
+  return Math.floor((encoded.length * 3) / 4) <= MAX_VISION_IMAGE_BYTES;
+}
+
+function confirmationReply(action: string, params?: Record<string, any>): string {
+  const target = params?.storeId || params?.id || params?.code || params?.agentCode;
+  const targetLabel = target ? ` (${String(target).slice(0, 100)})` : "";
+  return `Action sensible détectée : ${ACTION_LABELS[action] || action}${targetLabel}. Répondez CONFIRMER pour l'exécuter.`;
+}
+
+function getActorId(req: any): string {
+  return String(req.user?.userId || req.user?.id || "");
+}
+
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -32,7 +114,7 @@ Règles:
 - Pour les actions sensibles, annonce ce que tu vas faire puis demande confirmation avec "CONFIRMER"
 - Commence toujours par donner le contexte/les chiffres pertinents
 - Termine par une question ou une suggestion d'action
-- Si l'utilisateur demande une action, executes-la directement si c'est simple, ou annonce les conséquences
+- Si l'utilisateur demande une action, annonce les conséquences et attends une confirmation explicite avant toute exécution
 - Style: professionnel mais accessible, comme un consultant business`;
 
 function formatSecurityReport(report: any): string {
@@ -85,29 +167,64 @@ function formatAnalysis(analysis: any): string {
 
 router.post("/admin-chat", authMiddleware, requireOwner, async (req: any, res: any) => {
   try {
-    const { messages, command, params } = req.body;
-    const adminToken = req.headers.authorization;
-
-    // Handle direct commands
-    if (command) {
-      const result = await AICommandExecutor.execute(command, params, adminToken);
-      return res.json({ reply: result.success ? `✅ ${result.message}` : `❌ ${result.message}`, result });
+    const { messages, command, params, confirmationToken } = req.body;
+    const actorId = getActorId(req);
+    if (!actorId) {
+      return res.status(403).json({ error: "Session administrateur invalide" });
     }
 
-    if (!messages || !Array.isArray(messages)) {
+    if (confirmationToken !== undefined) {
+      if (typeof confirmationToken !== "string" || confirmationToken.length > MAX_CONFIRMATION_TOKEN_LENGTH) {
+        return res.status(400).json({ error: "Confirmation invalide ou expirée" });
+      }
+
+      const result = await AICommandExecutor.executeConfirmed(confirmationToken, actorId);
+      if (result.action === "confirmation") {
+        return res.status(403).json({ error: result.message });
+      }
+      return res.json({ reply: result.message, result });
+    }
+
+    if (command !== undefined) {
+      if (
+        typeof command !== "string" ||
+        command.length === 0 ||
+        command.length > MAX_COMMAND_LENGTH ||
+        !AICommandExecutor.isSupportedCommand(command) ||
+        (params !== undefined && !isRecord(params)) ||
+        jsonBytes(params || {}) > MAX_COMMAND_PARAMS_BYTES
+      ) {
+        return res.status(400).json({ error: "Commande invalide" });
+      }
+
+      const token = AICommandExecutor.createConfirmationToken(command, params || {}, actorId);
+      const action = String(command).trim().toLowerCase().replace(/\s+/g, "_");
+      return res.json({
+        reply: confirmationReply(action, params || {}),
+        confirmationRequired: true,
+        confirmationToken: token,
+        action,
+      });
+    }
+
+    if (!validChatMessages(messages)) {
       return res.status(400).json({ error: "Messages requis" });
     }
 
-    const lastMessage = messages[messages.length - 1]?.content || messages[messages.length - 1]?.parts?.[0]?.text || "";
-    const msg = typeof lastMessage === 'string' ? lastMessage : "";
+    const msg = messageText(messages[messages.length - 1]).trim();
+    if (!msg) {
+      return res.status(400).json({ error: "Message vide" });
+    }
 
-    // Parse intent for actions
     const parsed = await AICommandExecutor.parseUserIntent(msg);
     if (parsed) {
-      const result = await AICommandExecutor.execute(parsed.command, parsed.params, adminToken);
-      if (result.success) {
-        return res.json({ reply: `✅ ${result.message}`, result, action: parsed.command });
-      }
+      const token = AICommandExecutor.createConfirmationToken(parsed.command, parsed.params, actorId);
+      return res.json({
+        reply: confirmationReply(parsed.command, parsed.params),
+        confirmationRequired: true,
+        confirmationToken: token,
+        action: parsed.command,
+      });
     }
 
     // Detect special queries
@@ -131,7 +248,7 @@ router.post("/admin-chat", authMiddleware, requireOwner, async (req: any, res: a
         while (i >= 0 && lower[i] === " ") i--;
         let end = i + 1;
         while (i >= 0 && lower[i] >= "0" && lower[i] <= "9") i--;
-        if (i + 1 < end) days = parseInt(lower.slice(i + 1, end), 10);
+        if (i + 1 < end) days = Math.min(90, Math.max(1, parseInt(lower.slice(i + 1, end), 10) || 7));
       }
       const feed = await SecurityMonitor.getActivityFeed(days);
       let text = `📋 Activité système (${days} derniers jours):\n\n`;
@@ -202,8 +319,11 @@ Plateforme actuelle:
 router.post("/vision-products", authMiddleware, async (req, res) => {
   try {
     const { images } = req.body;
-    if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: "Images requises" });
+    if (!Array.isArray(images) || images.length === 0 || images.length > MAX_VISION_IMAGES) {
+      return res.status(400).json({ error: `Entre 1 et ${MAX_VISION_IMAGES} images requises` });
+    }
+    if (!images.every(validVisionImage)) {
+      return res.status(400).json({ error: "Image invalide ou trop volumineuse" });
     }
 
     const storeId = getStoreId(req);
@@ -218,10 +338,14 @@ router.post("/vision-products", authMiddleware, async (req, res) => {
           const result = await preprocessForVision(img);
           return `data:${result.mimeType};base64,${result.buffer.toString("base64")}`;
         } catch {
-          return img;
+          return "";
         }
       })
     );
+
+    if (processedImages.some((image) => !image)) {
+      return res.status(400).json({ error: "Image invalide ou trop volumineuse" });
+    }
 
     // Prepare image content parts for OpenAI
     const imageParts = processedImages.map((img) => ({
@@ -382,8 +506,11 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
     const storeId = getStoreId(req);
     if (!storeId) return res.status(401).json({ error: "Authentification requise" });
 
-    if (!Array.isArray(productList) || productList.length === 0) {
-      return res.status(400).json({ error: "Liste de produits requise" });
+    if (!Array.isArray(productList) || productList.length === 0 || productList.length > MAX_PRODUCTS_PER_IMPORT) {
+      return res.status(400).json({ error: `Liste de 1 à ${MAX_PRODUCTS_PER_IMPORT} produits requise` });
+    }
+    if (productList.some((item: any) => !isRecord(item) || typeof item.name !== "string" || item.name.trim().length === 0 || item.name.trim().length > MAX_PRODUCT_NAME_LENGTH)) {
+      return res.status(400).json({ error: "Nom de produit invalide" });
     }
 
     const created: any[] = [];
@@ -416,11 +543,12 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
         }
 
         let product;
-        const qty = Math.max(1, parseInt(item.quantity) || 1);
-        const unit = item.unit || "pièce";
+        const qty = Math.min(1000000, Math.max(1, parseInt(item.quantity, 10) || 1));
+        const unit = typeof item.unit === "string" && item.unit.trim() ? item.unit.trim().slice(0, 50) : "pièce";
+        const purchasePrice = Number.isFinite(Number(item.purchasePrice)) ? Math.min(1000000000, Math.max(0, Number(item.purchasePrice))) : 0;
         const updateFields: any = {
           $inc: { quantity: qty },
-          ...(item.purchasePrice > 0 ? { purchasePrice: item.purchasePrice } : {}),
+          ...(purchasePrice > 0 ? { purchasePrice } : {}),
           ...(unit !== "pièce" ? { unit } : {}),
         };
 
@@ -433,8 +561,8 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
         }
 
         if (existing) {
-          product = await Product.findByIdAndUpdate(
-            existing._id,
+          product = await Product.findOneAndUpdate(
+            { _id: existing._id, storeId },
             updateFields,
             { new: true }
           );
@@ -443,28 +571,28 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
           // Packaging détecté par l'IA
           const packaging = (item as any).packaging;
           const pConfigs: any[] = [];
-          if (packaging && packaging.name && packaging.contains > 1) {
+          if (packaging && typeof packaging.name === "string" && packaging.name.trim() && Number(packaging.contains) > 1) {
             pConfigs.push({
-              name: packaging.name,
-              quantity: packaging.contains,
-              purchasePrice: Math.max(0, parseInt(item.purchasePrice) || 0),
+              name: packaging.name.trim().slice(0, 50),
+              quantity: Math.min(1000000, Math.floor(Number(packaging.contains))),
+              purchasePrice,
             });
           }
           const createFields: any = {
             storeId,
             name: item.name.trim(),
-            category: item.category || "",
+            category: typeof item.category === "string" ? item.category.trim().slice(0, MAX_CATEGORY_LENGTH) : "",
             unit,
             baseUnit: unit,
-            sellPrice: Math.max(0, parseInt(item.sellPrice) || 0),
-            purchasePrice: Math.max(0, parseInt(item.purchasePrice) || 0),
+            sellPrice: Number.isFinite(Number(item.sellPrice)) ? Math.min(1000000000, Math.max(0, Number(item.sellPrice))) : 0,
+            purchasePrice,
             quantity: qty,
             alertLevel: 3,
             purchaseConfigs: pConfigs,
             sellConfigs: [{
               name: "Unité",
               quantity: 1,
-              sellPrice: Math.max(0, parseInt(item.sellPrice) || 0),
+              sellPrice: Number.isFinite(Number(item.sellPrice)) ? Math.min(1000000000, Math.max(0, Number(item.sellPrice))) : 0,
             }],
           };
           if (item.expirationDate) {
@@ -504,11 +632,14 @@ router.post("/vision-products/import", authMiddleware, async (req, res) => {
 router.post("/suggest-category", authMiddleware, async (req, res) => {
   try {
     const { name } = req.body;
-    if (!name) return res.status(400).json({ error: "Product name required" });
+    if (typeof name !== "string" || name.trim().length === 0 || name.trim().length > MAX_PRODUCT_NAME_LENGTH) {
+      return res.status(400).json({ error: "Nom de produit invalide" });
+    }
+    const productName = name.trim();
 
     const ai = await client.responses.create({
       model: "gpt-4o-mini",
-      input: `Donne la meilleure catégorie pour ce produit: "${name}". Réponds en JSON: {"category": "...", "confidence": 0-1}`,
+      input: `Donne la meilleure catégorie pour ce produit: "${productName}". Réponds en JSON: {"category": "...", "confidence": 0-1}`,
     });
 
     const result = JSON.parse(ai.output_text);

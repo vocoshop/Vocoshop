@@ -79,16 +79,16 @@ autoRenew: store.autoRenew ?? true,
 ===================================================== */
 export const activateSubscription = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const { storeId } = req.user || {};
-const { method, phone, card, expiry, cvc } = req.body || {};
+const { method, phone } = req.body || {};
 
 if (!storeId)
-  return next(new ValidationError("storeId manquant"));
+return next(new ValidationError("storeId manquant"));
 
-if (!method)
-  return next(new ValidationError("Méthode de paiement manquante"));
+if (method !== "mobile_money")
+return next(new ValidationError("Méthode de paiement non prise en charge"));
 
 const result = await processSubscriptionPayment({
-  method, phone, card, expiry, cvc, storeId,
+method, phone, storeId,
 });
 
 // Flutterwave configuré → attendre le webhook

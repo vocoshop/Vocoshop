@@ -459,7 +459,7 @@ function HistoryTab({ navigation }: { navigation: any }) {
 
   const renderScan = ({ item }: { item: ScanItem }) => {
     const saleLines = item.lines.filter((l) => l.type === "sale");
-    const totalRevenue = saleLines.reduce((s, l) => s + (l.total || 0), 0);
+    const totalRevenue = saleLines.reduce((s, l) => s + (l.quantity || 0) * (l.unitPrice || 0), 0);
     const matchedCount = item.lines.filter((l) => l.productName).length;
     const date = new Date(item.createdAt);
     const dateStr = date.toLocaleDateString("fr-FR", {
@@ -530,7 +530,7 @@ function HistoryTab({ navigation }: { navigation: any }) {
               <Text key={i} style={styles.previewLine}>
                 <Text style={{ color: "#666" }}>{getTypeLabel(line.type)} </Text>
                 {line.text}
-                {line.total ? <Text style={styles.previewTotal}> {line.total.toLocaleString("fr-FR")}F</Text> : null}
+                {(() => { const t = (line.quantity || 0) * (line.unitPrice || 0); return t ? <Text style={styles.previewTotal}> {t.toLocaleString("fr-FR")}F</Text> : null; })()}
               </Text>
             ))}
             {item.lines.length > 3 && (

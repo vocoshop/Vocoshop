@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 import CallProxy from "../models/CallProxy";
 import Agent from "../models/Agent";
 import Store from "../models/Store";

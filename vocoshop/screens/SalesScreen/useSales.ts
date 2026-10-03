@@ -36,6 +36,7 @@ export interface CartItem {
 product: Product;
 qty: number;
 total: number;
+sellPrice?: number;
 }
 
 export interface CarnetItem {
@@ -140,8 +141,10 @@ setFiltered(products.filter((p) => p.name.toLowerCase().includes(lower)));
 /* =====================================================
 ADD TO CART
 ===================================================== */
-const addToCart = (product: Product, qty: number) => {
+const addToCart = (product: Product, qty: number, priceOverride?: number) => {
 if (qty <= 0) return;
+
+const effectiveSellPrice = priceOverride ?? product.sellPrice;
 
 setCart((prev) => {
   if (qty > product.quantity) return prev;
@@ -160,7 +163,8 @@ setCart((prev) => {
       ? {
           ...c,
           qty: newQty,
-          total: newQty * c.product.sellPrice,
+          total: newQty * effectiveSellPrice,
+          sellPrice: priceOverride,
         }
       : c
     );
@@ -171,7 +175,8 @@ setCart((prev) => {
     {
       product,
       qty,
-      total: qty * product.sellPrice,
+      total: qty * effectiveSellPrice,
+      sellPrice: priceOverride,
     },
   ];
 });
@@ -185,10 +190,11 @@ setCart((prev) =>
   prev.map((c) => {
     if (c.product._id !== productId) return c;
     if (c.qty + 1 > c.product.quantity) return c;
+    const price = c.sellPrice ?? c.product.sellPrice;
     return {
       ...c,
       qty: c.qty + 1,
-      total: (c.qty + 1) * c.product.sellPrice,
+      total: (c.qty + 1) * price,
     };
   })
 );
@@ -202,7 +208,7 @@ c.product._id === productId
 ? {
 ...c,
 qty: c.qty - 1,
-total: (c.qty - 1) * c.product.sellPrice,
+total: (c.qty - 1) * (c.sellPrice ?? c.product.sellPrice),
 }
 : c
 )
@@ -228,7 +234,7 @@ const clamped = Math.min(qty, c.product.quantity);
 return {
 ...c,
 qty: clamped,
-total: clamped * c.product.sellPrice,
+total: clamped * (c.sellPrice ?? c.product.sellPrice),
 };
 })
 );
@@ -313,7 +319,7 @@ const today = new Date().toISOString().split("T")[0];
 
 setDayActive(true);
 })();
-}, []); // eslint-disable-line react-hooks/exhaustive-deps
+}, [token, storeId, headers, DAY_ACTIVE_KEY, DAY_OPENED_KEY, resetDayOpen]);
 
 const incCompletedSales = useCallback(() => {
 setCompletedSales((c) => {
@@ -329,17 +335,13 @@ return next;
 });
 }, [dayActive, DAY_ACTIVE_KEY, DAY_OPENED_KEY]);
 
-const finalizeSale = async (): Promise<"success" | "error" | "offline"> => {
-if (!cart.length) return "error";
+const finalizeSale = async (itemsOverride?: Array<{productId: string; quantity: number}>): Promise<"success" | "error" | "offline"> => {
+if (!cart.length && !itemsOverride?.length) return "error";
 
 try {
   setSelling(true);
-  const payload = {
-    items: cart.map((c) => ({
-      productId: c.product._id,
-      quantity: c.qty,
-    })),
-  };
+  const items = itemsOverride ?? cart.map((c) => ({ productId: c.product._id, quantity: c.qty }));
+  const payload = { items };
 
   const result = await runOrQueue({
     title: "Vente panier",
@@ -447,6 +449,13 @@ headers,
 if (result.mode === "offline") {
 items.forEach((c) => {
 setProducts((prev) =>
+prev.map((p) =>
+p._id === c.productId
+? { ...p, quantity: Math.max(0, p.quantity - c.qty) }
+: p
+)
+);
+setFiltered((prev) =>
 prev.map((p) =>
 p._id === c.productId
 ? { ...p, quantity: Math.max(0, p.quantity - c.qty) }

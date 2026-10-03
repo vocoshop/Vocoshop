@@ -99,9 +99,13 @@ export default function HomeScreen() {
     return () => unsub();
   }, [token, storeId, canInventory]);
 
-  const closeDailyOverlay = useCallback(async () => {
-    try { if (storeId) { const today = getTodayKey(); const key = `voco:lastDailyOverlay:${storeId}`; await AsyncStorage.setItem(key, today); } } catch (e) { console.warn("closeDailyOverlay", e); }
+  const closeDailyOverlay = useCallback(() => {
     setShowDailyOverlay(false);
+    if (storeId) {
+      const today = getTodayKey();
+      const key = `voco:lastDailyOverlay:${storeId}`;
+      AsyncStorage.setItem(key, today).catch((e) => console.warn("closeDailyOverlay", e));
+    }
   }, [storeId]);
 
   return (

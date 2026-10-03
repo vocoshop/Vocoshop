@@ -88,8 +88,19 @@ index: true
 }
 
 }, {
-timestamps: true // createdAt + updatedAt auto
+  timestamps: true // createdAt + updatedAt auto
 });
+
+/* =====================================================
+🔍 INDEX FACTURES
+===================================================== */
+
+/* Liste des paiements : tri paidAt décroissant */
+invoiceSchema.index({ paidAt: -1, _id: -1 });
+/* Factures d'une boutique */
+invoiceSchema.index({ storeId: 1, paidAt: -1 });
+/* Agrégat revenus mensuels (paidAt + fallback createdAt) */
+invoiceSchema.index({ createdAt: -1 });
 
 
 /**

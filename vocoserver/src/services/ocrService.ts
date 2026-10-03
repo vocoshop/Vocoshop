@@ -187,13 +187,21 @@ export class OcrService {
       }
 
       try {
-        const product = await Product.findById(line.productId);
+        const product = await Product.findOne({ _id: line.productId, storeId });
         if (!product) {
           errors.push(`Produit introuvable: "${line.text}"`);
           continue;
         }
         const increment = line.type === "sale" ? -line.quantity : line.quantity;
-        await Product.findByIdAndUpdate(line.productId, { $inc: { quantity: increment } });
+        const updatedProduct = await Product.findOneAndUpdate(
+          { _id: line.productId, storeId },
+          { $inc: { quantity: increment } },
+          { new: true }
+        );
+        if (!updatedProduct) {
+          errors.push(`Produit introuvable: "${line.text}"`);
+          continue;
+        }
         // Créer un enregistrement Sale pour les KPIs
         if (line.type === "sale") {
           const unitPrice = line.unitPrice ?? product.sellPrice ?? 0;

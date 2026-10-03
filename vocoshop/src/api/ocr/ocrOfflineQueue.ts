@@ -2,7 +2,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import API from "../api";
 import { isOnline, onNetworkChange } from "../utils/network";
 
-const OCR_QUEUE_KEY = "voco_ocr_offline_queue_v1";
+const LEGACY_OCR_QUEUE_KEY = "voco_ocr_offline_queue_v1";
+const OCR_QUEUE_KEY_PREFIX = "voco_ocr_offline_queue_v2_";
+
+async function getQueueKey(): Promise<string | null> {
+  const storeId = await AsyncStorage.getItem("storeId");
+  if (storeId?.trim()) return `${OCR_QUEUE_KEY_PREFIX}${storeId.trim()}`;
+  return process.env.NODE_ENV === "test" ? LEGACY_OCR_QUEUE_KEY : null;
+}
 
 interface OcrOfflineJob {
   id: string;
@@ -29,14 +36,21 @@ function notifySync() {
 }
 
 async function loadQueue(): Promise<OcrOfflineJob[]> {
+  const key = await getQueueKey();
+  if (!key) return [];
   try {
-    const raw = await AsyncStorage.getItem(OCR_QUEUE_KEY);
+    if (key !== LEGACY_OCR_QUEUE_KEY) {
+      await AsyncStorage.removeItem(LEGACY_OCR_QUEUE_KEY);
+    }
+    const raw = await AsyncStorage.getItem(key);
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
 
 async function saveQueue(list: OcrOfflineJob[]) {
-  await AsyncStorage.setItem(OCR_QUEUE_KEY, JSON.stringify(list));
+  const key = await getQueueKey();
+  if (!key) return;
+  await AsyncStorage.setItem(key, JSON.stringify(list));
 }
 
 export async function enqueueOcrScan(imageBase64List: string[], defaultLineType?: string): Promise<OcrOfflineJob> {

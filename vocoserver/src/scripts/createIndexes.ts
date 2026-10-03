@@ -19,46 +19,64 @@ async function createIndexes() {
     process.exit(1);
   }
 
-  console.log("\n📊 Creating indexes...\n");
+  // Import après connexion : les modèles s'enregistrent sur la connexion par défaut
+  const { default: Store } = await import("../models/Store");
+  const { default: User } = await import("../models/User");
+  const { default: Product } = await import("../models/Product");
+  const { default: Sales } = await import("../models/Sales");
+  const { default: Order } = await import("../models/Order");
+  const { default: InventorySession } = await import("../models/InventorySession");
+  const { default: InventoryHistory } = await import("../models/InventoryHistory");
+  const { default: StockHistory } = await import("../models/StockHistory");
+  const { default: StockLot } = await import("../models/StockLot");
+  const { default: Invoice } = await import("../models/Invoice");
+  const { default: Notification } = await import("../models/Notification");
+  const { default: Commission } = await import("../models/Commission");
+  const { default: ActivityLog } = await import("../models/ActivityLog");
+  const { default: Agent } = await import("../models/Agent");
 
-  const indexes: { col: string; idx: Record<string, any>; name: string }[] = [
-    { col: "users", idx: { store: 1 }, name: "users_store" },
-    { col: "users", idx: { isActive: 1 }, name: "users_isActive" },
-    { col: "users", idx: { deletedAt: 1 }, name: "users_deletedAt" },
-    { col: "products", idx: { store: 1 }, name: "products_store" },
-    { col: "products", idx: { store: 1, category: 1 }, name: "products_store_category" },
-    { col: "products", idx: { name: "text" }, name: "products_name_text" },
-    { col: "products", idx: { barcode: 1 }, name: "products_barcode" },
-    { col: "sales", idx: { store: 1, createdAt: -1 }, name: "sales_store_createdAt" },
-    { col: "sales", idx: { employee: 1 }, name: "sales_employee" },
-    { col: "orders", idx: { store: 1, createdAt: -1 }, name: "orders_store_createdAt" },
-    { col: "orders", idx: { status: 1 }, name: "orders_status" },
-    { col: "inventorysessions", idx: { store: 1, createdAt: -1 }, name: "inventorysessions_store_createdAt" },
-    { col: "invoices", idx: { store: 1, invoiceNumber: 1 }, name: "invoices_store_invoiceNumber" },
-    { col: "notifications", idx: { store: 1, read: 1 }, name: "notifications_store_read" },
-    { col: "stocklots", idx: { product: 1 }, name: "stocklots_product" },
-    { col: "stocklots", idx: { store: 1 }, name: "stocklots_store" },
+  // Les schémas Mongoose sont la source de vérité (évite les champs obsolètes
+  // du type `store` / `read` qui ne correspondent plus aux modèles actuels).
+  const models = [
+    Store,
+    User,
+    Product,
+    Sales,
+    Order,
+    InventorySession,
+    InventoryHistory,
+    StockHistory,
+    StockLot,
+    Invoice,
+    Notification,
+    Commission,
+    ActivityLog,
+    Agent,
   ];
 
-  for (const { col, idx, name } of indexes) {
+  console.log("\n📊 Creating indexes from model schemas...\n");
+
+  let created = 0;
+  let failed = 0;
+
+  for (const model of models) {
+    const name = model.collection.collectionName;
     try {
-      await db.collection(col).createIndex(idx, { background: true });
-      console.log(`✅ ${col}: ${name}`);
+      await model.createIndexes();
+      const specs = model.schema.indexes();
+      created += specs.length;
+      console.log(`✅ ${name}: ${specs.length} index(es)`);
     } catch (e: any) {
-      if (e.code === 86) {
-        console.log(`⚠️  ${col}: ${name} (already exists)`);
-      } else {
-        console.log(`❌ ${col}: ${name} - ${e.message}`);
-      }
+      failed++;
+      console.log(`❌ ${name}: ${e.message}`);
     }
   }
 
-  console.log("\n🎉 Indexes created (or already exist)!");
-  console.log("\nNote: Indexes are created in background (non-blocking).\n");
-  
+  console.log(`\n🎉 Done: ${created} index(es) ensured, ${failed} collection(s) failed.`);
+
   await mongoose.disconnect();
   console.log("👋 Disconnected");
-  process.exit(0);
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 createIndexes().catch((err) => {

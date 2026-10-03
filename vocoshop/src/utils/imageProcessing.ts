@@ -1,7 +1,7 @@
 import * as ImageManipulator from "expo-image-manipulator";
 
-const MAX_DIMENSION = 1280;
-const JPEG_QUALITY = 0.6;
+const MAX_DIMENSION = 1920;
+const JPEG_QUALITY = 0.85;
 
 export async function compressImage(uri: string): Promise<{ uri: string; base64: string }> {
   const result = await ImageManipulator.manipulateAsync(

@@ -33,6 +33,7 @@ const agent = await Agent.findById(agentId)
 
 if (!agent) return res.status(401).json({ error: "Agent invalide" });
 if ((agent as any).isActive === false) return res.status(403).json({ error: "Agent désactivé" });
+if ((agent as any).isApproved !== true) return res.status(403).json({ error: "Agent non approuvé" });
 
 req.agent = {
 id: String(agent._id),

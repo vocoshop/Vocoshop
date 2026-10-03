@@ -15,6 +15,7 @@ import { AuthContext } from "../src/api/context/AuthContext";
 // ✅ OFFLINE
 import { runOrQueue } from "../src/api/offline/queue";
 import { isOffline } from "../src/api/utils/network";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 
 export default function StockRemoveDetailsScreen({ route, navigation }: any) {
 const { product } = route.params;
@@ -32,9 +33,9 @@ Authorization: `Bearer ${token}`,
 // Retirer du stock (ONLINE / OFFLINE)
 // ================================
 const submitRemoveStock = async () => {
-const q = Number(quantity);
+const q = parseFrenchNumber(quantity);
 
-if (!quantity || isNaN(q) || q <= 0) {
+if (q <= 0) {
 return Alert.alert("Erreur", "Veuillez entrer une quantité valide.");
 }
 

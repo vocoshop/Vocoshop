@@ -48,7 +48,18 @@ appliedAt: { type: Date }, // ✔ appliqué au stock
 { timestamps: true }
 );
 
+/* =====================================================
+🔍 INDEX SESSIONS INVENTAIRE
+===================================================== */
+
+/* Sessions d'une boutique, du plus récent au plus ancien */
+InventorySessionSchema.index({ storeId: 1, createdAt: -1 });
+/* Session courante d'un employé (statut draft/validated) */
+InventorySessionSchema.index({ storeId: 1, employeeId: 1, createdAt: -1 });
+/* Statut + date d'application (nettoyage des sessions appliquées) */
+InventorySessionSchema.index({ storeId: 1, status: 1, appliedAt: -1 });
+
 export default mongoose.model<IInventorySession>(
-"InventorySession",
-InventorySessionSchema
+  "InventorySession",
+  InventorySessionSchema
 );

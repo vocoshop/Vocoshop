@@ -1,9 +1,8 @@
 // controllers/agentAdminController.ts
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 
 import Agent from "../models/Agent";
 import { getNextSequence } from "../services/counterService";
@@ -358,7 +357,6 @@ message: notifSent
 ? "Candidat approuvé + notification envoyée"
 : "Candidat approuvé (notification non envoyée)",
 notifSent,
-authCode,
 agent: {
 id: agent._id,
 name: agent.name,

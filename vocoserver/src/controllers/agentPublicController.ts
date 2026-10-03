@@ -1,12 +1,10 @@
 // controllers/agentPublicController.ts
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError } from "../utils/AppError";
 import Agent from "../models/Agent";
 import { getNextSequence, buildAgentCode, randomSuffix, generateAuthCode } from "../services/counterService";
 import bcrypt from "bcryptjs";
-import fs from "fs";
-import path from "path";
 import { normalizePhone } from "../utils/phone";
 
 export const registerAgent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {

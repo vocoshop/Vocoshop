@@ -271,4 +271,23 @@ next();
 🚀 MODEL
 ===================================================== */
 
+/* =====================================================
+🔍 INDEX LISTES / FILTRES ADMIN
+===================================================== */
+
+/* Listes admin-manager : filtre agentCode + tri createdAt */
+StoreSchema.index({ agentCode: 1, createdAt: -1 });
+/* Compteurs d'inactivité (agent lastActiveAt, alertes 14j) */
+StoreSchema.index({ lastActiveAt: -1 });
+/* Statut d'abonnement + échéance (stats agrégées) */
+StoreSchema.index({ subscriptionStatus: 1, paidUntil: -1 });
+/* Filtres liste /stores : statut boutique */
+StoreSchema.index({ status: 1, createdAt: -1 });
+/* Parrainage : top sponsors (referredCount > 0) */
+StoreSchema.index({ referredCount: -1 });
+
+/* =====================================================
+🚀 MODEL
+===================================================== */
+
 export default mongoose.model<IStore>("Store", StoreSchema);

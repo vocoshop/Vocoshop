@@ -1,65 +1,31 @@
 import API from "../api";
 
 type PaymentPayload = {
-method: "mobile_money" | "card";
-phone?: string;
-card?: string;
-expiry?: string;
-cvc?: string;
-email?: string;
-countryCode?: string;
+  method: "mobile_money" | "card";
+  phone?: string;
+  email?: string;
 };
 
-/**
- * 🔥 PAYMENT HANDLER GLOBAL
- * - Mobile Money → Yabetoo (intégré)
- */
-export async function handleSubscriptionPayment(payload: PaymentPayload): Promise<true | { checkoutUrl: string }> {
-try {
+export async function handleSubscriptionPayment(payload: PaymentPayload): Promise<{ checkoutUrl: string }> {
+  try {
+    if (payload.method !== "mobile_money" && payload.method !== "card") {
+      throw new Error("Méthode inconnue");
+    }
 
-/* =====================================================
-📱 MOBILE MONEY → YABETOO
-===================================================== */
-if (payload.method === "mobile_money") {
+    if (payload.method === "mobile_money" && !payload.phone?.trim()) {
+      throw new Error("Numéro manquant");
+    }
 
-if (!payload.phone) {
-throw new Error("Numéro manquant");
-}
+    const email = payload.email?.trim() || `client_${Date.now()}@vocoshop.com`;
+    const res: any = await API.post("/yabetoo/checkout", { email });
 
-const email = payload.email || `client_${Date.now()}@vocoshop.com`;
+    if (!res.data?.checkoutUrl) {
+      throw new Error(res.data?.error || "Échec du paiement");
+    }
 
-const res: any = await API.post("/yabetoo/checkout", { email });
-
-if (res.data?.checkoutUrl) {
-return { checkoutUrl: res.data.checkoutUrl };
-}
-
-throw new Error(res.data?.error || "Échec du paiement");
-}
-
-/* =====================================================
-💳 CARTE BANCAIRE
-===================================================== */
-if (payload.method === "card") {
-
-if (!payload.card || !payload.expiry || !payload.cvc) {
-throw new Error("Informations carte incomplètes");
-}
-
-await API.post("/subscription/activate", {
-method: "card",
-card: payload.card,
-expiry: payload.expiry,
-cvc: payload.cvc,
-});
-
-return true;
-}
-
-throw new Error("Méthode inconnue");
-
-} catch (e) {
-console.log("❌ PaymentHandler error:", e);
-throw e;
-}
+    return { checkoutUrl: res.data.checkoutUrl };
+  } catch (e) {
+    console.log("❌ PaymentHandler error:", e);
+    throw e;
+  }
 }

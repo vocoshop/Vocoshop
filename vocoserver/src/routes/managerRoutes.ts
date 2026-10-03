@@ -11,6 +11,7 @@ import { sendSMS } from "../services/smsService";
 import { createNotification } from "../services/notificationEngine";
 import Notification from "../models/Notification";
 import { PushNotificationService } from "../services/pushNotificationService";
+import { getAgentStoreStats } from "../services/storeStatsService";
 
 const router = Router();
 router.use(requireManager);
@@ -45,9 +46,21 @@ Score qualité agent (calcul côté serveur)
 ===================================================== */
 const computeAgentScore = async (agent: any, stores: any[]) => {
   const agentStores = stores.filter((s: any) => (s.agentCode || "").toLowerCase() === (agent.code || "").toLowerCase());
-  const total = agentStores.length;
-  const active = agentStores.filter((s: any) => s.subscriptionStatus === "active").length;
-  const inactive = total - active;
+  return computeAgentScoreFromCounts(agent, {
+    total: agentStores.length,
+    active: agentStores.filter((s: any) => s.subscriptionStatus === "active").length,
+    inactive: agentStores.filter((s: any) => s.subscriptionStatus !== "active").length,
+  });
+};
+
+/* Score qualité agent à partir de compteurs déjà agrégés (évite de charger les boutiques) */
+const computeAgentScoreFromCounts = (
+  agent: any,
+  counts: { total: number; active: number; inactive?: number }
+) => {
+  const total = counts.total;
+  const active = counts.active;
+  const inactive = counts.inactive ?? Math.max(0, total - active);
   const lastActive = agent.lastLoginAt ? new Date(agent.lastLoginAt).getTime() : 0;
   const daysSinceActive = (Date.now() - lastActive) / 86400000;
 
@@ -75,16 +88,40 @@ router.get("/stats", async (req: any, res: any) => {
     const accessFilter = buildAccessFilter(req.manager);
     const allAgents = await Agent.find({ ...accessFilter, isApproved: true }).lean();
     const agentCodes = allAgents.map((a: any) => a.code?.toLowerCase()).filter(Boolean);
-    const allStores = await Store.find({ agentCode: { $in: agentCodes } }).lean();
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+    const counters = await Store.aggregate([
+      { $match: { agentCode: { $in: agentCodes } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          active: { $sum: { $cond: [{ $eq: ["$subscriptionStatus", "active"] }, 1, 0] } },
+          expired: { $sum: { $cond: [{ $eq: ["$subscriptionStatus", "expired"] }, 1, 0] } },
+          inactive: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: [{ $ifNull: ["$lastActiveAt", null] }, null] },
+                    { $lt: ["$lastActiveAt", sevenDaysAgo] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    const totalStores = (counters as any[])[0]?.total || 0;
+    const activeSubs = (counters as any[])[0]?.active || 0;
+    const expiredStores = (counters as any[])[0]?.expired || 0;
+    const inactiveStores = (counters as any[])[0]?.inactive || 0;
 
     const activeAgents = allAgents.filter((a: any) => a.isActive);
-    const totalStores = allStores.length;
-    const activeSubs = allStores.filter((s: any) => s.subscriptionStatus === "active").length;
-    const expiredStores = allStores.filter((s: any) => s.subscriptionStatus === "expired").length;
-    const inactiveStores = allStores.filter((s: any) => {
-      if (!s.lastActiveAt) return true;
-      return (Date.now() - new Date(s.lastActiveAt).getTime()) > 7 * 86400000;
-    }).length;
 
     const alertCount = expiredStores + inactiveStores + allAgents.filter((a: any) => !a.isActive).length;
 
@@ -130,14 +167,17 @@ router.get("/agents", async (req: any, res: any) => {
       Agent.countDocuments({ ...accessFilter, isApproved: true }),
     ]);
 
-    const allStores = await Store.find().lean();
+    const pageCodes = agents
+      .map((a: any) => (a.code || "").toLowerCase())
+      .filter(Boolean);
+    const storesByAgent = await getAgentStoreStats(pageCodes);
 
-    const enriched = await Promise.all(
-      agents.map(async (a: any) => {
-        const scoreData = await computeAgentScore(a, allStores);
-        return { ...a, ...scoreData };
-      })
-    );
+    const enriched = agents.map((a: any) => {
+      const code = (a.code || "").toLowerCase();
+      const stats = storesByAgent[code] || { total: 0, active: 0, inactive: 0 };
+      const scoreData = computeAgentScoreFromCounts(a, stats);
+      return { ...a, ...scoreData };
+    });
 
     res.json({ agents: enriched, meta: { page, limit, total } });
   } catch (e) {
@@ -363,7 +403,9 @@ router.get("/alerts", async (req: any, res: any) => {
     const accessFilter = buildAccessFilter(req.manager);
     const agents = await Agent.find({ ...accessFilter, isApproved: true }).lean();
     const agentCodes = agents.map((a: any) => a.code?.toLowerCase()).filter(Boolean);
-    const stores = await Store.find({ agentCode: { $in: agentCodes } }).lean();
+    const stores = await Store.find({ agentCode: { $in: agentCodes } })
+      .select("agentCode subscriptionStatus paidUntil lastActiveAt createdAt storeName")
+      .lean();
 
     const alerts: any[] = [];
 
@@ -473,11 +515,18 @@ router.get("/activity-stats", async (req: any, res: any) => {
       { $sort: { _id: 1 } },
     ]);
 
-    const stores = await Store.find({ agentCode: { $in: agentCodes }, createdAt: { $gte: start } }).lean();
+    const storeData = await Store.aggregate([
+      { $match: { agentCode: { $in: agentCodes }, createdAt: { $gte: start } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
     const storeMap: Record<string, number> = {};
-    stores.forEach((s: any) => {
-      const day = new Date(s.createdAt).toISOString().split("T")[0];
-      storeMap[day] = (storeMap[day] || 0) + 1;
+    storeData.forEach((row: any) => {
+      storeMap[row._id] = row.count;
     });
 
     const activityMap: Record<string, number> = {};
@@ -536,7 +585,9 @@ router.get("/agents/:id/score-evolution", async (req: any, res: any) => {
     if (!agent) return res.status(404).json({ error: "Agent introuvable" });
     const agentCode = (agent.code || "").toLowerCase();
 
-    const stores = await Store.find({ agentCode }).lean();
+    const stores = await Store.find({ agentCode })
+      .select("createdAt paidUntil trialEnd graceUntil")
+      .lean();
     const weeks = 8;
     const now = new Date();
     const data: { week: string; label: string; score: number; stores: number; active: number }[] = [];
@@ -594,7 +645,9 @@ router.get("/inactive-stores", async (req: any, res: any) => {
     const accessFilter = buildAccessFilter(req.manager);
     const agents = await Agent.find({ ...accessFilter, isApproved: true }).lean();
     const agentCodes = agents.map((a: any) => a.code?.toLowerCase()).filter(Boolean);
-    const stores = await Store.find({ agentCode: { $in: agentCodes } }).lean();
+    const stores = await Store.find({ agentCode: { $in: agentCodes } })
+      .select("_id storeName name phone city lastActiveAt createdAt subscriptionStatus agentCode")
+      .lean();
     const now = Date.now();
 
     const byAgent: Record<string, { agent: any; stores: any[] }> = {};
@@ -734,8 +787,7 @@ router.post("/broadcast-message", async (req: any, res: any) => {
     const accessFilter = buildAccessFilter(req.manager);
     const agents = await Agent.find({ ...accessFilter, isApproved: true }).lean();
     const agentCodes = agents.map((a: any) => a.code?.toLowerCase()).filter(Boolean);
-    const stores = await Store.find({ agentCode: { $in: agentCodes } }).lean();
-    const totalStores = stores.length;
+    const totalStores = await Store.countDocuments({ agentCode: { $in: agentCodes } });
     let sent = 0;
 
     await Promise.allSettled(agents.map(async (a: any) => {

@@ -88,6 +88,21 @@ describe('offline/conflictResolver', () => {
     });
   });
 
+  it('isole les versions par boutique', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+    await AsyncStorage.setItem('storeId', 'store-a');
+    await recordVersion('stock', 'shared-id', 1, Date.now(), 'a');
+
+    await AsyncStorage.setItem('storeId', 'store-b');
+    expect(await getLastVersion('stock', 'shared-id')).toBeNull();
+    await recordVersion('stock', 'shared-id', 2, Date.now(), 'b');
+
+    await AsyncStorage.setItem('storeId', 'store-a');
+    const version = await getLastVersion('stock', 'shared-id');
+    expect(version?.version).toBe(1);
+    expect(version?.serverHash).toBe('a');
+  });
+
   describe('detectConflict', () => {
     it('should return null when no version is known', async () => {
       const job = makeJob();

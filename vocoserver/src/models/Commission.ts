@@ -32,5 +32,9 @@ const CommissionSchema = new Schema<ICommission>(
 );
 
 CommissionSchema.index({ agentCode: 1, storeId: 1, month: 1, year: 1 }, { unique: true });
+/* Filtres admin-manager par statut + tri antéchronologique */
+CommissionSchema.index({ agentCode: 1, status: 1, createdAt: -1 });
+/* Agrégats de commissions par période */
+CommissionSchema.index({ agentCode: 1, year: 1, month: 1, status: 1 });
 
 export default mongoose.model<ICommission>("Commission", CommissionSchema);

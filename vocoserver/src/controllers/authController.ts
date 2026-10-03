@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError, NotFoundError, UnauthorizedError } from "../utils/AppError";
 import bcrypt from "bcryptjs";
 import Store from "../models/Store";
 import Subscription from "../models/Subscription";

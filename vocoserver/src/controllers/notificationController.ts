@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError } from "../utils/AppError";
 import Notification from "../models/Notification";
 
 /**

@@ -13,6 +13,7 @@ ScrollView,
 import { Ionicons } from "@expo/vector-icons";
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 
 // ✅ OFFLINE
 // ⚠️ adapte les chemins si besoin
@@ -187,7 +188,7 @@ expirationDates: nextExp,
 // Ajouter du stock (+ offline queue)
 // ================================
   const submitAddStock = async () => {
-    const rawQty = Number(quantity);
+    const rawQty = parseFrenchNumber(quantity);
 
     if (!token) return Alert.alert("Erreur", "Session invalide. Reconnectez-vous.");
     if (!realId) return Alert.alert("Erreur", "Produit introuvable (ID manquant).");
@@ -356,7 +357,7 @@ const offlineNow = isOffline();
           onChangeText={setQuantity}
         />
 
-        {hasConfigs && selectedConfig && Number(quantity) > 0 && (
+        {hasConfigs && selectedConfig && parseFrenchNumber(quantity) > 0 && (
           <Text style={styles.conversionText}>
             = {effectiveQty} {baseUnit}s (total stock ajouté)
           </Text>

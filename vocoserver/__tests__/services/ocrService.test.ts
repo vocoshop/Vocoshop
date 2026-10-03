@@ -11,6 +11,7 @@ const mockOcrScanCreate = jest.fn();
 const mockOcrFindOne = jest.fn();
 const mockOcrFind = jest.fn();
 const mockOcrCountDocuments = jest.fn();
+const mockInventoryHistoryCreate = jest.fn().mockResolvedValue({});
 
 jest.mock("../../src/models/OcrScan", () => {
   const mockToObject = jest.fn(function () {
@@ -57,6 +58,13 @@ jest.mock("../../src/models/ProductAlias", () => ({
   },
 }));
 
+jest.mock("../../src/models/InventoryHistory", () => ({
+  __esModule: true,
+  default: {
+    create: mockInventoryHistoryCreate,
+  },
+}));
+
 let mockProductFindResult: any = [];
 
 const mockProductFind = jest.fn().mockImplementation(() => ({
@@ -64,6 +72,7 @@ const mockProductFind = jest.fn().mockImplementation(() => ({
 }));
 
 const mockProductFindByIdAndUpdate = jest.fn();
+const mockProductFindOneAndUpdate = jest.fn();
 const mockProductFindOne = jest.fn();
 
 const mockProductFindById = jest.fn();
@@ -73,8 +82,9 @@ jest.mock("../../src/models/Product", () => ({
   default: {
     find: mockProductFind,
     findById: mockProductFindById,
-    findByIdAndUpdate: mockProductFindByIdAndUpdate,
-    findOne: mockProductFindOne,
+findByIdAndUpdate: mockProductFindByIdAndUpdate,
+findOneAndUpdate: mockProductFindOneAndUpdate,
+findOne: mockProductFindOne,
   },
 }));
 
@@ -231,17 +241,22 @@ describe("OcrService", () => {
         save: mockSave,
       };
 
-      mockOcrFindOne.mockResolvedValue(mockScan);
-      mockProductFindById.mockResolvedValue({ _id: "507f191e810c19729de860ed", name: "Riz", sellPrice: 500 });
-      mockProductFindByIdAndUpdate.mockResolvedValue({});
+mockOcrFindOne.mockResolvedValue(mockScan);
+mockProductFindOne.mockResolvedValue({ _id: "507f191e810c19729de860ed", name: "Riz", sellPrice: 500 });
+mockProductFindOneAndUpdate.mockResolvedValue({});
 
-      const result = await ocrService.importValidatedScan("507f191e810c19729de860ee", storeId);
-      expect(result.importedCount).toBe(1);
-      expect(result.errors).toHaveLength(0);
-      expect(mockProductFindByIdAndUpdate).toHaveBeenCalledWith(
-        "507f191e810c19729de860ed",
-        { $inc: { quantity: 10 } }
-      );
+const result = await ocrService.importValidatedScan("507f191e810c19729de860ee", storeId);
+expect(result.importedCount).toBe(1);
+expect(result.errors).toHaveLength(0);
+expect(mockProductFindOne).toHaveBeenCalledWith({
+_id: "507f191e810c19729de860ed",
+storeId,
+});
+expect(mockProductFindOneAndUpdate).toHaveBeenCalledWith(
+{ _id: "507f191e810c19729de860ed", storeId },
+{ $inc: { quantity: 10 } },
+{ new: true }
+);
     });
 
     it("ignore les lignes à faible confiance", async () => {

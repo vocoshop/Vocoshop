@@ -94,6 +94,8 @@ const onSave = useCallback(async () => {
 if (!isReady) return;
 
 const p = normalizePhone(phone);
+const n = name.trim();
+if (!n) return Alert.alert("Erreur", "Nom requis.");
 if (!p) return Alert.alert("Erreur", "Numéro requis.");
 
 try {
@@ -102,7 +104,7 @@ setSaving(true);
 const created = await createEmployee(
 {
 phone: p,
-name: name.trim() || undefined,
+name: n,
 role: "employee",
 permissions,
 },
@@ -218,7 +220,7 @@ style={styles.input}
 keyboardType="phone-pad"
 />
 
-<Text style={styles.label}>Nom (optionnel)</Text>
+<Text style={styles.label}>Nom *</Text>
 <TextInput
 value={name}
 onChangeText={setName}

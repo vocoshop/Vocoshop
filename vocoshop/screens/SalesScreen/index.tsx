@@ -1,5 +1,5 @@
 // screens/SalesScreen.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
 View,
 Text,
@@ -11,9 +11,11 @@ ActivityIndicator,
 StyleSheet,
 FlatList,
 Alert,
+Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { parseFrenchNumber, formatMoney } from "../../src/utils/parseFrenchNumber";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import API from "../../src/api/api";
@@ -61,17 +63,21 @@ const [editingQty, setEditingQty] = useState<string | null>(null);
   const [saleMsg, setSaleMsg] = useState<{ type: "success" | "offline" | "error"; text: string } | null>(null);
   const [hasSalesToday, setHasSalesToday] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await API.get("/sales/today");
-        const items = Array.isArray(data) ? data : data?.sales || [];
-        if (items.length > 0) {
-          setHasSalesToday(true);
-        }
-      } catch (e) { console.warn("check today sales", e); }
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      (async () => {
+        try {
+          const { data } = await API.get("/sales/today");
+          const items = Array.isArray(data) ? data : data?.sales || [];
+          if (mounted && items.length > 0) {
+            setHasSalesToday(true);
+          }
+        } catch (e) { console.warn("check today sales", e); }
+      })();
+      return () => { mounted = false; };
+    }, [])
+  );
 
   // Rappel : journée auto-clôturée → proposer d'envoyer le bilan
   useEffect(() => {
@@ -103,7 +109,26 @@ const [editingQty, setEditingQty] = useState<string | null>(null);
   }, []);
 
   const handleFinalize = async () => {
-const res = await finalizeSale();
+  Keyboard.dismiss();
+  // Appliquer la quantite en cours d'edition AVANT de construire les items
+  if (editingQty) {
+    const n = parseFrenchNumber(editingQtyValue);
+    if (n > 0) {
+      setItemQty(editingQty, n);
+    } else {
+      setItemQty(editingQty, 0);
+    }
+    setEditingQty(null);
+    setEditingQtyValue("");
+  }
+  // Lire le cart mis à jour via functional updater
+  const items = cart.map((c) => ({
+    productId: c.product._id,
+    quantity: editingQty && c.product._id === editingQty
+      ? (parseFrenchNumber(editingQtyValue) || c.qty)
+      : c.qty,
+  }));
+const res = await finalizeSale(items);
 if (res === "success") {
   setSaleMsg({ type: "success", text: "Vente enregistrée" });
   setCartModal(false);
@@ -183,10 +208,19 @@ style={styles.search}
 )}
 
       {/* ================= CLOSE DAY ================= */}
-      {dayActive && (hasSalesToday || completedSales > 0) && (
+      {(dayActive || hasSalesToday) && (hasSalesToday || completedSales > 0) && (
         <TouchableOpacity
           style={styles.endDayBtn}
-          onPress={closeDay}
+          onPress={() =>
+            Alert.alert(
+              "Clôturer la journée",
+              "Confirmer la clôture de la journée ?",
+              [
+                { text: "Annuler", style: "cancel" },
+                { text: "Clôturer", style: "destructive", onPress: closeDay },
+              ]
+            )
+          }
           disabled={dayLoading}
         >
           <Text style={styles.endDayBtnText}>
@@ -217,7 +251,7 @@ style={styles.search}
         <View style={{ flex: 1 }}>
           <Text style={styles.productName}>{item.name}</Text>
           <Text style={styles.productPrice}>
-            {item.sellPrice} FCFA · Stock {item.quantity}
+            {formatMoney(item.sellPrice)} FCFA · Stock {item.quantity}
           </Text>
         </View>
         <Text style={styles.quickBadge}>+</Text>
@@ -267,7 +301,7 @@ style={styles.search}
                       onPress={() => setSelectedSellConfig("")}
                     >
                       <Text style={[styles.sellChipText, !selectedSellConfig && styles.sellChipTextActive]}>
-                        Unité ({selectedProduct?.sellPrice || 0} F)
+                        Unité ({formatMoney(selectedProduct?.sellPrice || 0)} F)
                       </Text>
                     </TouchableOpacity>
                     {selectedProduct.sellConfigs.map((c, i) => (
@@ -277,7 +311,7 @@ style={styles.search}
                         onPress={() => setSelectedSellConfig(c.name)}
                       >
                         <Text style={[styles.sellChipText, selectedSellConfig === c.name && styles.sellChipTextActive]}>
-                          {c.name} ({c.quantity} × {Math.round(c.sellPrice / c.quantity)} F)
+                          {c.name} ({c.quantity} × {c.quantity > 0 ? Math.round(c.sellPrice / c.quantity) : c.sellPrice} F)
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -298,12 +332,16 @@ style={styles.search}
                 style={styles.primaryBtn}
                 onPress={() => {
                   if (selectedProduct) {
-                    let finalQty = Number(qty);
+                    let finalQty = parseFrenchNumber(qty);
+                    let priceOverride: number | undefined;
                     if (selectedSellConfig && selectedProduct.sellConfigs) {
                       const cfg = selectedProduct.sellConfigs.find(c => c.name === selectedSellConfig);
-                      if (cfg) finalQty = finalQty * cfg.quantity;
+                      if (cfg) {
+                        finalQty = finalQty * cfg.quantity;
+                        priceOverride = cfg.quantity > 0 ? cfg.sellPrice / cfg.quantity : cfg.sellPrice;
+                      }
                     }
-                    addToCart(selectedProduct, finalQty);
+                    addToCart(selectedProduct, finalQty, priceOverride);
                   }
                   setSelectedProduct(null);
                   setSelectedSellConfig("");
@@ -364,8 +402,8 @@ hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
 value={editingQtyValue}
 onChangeText={setEditingQtyValue}
 onBlur={() => {
-  const n = parseInt(editingQtyValue, 10);
-  if (!isNaN(n) && n > 0) setItemQty(item.product._id, n);
+  const n = parseFrenchNumber(editingQtyValue);
+  setItemQty(item.product._id, n);
   setEditingQty(null);
 }}
 keyboardType="numeric"
@@ -381,15 +419,15 @@ autoFocus
 </TouchableOpacity>
 )}
 
-<Text style={styles.cartQtyLabel}>× {item.product.sellPrice} FCFA</Text>
+<Text style={styles.cartQtyLabel}>× {formatMoney(item.sellPrice ?? item.product.sellPrice)} FCFA</Text>
 
-<Text style={styles.cartTotalLine}>= {item.total} FCFA</Text>
+<Text style={styles.cartTotalLine}>= {formatMoney(item.total)} FCFA</Text>
 </View>
 </View>
 ))}
 </ScrollView>
 
-<Text style={styles.total}>Total : {cartTotal} FCFA</Text>
+<Text style={styles.total}>Total : {formatMoney(cartTotal)} FCFA</Text>
 
   <TouchableOpacity
     style={[styles.primaryBtn, selling && { opacity: 0.6 }]}
@@ -425,7 +463,7 @@ autoFocus
 <>
 <Text style={styles.summaryText}>Ventes : {daySummary.totalSales}</Text>
 <Text style={styles.summaryText}>
-Total : {daySummary.totalRevenue} FCFA
+Total : {formatMoney(daySummary.totalRevenue)} FCFA
 </Text>
 </>
 ) : (

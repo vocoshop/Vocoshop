@@ -17,6 +17,7 @@ import {
   Share,
   Platform,
 } from "react-native";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useNavigation,
@@ -56,7 +57,7 @@ type DailyReport = {
 export default function ReportDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { reportId } = (route.params || {}) as RouteParams;
+  const { reportId: initialReportId } = (route.params || {}) as RouteParams;
 
   const { token, storeId } = useContext(AuthContext);
 
@@ -72,8 +73,11 @@ export default function ReportDetailScreen() {
   const [report, setReport] = useState<DailyReport | null>(null);
   const [storeName, setStoreName] = useState("");
   const [shopId, setShopId] = useState("");
+  const [currentId, setCurrentId] = useState(initialReportId);
+  const [siblings, setSiblings] = useState<{ _id: string; date: string }[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
 
-  const canLoad = !!reportId && !!token && !!storeId;
+  const canLoad = !!currentId && !!token && !!storeId;
 
   const money = (v?: number) =>
     `${Math.round(v ?? 0).toLocaleString("fr-FR")} FCFA`;
@@ -97,19 +101,22 @@ export default function ReportDetailScreen() {
     if (!canLoad) { setLoading(false); return; }
     try {
       setLoading(true);
-      const [reportRes, storeRes] = await Promise.all([
-        API.get<DailyReport>(`/sales/reports/${reportId}`, { headers }),
+      const [reportRes, storeRes, siblingsRes] = await Promise.all([
+        API.get<DailyReport>(`/sales/reports/${currentId}`, { headers }),
         API.get("/store/me", { headers }).catch(() => ({ data: null })),
+        API.get("/sales/reports?page=1&limit=365", { headers }).catch(() => ({ data: { reports: [] } })),
       ]);
       setReport(reportRes.data ?? null);
       setStoreName((storeRes.data as any)?.storeName || "");
       setShopId((storeRes.data as any)?.shopId || "");
+      const raw = (siblingsRes.data as any)?.reports ?? [];
+      setSiblings(raw.map((r: any) => ({ _id: r._id, date: r.date })));
     } catch (e: any) {
       setReport(null);
     } finally {
       setLoading(false);
     }
-  }, [canLoad, reportId, headers]);
+  }, [canLoad, currentId, headers]);
 
   useEffect(() => { load(); }, [load]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -223,6 +230,18 @@ export default function ReportDetailScreen() {
     }
   }, [report, storeName]);
 
+  const onDateChange = useCallback((_event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowPicker(false);
+    if (!selectedDate) return;
+    const target = selectedDate.toISOString().split("T")[0];
+    const match = siblings.find((s) => s.date?.startsWith(target));
+    if (match) {
+      setCurrentId(match._id);
+    } else {
+      Alert.alert("Aucun bilan", `Aucun rapport trouvé pour le ${target}.`);
+    }
+  }, [siblings]);
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -254,9 +273,10 @@ export default function ReportDetailScreen() {
               <Text style={styles.proStoreName}>{storeName || "Boutique"}</Text>
               <Text style={styles.proRef}>Réf : {report._id?.slice(-8).toUpperCase()}</Text>
             </View>
-            <View style={styles.proDateBadge}>
+            <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.proDateBadge}>
               <Text style={styles.proDateText}>{formatDate(report.date)}</Text>
-            </View>
+              <Ionicons name="calendar-outline" size={14} color="#A78BFA" style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
           </View>
 
           {/* KPIs */}
@@ -320,6 +340,16 @@ export default function ReportDetailScreen() {
               </View>
             </View>
           ))}
+
+          {/* DATE PICKER */}
+          {showPicker && (
+            <DateTimePicker
+              value={new Date(report.date)}
+              mode="date"
+              display="default"
+              onChange={onDateChange}
+            />
+          )}
 
           {/* FOOTER */}
           <View style={styles.proFooter}>
@@ -399,6 +429,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
   },
   proDateText: {
     color: "#A78BFA",

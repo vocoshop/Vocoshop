@@ -47,6 +47,16 @@ function escapeHtml(s: any) {
     .replace(/'/g, "&#039;");
 }
 
+function jsonForScript(value: unknown): string {
+  const serialized = JSON.stringify(value);
+  return (serialized === undefined ? "null" : serialized)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 function getPublicBaseUrl(req: Request) {
   const envUrl = process.env.PUBLIC_BASE_URL;
   if (envUrl && envUrl.startsWith("http")) return envUrl.replace(/\/+$/, "");
@@ -713,25 +723,30 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     if (!link) return res.status(404).send("Lien invalide ou expire.");
 
     const storeId = String(link.storeId || "").trim();
-    const defaultMonth = String(link.month || "").trim();
-    if (!storeId) return res.status(404).send("Lien invalide.");
+    const defaultMonthValue = String(link.month || "").trim();
+    const defaultMonth = isISOMonth(defaultMonthValue) ? defaultMonthValue : "";
+    if (!storeId || !defaultMonth) return res.status(404).send("Lien invalide.");
 
-    const queryMonth = req.query.month as string | undefined;
-    const compareMonth = req.query.compare as string | undefined;
-    const customFrom = req.query.from as string | undefined;
-    const customTo = req.query.to as string | undefined;
+    const queryMonthValue = req.query.month;
+    const compareMonthValue = req.query.compare;
+    const customFromValue = req.query.from;
+    const customToValue = req.query.to;
+    const queryMonth = typeof queryMonthValue === "string" ? queryMonthValue : undefined;
+    const compareMonth = typeof compareMonthValue === "string" && isISOMonth(compareMonthValue) ? compareMonthValue : undefined;
+    const customFrom = typeof customFromValue === "string" ? customFromValue : undefined;
+    const customTo = typeof customToValue === "string" ? customToValue : undefined;
+    const validCustomRange = isISODate(customFrom) && isISODate(customTo);
 
     let from: string, to: string;
-    if (customFrom && customTo && isISODate(customFrom) && isISODate(customTo)) {
-      from = customFrom; to = customTo;
+    if (validCustomRange) {
+      from = customFrom!; to = customTo!;
     } else if (queryMonth === "all") {
       from = "2000-01-01"; to = "2099-12-31";
     } else {
-      const base = (isISOMonth(queryMonth) ? queryMonth : defaultMonth) as string;
-      if (!base) return res.status(404).send("Lien invalide.");
+      const base = isISOMonth(queryMonth) ? queryMonth : defaultMonth;
       try { const r = monthToRange(base); from = r.from; to = r.to; } catch { return res.status(404).send("Lien invalide."); }
     }
-    const selectedMonth = queryMonth || defaultMonth;
+    const selectedMonth = queryMonth === "all" || isISOMonth(queryMonth) ? queryMonth : defaultMonth;
 
     await SharedReportLink.updateOne({ _id: link._id }, { $inc: { viewsCount: 1 }, $set: { lastViewedAt: new Date() } }).catch(() => {});
 
@@ -753,11 +768,16 @@ export const viewSharedReport = async (req: Request, res: Response) => {
       } catch (cmpErr) { console.warn("compare month report", cmpErr); }
     }
 
-    const merchantName = escapeHtml(String((store as any)?.storeName || link.storeName || "Commerce"));
-    const ownerName = escapeHtml(String((store as any)?.ownerName || ""));
-    const merchantCity = escapeHtml(String((store as any)?.city || ""));
-    const merchantPhone = escapeHtml(String((store as any)?.phone || ""));
-    const shopId = escapeHtml(String((store as any)?.shopId || storeId));
+    const merchantNameValue = String((store as any)?.storeName || link.storeName || "Commerce");
+    const ownerNameValue = String((store as any)?.ownerName || "");
+    const merchantCityValue = String((store as any)?.city || "");
+    const merchantPhoneValue = String((store as any)?.phone || "");
+    const shopIdValue = String((store as any)?.shopId || storeId);
+    const merchantName = escapeHtml(merchantNameValue);
+    const ownerName = escapeHtml(ownerNameValue);
+    const merchantCity = escapeHtml(merchantCityValue);
+    const merchantPhone = escapeHtml(merchantPhoneValue);
+    const shopId = escapeHtml(shopIdValue);
     const createdAtStr = (store as any)?.createdAt
       ? new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Brazzaville", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date((store as any).createdAt))
       : "N/A";
@@ -794,10 +814,11 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const availableMonthsRaw = await DailyReport.distinct("date", { storeId });
     const availableMonthsSet = new Set<string>();
     (availableMonthsRaw as string[]).forEach(d => { if (d) availableMonthsSet.add(d.slice(0, 7)); });
-    const availableMonths = Array.from(availableMonthsSet).sort().reverse();
+    const availableMonths = Array.from(availableMonthsSet).filter(isISOMonth).sort().reverse();
 
     const MONTH_NAMES = ["Janvier","Fevrier","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Decembre"];
-    const periodLabel = queryMonth === "all" ? "Toute la periode" : (customFrom && customTo) ? `${new Date(customFrom).toLocaleDateString("fr")} - ${new Date(customTo).toLocaleDateString("fr")}` : `${MONTH_NAMES[parseInt((selectedMonth || defaultMonth).slice(5,7))-1]} ${(selectedMonth || defaultMonth).slice(0,4)}`;
+    const periodLabel = selectedMonth === "all" ? "Toute la periode" : (validCustomRange ? `${new Date(customFrom!).toLocaleDateString("fr")} - ${new Date(customTo!).toLocaleDateString("fr")}` : `${MONTH_NAMES[parseInt(selectedMonth.slice(5,7))-1]} ${selectedMonth.slice(0,4)}`);
+    const periodLabelHtml = escapeHtml(periodLabel);
 
     const fmtCFA = (v: number) => formatMoney(v) + " FCFA";
 
@@ -810,17 +831,19 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const baseUrl = getPublicBaseUrl(req);
     const verifyUrl = `${baseUrl}/api/public/report/verify/${token}`;
     const pdfUrl = `${baseUrl}/api/public/report/share/${token}/pdf`;
+    const verifyUrlHtml = escapeHtml(verifyUrl);
+    const pdfUrlHtml = escapeHtml(pdfUrl);
 
     const monthsOptions = availableMonths.map(m => {
       const label = `${MONTH_NAMES[parseInt(m.slice(5,7))-1]} ${m.slice(0,4)}`;
-      const sel = m === queryMonth || (!queryMonth && m === defaultMonth) ? "selected" : "";
-      return `<option value="${m}" ${sel}>${label}</option>`;
+      const sel = m === selectedMonth ? "selected" : "";
+      return `<option value="${escapeHtml(m)}" ${sel}>${escapeHtml(label)}</option>`;
     }).join("");
 
     const compareOptions = availableMonths.map(m => {
       const label = `${MONTH_NAMES[parseInt(m.slice(5,7))-1]} ${m.slice(0,4)}`;
       const sel = m === compareMonth ? "selected" : "";
-      return `<option value="${m}" ${sel}>${label}</option>`;
+      return `<option value="${escapeHtml(m)}" ${sel}>${escapeHtml(label)}</option>`;
     }).join("");
 
     const chartLabels = (reports as any[]).map(r => r.date?.slice(8,10) || "");
@@ -841,10 +864,10 @@ export const viewSharedReport = async (req: Request, res: Response) => {
     const topProducts = Array.from(productSales.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
 
     const stockItems = (products as any[]).filter(p => safeNum(p?.quantity) > 0).slice(0, 10);
-    const stockLabels = stockItems.map(p => escapeHtml(String((p as any)?.name || "").slice(0,15)).replace(/"/g, ""));
+    const stockLabels = stockItems.map(p => String((p as any)?.name || "").slice(0,15));
 
     const kpi = (label: string, value: number | string, color: string, icon: string, evol: string | null = null) =>
-      `<div class="kpi-card"><div class="kpi-icon">${icon}</div><div class="kpi-label">${label}</div><div class="kpi-value" style="color:${color}">${typeof value === 'number' ? fmtCFA(value) : value}</div>${evol ? '<div class="kpi-evol ' + (parseFloat(evol) >= 0 ? 'up' : 'down') + '">' + evol + '%</div>' : ''}</div>`;
+      `<div class="kpi-card"><div class="kpi-icon">${escapeHtml(icon)}</div><div class="kpi-label">${escapeHtml(label)}</div><div class="kpi-value" style="color:${escapeHtml(color)}">${escapeHtml(typeof value === 'number' ? fmtCFA(value) : value)}</div>${evol ? '<div class="kpi-evol ' + (parseFloat(evol) >= 0 ? 'up' : 'down') + '">' + escapeHtml(evol) + '%</div>' : ''}</div>`;
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -949,7 +972,7 @@ tr:hover td{background:rgba(255,255,255,.01)}
 </div>
 <div class="export-bar">
   <button class="btn btn-primary" onclick="window.print()">Imprimer</button>
-  <a class="btn btn-outline" href="${pdfUrl}" download>PDF</a>
+  <a class="btn btn-outline" href="${pdfUrlHtml}" download>PDF</a>
   <button class="btn btn-outline" onclick="downloadCSV()">Excel (CSV)</button>
 </div>
 <div class="period-bar">
@@ -962,7 +985,7 @@ tr:hover td{background:rgba(255,255,255,.01)}
     <button onclick="nextMonth()" title="Mois suivant">&#9654;</button>
   </div>
   <div class="quick-filters">
-    <a class="qf-btn${!queryMonth || queryMonth === defaultMonth && !compareMonth ? ' active' : ''}" href="?month=${defaultMonth || ''}">Ce mois</a>
+    <a class="qf-btn${selectedMonth === defaultMonth && !compareMonth ? ' active' : ''}" href="?month=${encodeURIComponent(defaultMonth)}">Ce mois</a>
     <a class="qf-btn${queryMonth === 'all' && !customFrom ? ' active' : ''}" href="?month=all">Tout</a>
     <a class="qf-btn" href="#" onclick="setRange('3m');return false">3 mois</a>
     <a class="qf-btn" href="#" onclick="setRange('6m');return false">6 mois</a>
@@ -974,10 +997,10 @@ tr:hover td{background:rgba(255,255,255,.01)}
       <option value="">Aucune</option>
       ${compareOptions}
     </select>
-    ${compareMonth ? '<a class="qf-btn" href="?month='+(queryMonth||defaultMonth)+'" style="color:#ef4444">x</a>' : ''}
+    ${compareMonth ? '<a class="qf-btn" href="?month='+encodeURIComponent(selectedMonth)+'" style="color:#ef4444">x</a>' : ''}
   </div>
 </div>
-<div style="margin-bottom:12px;color:#A78BFA;font-size:13px;font-weight:700">${periodLabel}${compareMonth ? ' vs ' + MONTH_NAMES[parseInt(compareMonth.slice(5,7))-1] + ' ' + compareMonth.slice(0,4) : ''}</div>
+<div style="margin-bottom:12px;color:#A78BFA;font-size:13px;font-weight:700">${periodLabelHtml}${compareMonth ? ' vs ' + escapeHtml(MONTH_NAMES[parseInt(compareMonth.slice(5,7))-1] + ' ' + compareMonth.slice(0,4)) : ''}</div>
 <div class="kpi-grid">
   ${kpi("Chiffre d'affaires", monthlyRevenue, "#F59E0B", "CA", revEvol)}
   ${kpi("Benefice brut", monthlyGrossProfit, "#22c55e", "Benef.", profitEvol)}
@@ -1007,11 +1030,11 @@ tr:hover td{background:rgba(255,255,255,.01)}
 ${topProducts.length > 0 ? '<div class="table-card"><div class="chart-title" style="margin-bottom:12px">Produits les plus vendus</div><table><tr><th>Produit</th><th class="text-right">Qte</th><th class="text-right">CA</th></tr>' + topProducts.map(p => '<tr><td>' + escapeHtml(p.name) + '</td><td class="text-right">' + p.qty + '</td><td class="text-right text-gold">' + fmtCFA(p.revenue) + '</td></tr>').join("") + '</table></div>' : ''}
 ${stockItems.length > 0 ? '<div class="chart-card" style="margin-bottom:20px"><div class="chart-title">Etat du stock</div><div class="chart-wrap"><canvas id="stockChart"></canvas></div></div>' : ''}
 <div class="qr-section">
-  ${qrDataUri ? '<img src="' + qrDataUri + '" width="100" height="100" alt="QR Code">' : ''}
+  ${qrDataUri ? '<img src="' + escapeHtml(qrDataUri) + '" width="100" height="100" alt="QR Code">' : ''}
   <div class="qr-info">
     <h3>Verification d'authenticite</h3>
     <p>Ce rapport est signe numeriquement par VocoShop. Scannez le QR code pour confirmer son authenticite.</p>
-    <p style="margin-top:8px"><a href="${verifyUrl}" target="_blank" style="color:#A78BFA">${verifyUrl}</a></p>
+    <p style="margin-top:8px"><a href="${verifyUrlHtml}" target="_blank" style="color:#A78BFA">${verifyUrlHtml}</a></p>
     <p style="margin-top:4px;color:#4B5563;font-size:10px">Rapport genere le ${now.toLocaleDateString("fr")} · ID: ${token.slice(0,16)}...</p>
   </div>
 </div>
@@ -1021,8 +1044,8 @@ ${stockItems.length > 0 ? '<div class="chart-card" style="margin-bottom:20px"><d
 </div>
 </div>
 <script>
-const currentMonth = "${queryMonth || defaultMonth}";
-const availMonths = ${JSON.stringify(availableMonths)};
+const currentMonth = ${jsonForScript(selectedMonth)};
+const availMonths = ${jsonForScript(availableMonths)};
 function setPeriod(m) {
   let u = new URL(window.location);
   if(m==='all'){u.searchParams.set('month','all')}else{u.searchParams.set('month',m)}
@@ -1049,41 +1072,42 @@ function navigateCompare(m){
 }
 function downloadCSV(){
   const rows=[];
-  rows.push(["Boutique","${merchantName.replace(/"/g,'""')}"]);
-  ${ownerName ? `rows.push(["Proprietaire","${ownerName.replace(/"/g,'""')}"]);` : ''}
-  rows.push(["ID","${shopId.replace(/"/g,'""')}"]);
-  rows.push(["Periode","${periodLabel.replace(/"/g,'""')}"]);
-  rows.push(["Genere le","${now.toLocaleDateString('fr')}"]);
+  rows.push(["Boutique",${jsonForScript(merchantNameValue)}]);
+  ${ownerNameValue ? `rows.push(["Proprietaire",${jsonForScript(ownerNameValue)}]);` : ''}
+  rows.push(["ID",${jsonForScript(shopIdValue)}]);
+  rows.push(["Periode",${jsonForScript(periodLabel)}]);
+  rows.push(["Genere le",${jsonForScript(now.toLocaleDateString("fr"))}]);
   rows.push([]);
   rows.push(["Date","CA (FCFA)","Benefice (FCFA)","COGS (FCFA)","Ventes"]);
-  ${JSON.stringify((reports as any[]).map(r => [r.date?.slice(0,10)||"", safeNum(r?.totalRevenue), safeNum(r?.grossProfit), safeNum(r?.cogs), safeNum(r?.totalSales)]))}.forEach(r=>rows.push(r));
+  ${jsonForScript((reports as any[]).map(r => [r.date?.slice(0,10)||"", safeNum(r?.totalRevenue), safeNum(r?.grossProfit), safeNum(r?.cogs), safeNum(r?.totalSales)]))}.forEach(r=>rows.push(r));
   rows.push([]);
-  rows.push(["CA total","${merchantName.replace(/"/g,'""')}","","","Total"]);
+  rows.push(["CA total",${jsonForScript(merchantNameValue)},"","","Total"]);
   rows.push(["","","","","${monthlyRevenue}"]);
   let csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\\n");
   const blob=new Blob(["\\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-  a.download="bilan_${merchantName.replace(/[^a-zA-Z0-9]/g,'_')}_${(selectedMonth || defaultMonth).replace(/\s/g,'_')}.csv";a.click();
+  a.download="bilan_"+${jsonForScript(merchantNameValue.replace(/[^a-zA-Z0-9]/g,'_'))}+"_"+
+    ${jsonForScript(selectedMonth.replace(/\s/g,'_'))}+".csv";a.click();
 }
 document.addEventListener('DOMContentLoaded',function(){
   Chart.defaults.color='#8B83A8';Chart.defaults.borderColor='rgba(255,255,255,.05)';
   new Chart(document.getElementById('revenueChart'),{
     type:'line',
     data:{
-      labels:${JSON.stringify(chartLabels)},
+      labels:${jsonForScript(chartLabels)},
       datasets:[
-        {label:'CA ${periodLabel}',data:${JSON.stringify(chartRevenue)},borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.1)',fill:true,tension:.3},
-        {label:'Benefice',data:${JSON.stringify(chartProfit)},borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',fill:true,tension:.3}${compareReports.length > 0 ? ',{label:"CA '+MONTH_NAMES[parseInt(compareMonth!.slice(5,7))-1]+'",data:'+JSON.stringify(chartCompareRevenue)+',borderColor:"#A78BFA",borderDash:[5,5],tension:.3}' : ''}
+        {label:${jsonForScript(`CA ${periodLabel}`)},data:${jsonForScript(chartRevenue)},borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.1)',fill:true,tension:.3},
+        {label:'Benefice',data:${jsonForScript(chartProfit)},borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',fill:true,tension:.3}${compareReports.length > 0 ? ',{label:' + jsonForScript(`CA ${MONTH_NAMES[parseInt(compareMonth!.slice(5,7))-1]}`) + ',data:' + jsonForScript(chartCompareRevenue) + ',borderColor:"#A78BFA",borderDash:[5,5],tension:.3}' : ''}
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}
   });
   new Chart(document.getElementById('productsChart'),{
     type:'bar',
-    data:{labels:${JSON.stringify(topProducts.map(p=>p.name.slice(0,15)))},datasets:[{label:'CA (FCFA)',data:${JSON.stringify(topProducts.map(p=>p.revenue))},backgroundColor:'#A78BFA',borderRadius:6}]},
+    data:{labels:${jsonForScript(topProducts.map(p=>p.name.slice(0,15)))},datasets:[{label:'CA (FCFA)',data:${jsonForScript(topProducts.map(p=>p.revenue))},backgroundColor:'#A78BFA',borderRadius:6}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'}}}}
   });
-  ${stockItems.length > 0 ? 'new Chart(document.getElementById("stockChart"),{type:"bar",data:{labels:' + JSON.stringify(stockLabels) + ',datasets:[{label:"Qte en stock",data:' + JSON.stringify(stockItems.map(p=>safeNum(p?.quantity))) + ',backgroundColor:"#3B82F6",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});' : ''}
+  ${stockItems.length > 0 ? 'new Chart(document.getElementById("stockChart"),{type:"bar",data:{labels:' + jsonForScript(stockLabels) + ',datasets:[{label:"Qte en stock",data:' + jsonForScript(stockItems.map(p=>safeNum(p?.quantity))) + ',backgroundColor:"#3B82F6",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});' : ''}
 });
 <\/script>
 </body>

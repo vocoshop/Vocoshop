@@ -22,6 +22,7 @@ import * as Sharing from "expo-sharing";
 
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 
 /* ------------------------------------------
 TYPES
@@ -365,15 +366,14 @@ ADD TO CART
 const addToCart = async () => {
 if (!selectedProduct) return;
 
-if (!unitPriceInput || isNaN(Number(unitPriceInput))) {
+const unitPrice = parseFrenchNumber(unitPriceInput);
+const quantity = parseFrenchNumber(quantityInput);
+if (unitPrice <= 0) {
 return Alert.alert("Erreur", "Veuillez renseigner un prix d'achat valide.");
 }
-if (!quantityInput || isNaN(Number(quantityInput))) {
+if (quantity <= 0) {
 return Alert.alert("Erreur", "Veuillez renseigner une quantité valide.");
 }
-
-const unitPrice = Number(unitPriceInput);
-const quantity = Number(quantityInput);
 
 API.patch(`/products/${selectedProduct._id}`, { purchasePrice: unitPrice }, { headers }).catch(
 (err) => console.log("⚠️ Erreur sauvegarde prix:", err)

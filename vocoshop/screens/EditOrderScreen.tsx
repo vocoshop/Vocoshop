@@ -14,6 +14,7 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 
 type OrderItem = {
 name: string;
@@ -111,7 +112,7 @@ setSaving(false);
 
 const addItem = async () => {
 const name = itemName.trim();
-const qty = Number(itemQty);
+const qty = parseFrenchNumber(itemQty);
 
 if (!name) return Alert.alert("Erreur", "Nom du produit requis.");
 if (!itemQty || Number.isNaN(qty) || qty <= 0) {

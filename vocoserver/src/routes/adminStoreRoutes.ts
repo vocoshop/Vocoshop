@@ -5,6 +5,7 @@ import requireOwner from "../middleware/requireOwner";
 import Store from "../models/Store";
 import Invoice from "../models/Invoice";
 import RevenueMonthly from "../models/RevenueMonthly";
+import { getStoreStats } from "../services/storeStatsService";
 
 const router = Router();
 
@@ -117,29 +118,18 @@ GET /api/admin/stats
 ===================================================== */
 router.get("/stats", async (req: any, res: any) => {
   try {
-    const [
-      totalAgents,
-      activeAgents,
-      totalStores,
-      allStores,
-      storesByCity,
-    ] = await Promise.all([
+    const [totalAgents, activeAgents, totalStores, subStats, storesByCity] = await Promise.all([
       require("mongoose").connection.collection("agents").countDocuments({ isApproved: true }),
       require("mongoose").connection.collection("agents").countDocuments({ isApproved: true, isActive: true }),
       require("mongoose").connection.collection("stores").countDocuments(),
-      Store.find().select("subscriptionStatus paidUntil graceUntil trialEnd").lean(),
+      getStoreStats(),
       require("mongoose").connection.collection("stores").aggregate([
+        { $match: { city: { $exists: true, $ne: "" } } },
         { $group: { _id: "$city", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 10 },
       ]).toArray(),
     ]);
-
-    const subStats: Record<string, number> = { active: 0, trial: 0, grace: 0, expired: 0, unused: 0 };
-    (allStores as any[]).forEach((s) => {
-      const computed = computeSubscriptionStatus(s);
-      subStats[computed] = (subStats[computed] || 0) + 1;
-    });
 
     res.json({
       agents: { total: totalAgents, active: activeAgents },
@@ -228,30 +218,44 @@ router.get("/payments", async (req: any, res: any) => {
     const filter: any = {};
     if (storeId) filter.storeId = storeId;
 
-    const [invoices, total, allInvoices, revenueMonthly] = await Promise.all([
+    const [invoices, total, invoiceAggregates, revenueMonthly] = await Promise.all([
       Invoice.find(filter)
-        .sort({ paidAt: -1 })
+        .sort({ paidAt: -1, _id: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
       Invoice.countDocuments(filter),
-      Invoice.find().select("amount paidAt createdAt").lean(),
+      Invoice.aggregate([
+        { $match: filter },
+        {
+          $project: {
+            amount: { $ifNull: ["$amount", 3900] },
+            effectiveDate: { $ifNull: ["$paidAt", "$createdAt"] },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m", date: "$effectiveDate" },
+            },
+            totalRevenue: { $sum: "$amount" },
+          },
+        },
+        { $sort: { _id: -1 } },
+      ]),
       RevenueMonthly.find().sort({ month: -1 }).limit(12).lean(),
     ]);
 
-    // Build monthly revenue from all invoices (fallback if RevenueMonthly empty)
+    const monthlyRows = (invoiceAggregates as any[]).filter(
+      (row) => row._id && !isNaN(new Date(`${row._id}-01`).getTime())
+    );
     const monthlyMap: Record<string, number> = {};
-    allInvoices.forEach((inv: any) => {
-      const date = inv.paidAt || inv.createdAt;
-      if (!date) return;
-      const m = new Date(date).toISOString().slice(0, 7);
-      if (m === "Invalid date" || isNaN(new Date(date).getTime())) return;
-      monthlyMap[m] = (monthlyMap[m] || 0) + (inv.amount || 3900);
+    monthlyRows.forEach((row) => {
+      monthlyMap[row._id] = row.totalRevenue;
     });
-    const monthlyRevenue = Object.entries(monthlyMap)
-      .sort(([a], [b]) => b.localeCompare(a))
+    const monthlyRevenue = monthlyRows
       .slice(0, 12)
-      .map(([month, totalRevenue]) => ({ month, totalRevenue }));
+      .map((row) => ({ month: row._id, totalRevenue: row.totalRevenue }));
 
     // Use RevenueMonthly if available, otherwise computed from invoices
     const revenueData = revenueMonthly.length > 0 ? revenueMonthly : monthlyRevenue;
@@ -259,7 +263,7 @@ router.get("/payments", async (req: any, res: any) => {
     const now = new Date();
     const currentMonth = now.toISOString().slice(0, 7);
     const currentMonthRevenue = monthlyMap[currentMonth] || 0;
-    const totalRevenue = Object.values(monthlyMap).reduce((s, v) => s + v, 0);
+    const totalRevenue = monthlyRows.reduce((sum: number, row: any) => sum + (row.totalRevenue || 0), 0);
 
     // Enrich with store names
     const storeIds = [...new Set(invoices.map((i: any) => String(i.storeId)))];

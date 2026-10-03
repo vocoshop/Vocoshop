@@ -10,7 +10,7 @@ interface Props {
   canSales: boolean;
   navigation: any;
   canStock: boolean;
-  closeDailyOverlay: () => Promise<void>;
+  closeDailyOverlay: () => void;
   deny: () => void;
 }
 
@@ -45,8 +45,8 @@ export default function HomeOverlay({ overlayReady, canInventory, isNewStore, sh
             <Text style={styles.text}>{t("home.overlay.ready_text")}</Text>
             <TouchableOpacity
               style={styles.primaryBtn}
-              onPress={async () => {
-                await closeDailyOverlay();
+              onPress={() => {
+                closeDailyOverlay();
                 navigation.navigate("Sales");
               }}
             >

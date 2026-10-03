@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 import { ocrService } from "../services/ocrService";
 import { analyzeImageQuality } from "../services/imagePreprocess";
 import OcrScan from "../models/OcrScan";
@@ -13,7 +13,7 @@ export const scanDocument = asyncHandler(async (req: Request, res: Response, nex
     const storeId = getStoreId(req);
 
     if (!storeId) {
-      return next(new UnauthorizedError("Authentification requise"));
+      return next(new ValidationError("Authentification requise"));
     }
 
     const validTypes = ["sale", "stock_in", "expense", "debt"];
@@ -39,7 +39,7 @@ export const validateScan = asyncHandler(async (req: Request, res: Response, nex
     const storeId = getStoreId(req);
 
     if (!storeId) {
-      return next(new UnauthorizedError("Authentification requise"));
+      return next(new ValidationError("Authentification requise"));
     }
 
     const result = await ocrService.validateScan(id, storeId, lines, feedback, businessDate);
@@ -52,7 +52,7 @@ export const importScan = asyncHandler(async (req: Request, res: Response, next:
     const storeId = getStoreId(req);
 
     if (!storeId) {
-      return next(new UnauthorizedError("Authentification requise"));
+      return next(new ValidationError("Authentification requise"));
     }
 
     const result = await ocrService.importValidatedScan(id, storeId);
@@ -63,7 +63,7 @@ export const getScanHistory = asyncHandler(async (req: Request, res: Response, n
 
     const storeId = getStoreId(req);
     if (!storeId) {
-      return next(new UnauthorizedError("Authentification requise"));
+      return next(new ValidationError("Authentification requise"));
     }
 
     const page = parseInt(req.query.page as string) || 1;
@@ -85,7 +85,7 @@ export const getScanById = asyncHandler(async (req: Request, res: Response, next
     const { id } = req.params;
     const storeId = getStoreId(req);
     if (!storeId) {
-      return next(new UnauthorizedError("Authentification requise"));
+      return next(new ValidationError("Authentification requise"));
     }
 
     const scan = await OcrScan.findOne({ _id: id, storeId }).lean();
@@ -100,7 +100,7 @@ export const getAliases = asyncHandler(async (req: Request, res: Response, next:
 
     const storeId = getStoreId(req);
     if (!storeId) {
-      return next(new UnauthorizedError("Authentification requise"));
+      return next(new ValidationError("Authentification requise"));
     }
 
     const aliases = await ProductAlias.find({ storeId })

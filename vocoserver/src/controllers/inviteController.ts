@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError } from "../utils/AppError";
 
 export const redirectInvite = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 const token = String(req.params.token || "").trim();

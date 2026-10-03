@@ -311,7 +311,7 @@ style={[styles.otpBox, password.length === i && { borderColor: "#6C63FF", backgr
 
             <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A22", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", paddingHorizontal: 14, marginBottom: 14 }}>
               <Text style={{ fontSize: 16, marginRight: 10 }}>🔒</Text>
-              <TextInput style={{ flex: 1, color: "#fff", fontSize: 16, paddingVertical: 14 }} placeholder="Nouveau mot de passe (6 chiffres)" placeholderTextColor="#777" keyboardType="numeric" secureTextEntry maxLength={6} value={newPassword} onChangeText={setNewPassword} />
+              <TextInput style={{ flex: 1, color: "#fff", fontSize: 16, paddingVertical: 14 }} placeholder="Nouveau mot de passe (6 chiffres)" placeholderTextColor="#777" keyboardType="numeric" maxLength={6} value={newPassword} onChangeText={setNewPassword} />
             </View>
 
             <TouchableOpacity style={[styles.btn, forgotLoading && { opacity: 0.5 }]} onPress={doResetPassword} disabled={forgotLoading}>

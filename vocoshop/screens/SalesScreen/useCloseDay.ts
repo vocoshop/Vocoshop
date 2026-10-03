@@ -3,6 +3,7 @@ import { Alert, Share, Platform } from "react-native";
 
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system";
 
 import API from "../../src/api/api";
 import { AuthContext } from "../../src/api/context/AuthContext";
@@ -154,14 +155,17 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
 
       const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
 
+      const dateStr = report.date ? report.date.split("T")[0] : new Date().toISOString().split("T")[0];
+      const fileName = `Bilan_${dateStr}.pdf`;
+      const dest = `${FileSystem.cacheDirectory}${fileName}`;
+      await FileSystem.moveAsync({ from: uri, to: dest });
+
       const canShare = await Sharing.isAvailableAsync();
 
       if (Platform.OS === "ios") {
-        // iOS : message + PDF en un seul partage
-        await Share.share({ message, url: uri });
+        await Share.share({ message, url: dest });
       } else if (canShare) {
-        // Android : PDF avec message en titre de partage
-        await Sharing.shareAsync(uri, {
+        await Sharing.shareAsync(dest, {
           mimeType: "application/pdf",
           dialogTitle: message,
           UTI: "com.adobe.pdf",

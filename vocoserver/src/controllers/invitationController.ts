@@ -118,7 +118,6 @@ export const acceptInvitation = asyncHandler(async (req: Request, res: Response,
 
   // Vérifier que l'utilisateur connecté correspond au numéro de l'invitation
   const userId = req.user?.userId || req.user?.id || "";
-  const userPhone = req.user?.phone || "";
 
   // Si l'utilisateur a un userId et un store dans le token, vérifier
   if (userId && !userId.startsWith("owner:")) {

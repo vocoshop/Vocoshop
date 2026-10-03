@@ -1,15 +1,16 @@
-import React, { useState, useContext, useMemo, useEffect } from "react";
+import React, { useState, useContext, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity, Alert,
   ScrollView, ActivityIndicator, Modal, Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
 import { isOnline } from "../src/api/utils/network";
 import { runOrQueue } from "../src/api/offline/queue";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 
 const CATEGORIES = [
   "Boissons", "Épicerie", "Laitière", "Boucherie", "Hygiène",
@@ -33,9 +34,19 @@ export default function CreateProductScreen() {
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
 
+  const resetForm = () => {
+    setName("");
+    setSellUnit(""); setSellCustomUnit("");
+    setSellPrice("");
+    setBuyUnit(""); setBuyCustomUnit(""); setBuyQty("");
+    setBuyPrice(""); setStockQty(""); setStockUnit("");
+    setExpirationDate(""); setImageUri(null);
+  };
+
   // Pré-remplissage depuis photo/OCR
   const prefill = route?.params?.prefill;
   const photoBase64 = route?.params?.photoBase64;
+  const hasPrefill = useRef(!!prefill || !!photoBase64);
   useEffect(() => {
     if (prefill) {
       if (prefill.name) setName(prefill.name);
@@ -51,7 +62,14 @@ export default function CreateProductScreen() {
     if (photoBase64) {
       setImageUri(`data:image/jpeg;base64,${photoBase64}`);
     }
-  }, []);
+    hasPrefill.current = true;
+  }, [prefill, photoBase64]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasPrefill.current) resetForm();
+    }, [])
+  );
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Boissons");
@@ -86,13 +104,13 @@ export default function CreateProductScreen() {
   const sellLabel = sellCustomUnit.trim() || sellUnit || effectiveUnit;
   const buyLabel = buyCustomUnit.trim() || buyUnit || effectiveUnit;
 
-  const buyCfgQty = Number(buyQty || 1);
+  const buyCfgQty = parseFrenchNumber(buyQty || "1");
   const stockMultiplier = stockUnit && stockUnit === buyLabel ? buyCfgQty : 1;
-  const finalStock = Number(stockQty || 0) * stockMultiplier;
+  const finalStock = parseFrenchNumber(stockQty || "0") * stockMultiplier;
 
   const summary = useMemo(() => {
-    const ub = buyCfgQty > 0 ? Number(buyPrice || 0) / buyCfgQty : 0;
-    const us = Number(sellPrice || 0);
+    const ub = buyCfgQty > 0 ? parseFrenchNumber(buyPrice || "0") / buyCfgQty : 0;
+    const us = parseFrenchNumber(sellPrice || "0");
     return { ub, us, profit: us - ub, margin: us > 0 ? Math.round(((us - ub) / us) * 100) : 0 };
   }, [sellPrice, buyPrice, buyCfgQty]);
 
@@ -105,7 +123,7 @@ export default function CreateProductScreen() {
 
   const save = async () => {
     if (!name.trim()) return Alert.alert("", "Nom du produit requis.");
-    if (!sellPrice || Number(sellPrice) <= 0) return Alert.alert("", "Prix de vente requis.");
+    if (!sellPrice || parseFrenchNumber(sellPrice) <= 0) return Alert.alert("", "Prix de vente requis.");
     if (!token) return Alert.alert("", "Session invalide.");
     try {
       setLoading(true);
@@ -114,13 +132,13 @@ export default function CreateProductScreen() {
         category,
         baseUnit: effectiveUnit,
         unit: effectiveUnit,
-        sellPrice,
-        purchasePrice: String(Math.round(buyCfgQty > 0 ? Number(buyPrice || 0) / buyCfgQty : 0)),
+        sellPrice: String(parseFrenchNumber(sellPrice)),
+        purchasePrice: String(Math.round(buyCfgQty > 0 ? parseFrenchNumber(buyPrice || "0") / buyCfgQty : 0)),
         quantity: String(finalStock),
         alertLevel: "3",
         expirationDate: expirationDate.trim() || undefined,
-        purchaseConfigs: buyUnit ? [{ name: buyLabel, quantity: buyCfgQty, purchasePrice: Number(buyPrice) }] : [],
-        sellConfigs: sellUnit ? [{ name: sellLabel, quantity: 1, sellPrice: Number(sellPrice) }] : [{ name: effectiveUnit, quantity: 1, sellPrice: Number(sellPrice) }],
+        purchaseConfigs: buyUnit ? [{ name: buyLabel, quantity: buyCfgQty, purchasePrice: parseFrenchNumber(buyPrice) }] : [],
+        sellConfigs: sellUnit ? [{ name: sellLabel, quantity: 1, sellPrice: parseFrenchNumber(sellPrice) }] : [{ name: effectiveUnit, quantity: 1, sellPrice: parseFrenchNumber(sellPrice) }],
       };
 
       if (!isOnline()) {
@@ -132,27 +150,31 @@ export default function CreateProductScreen() {
           body: payload,
           headers: { Authorization: `Bearer ${token}` },
         });
+        resetForm();
         Alert.alert("Hors-ligne ✅", "Produit enregistré. La synchronisation se fera automatiquement.", [
-          { text: "OK", onPress: () => nav.navigate("AddStock") },
+          { text: "OK", onPress: () => route.params?.mode === "stock" ? nav.goBack() : nav.replace("AddStock") },
         ]);
         return;
       }
 
       // --- ONLINE : normal ---
       const res = await API.post("/products", payload, { headers: { Authorization: `Bearer ${token}` } });
+      const productName = name;
+      const savedImageUri = imageUri;
+      resetForm();
 
       // Upload photo en arrière-plan
-      if (imageUri && res.data?._id) {
+      if (savedImageUri && res.data?._id) {
         const fd = new FormData();
-        const fn = imageUri.split("/").pop() || "p.jpg";
-        fd.append("image", { uri: imageUri, name: fn, type: `image/${fn.split(".").pop() || "jpg"}` } as any);
+        const fn = savedImageUri.split("/").pop() || "p.jpg";
+        fd.append("image", { uri: savedImageUri, name: fn, type: `image/${fn.split(".").pop() || "jpg"}` } as any);
         API.patch(`/products/${res.data._id}`, fd, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         }).catch(() => {});
       }
-      Alert.alert("Produit créé", name, [
-        { text: "Continuer", onPress: () => nav.navigate("PhotoStock") },
-        { text: "Terminer", onPress: () => nav.navigate("AddStock") },
+      Alert.alert("Produit créé", productName, [
+        { text: "Continuer", onPress: () => nav.replace("PhotoStock") },
+        { text: "Terminer", onPress: () => route.params?.mode === "stock" ? nav.goBack() : nav.replace("AddStock") },
       ]);
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.response?.data?.message || e?.message || "Échec.";
@@ -162,15 +184,6 @@ export default function CreateProductScreen() {
   };
 
   const fmt = (v: number) => v.toLocaleString("fr-FR");
-
-  const resetForm = () => {
-    setName("");
-    setSellUnit(""); setSellCustomUnit("");
-    setSellPrice("");
-    setBuyUnit(""); setBuyCustomUnit(""); setBuyQty("");
-    setBuyPrice(""); setStockQty(""); setStockUnit("");
-    setExpirationDate(""); setImageUri(null);
-  };
 
   return (
     <View style={S.container}>
@@ -225,9 +238,9 @@ export default function CreateProductScreen() {
           <Text style={{ color: "#6B7280", fontSize: 13, alignSelf: "center", marginHorizontal: 4 }}>FCFA</Text>
         </View>
 
-        {Number(buyPrice) > 0 && buyCfgQty > 1 && (
+        {parseFrenchNumber(buyPrice) > 0 && buyCfgQty > 1 && (
           <Text style={S.hint}>
-            ≈ {fmt(Math.round(Number(buyPrice) / buyCfgQty))} FCFA / {effectiveUnit}
+            ≈ {fmt(Math.round(parseFrenchNumber(buyPrice) / buyCfgQty))} FCFA / {effectiveUnit}
           </Text>
         )}
 
@@ -242,7 +255,7 @@ export default function CreateProductScreen() {
           <TextInput style={S.inputHalf} placeholder="Quantité" placeholderTextColor="#555" keyboardType="numeric" value={stockQty} onChangeText={setStockQty} />
           <Text style={{ color: "#6B7280", fontSize: 13, alignSelf: "center", marginHorizontal: 4 }}>{stockUnit || effectiveUnit}(s)</Text>
         </View>
-        {stockUnit && Number(stockQty) > 0 && (
+        {stockUnit && parseFrenchNumber(stockQty) > 0 && (
           <Text style={S.hint2}>
             = {finalStock} {effectiveUnit}s
           </Text>
@@ -261,13 +274,13 @@ export default function CreateProductScreen() {
         </TouchableOpacity>
 
         {/* RÉSUMÉ */}
-        {Number(sellPrice) > 0 && (
+        {parseFrenchNumber(sellPrice) > 0 && (
           <>
             <View style={S.divider} />
             <Text style={S.sectionTitle}>Résumé</Text>
             <View style={S.summaryCard}>
-              <View style={S.sumRow}><Text style={S.sumLabel}>Prix vente</Text><Text style={S.sumVal}>{fmt(Number(sellPrice))} FCFA / {sellLabel}</Text></View>
-              {Number(buyPrice) > 0 && (
+              <View style={S.sumRow}><Text style={S.sumLabel}>Prix vente</Text><Text style={S.sumVal}>{fmt(parseFrenchNumber(sellPrice))} FCFA / {sellLabel}</Text></View>
+              {parseFrenchNumber(buyPrice) > 0 && (
                 <>
                   <View style={S.sumRow}><Text style={S.sumLabel}>Prix achat</Text><Text style={S.sumVal}>{fmt(Math.round(summary.ub))} FCFA / {effectiveUnit}</Text></View>
                   <View style={S.sumRow}><Text style={S.sumLabel}>Bénéfice</Text><Text style={[S.sumVal, { color: summary.profit >= 0 ? "#4ADE80" : "#ef4444" }]}>{fmt(Math.round(summary.profit))} FCFA</Text></View>

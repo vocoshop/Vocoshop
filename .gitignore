@@ -7,8 +7,41 @@ dist/
 .env.render
 .env.local
 .env.production
+.env.*.local
 !.env.example
 .DS_Store
 *.log
 
 # History backup.history/
+
+# ============================================================
+# SECRETS / CREDENTIALS (defense en profondeur monorepo)
+# ============================================================
+# Signing mobile / EAS
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+*.der
+credentials.json
+service-account*.json
+GooglePlayServiceAccount*.json
+eas-build-*.log
+
+# Fichiers env variants non couverts ci-dessus
+.env.staging
+.env.test
+.env.dev
+.env.development
+
+# ============================================================
+# ARTEFACTS DE TEST DE CHARGE (vocoserver/perf)
+# Harnais local + resultats de mesures : non versionnes
+# ============================================================
+perf/
+**/perf/
+perf/**/*.txt
+**/perf/**/*.txt
+**/perf/**/*.log

@@ -68,7 +68,6 @@ const stores = await Store.find({ city: new RegExp(escapedCity, "i") }).select("
 
   // Dédupliquer
   const uniquePhones = [...new Set(phones.map(p => p.phone))];
-  const phoneMap = new Map(phones.map(p => [p.phone, p.name]));
 
   let sent = 0;
   let failed = 0;

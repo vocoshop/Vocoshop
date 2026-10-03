@@ -80,10 +80,13 @@ export const sendAgentOTP = asyncHandler(async (req: Request, res: Response, nex
   const phone = normalizePhone(phoneRaw);
   if (!phone) return next(new ValidationError("Téléphone requis"));
 
-  const agent = await Agent.findOne({ phone }).lean();
-  if (!agent) return next(new NotFoundError("Aucun agent trouvé avec ce numéro"));
+const agent = await Agent.findOne({ phone }).lean();
+if (!agent) return next(new NotFoundError("Aucun agent trouvé avec ce numéro"));
+if (!agent.isActive) return next(new ForbiddenError("Agent désactivé"));
+if (!agent.isApproved) return next(new ForbiddenError("Agent non approuvé"));
+if (!agent.isApproved) return next(new ForbiddenError("Agent non approuvé"));
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+const code = Math.floor(100000 + Math.random() * 900000).toString();
   const hashed = await bcrypt.hash(code, 10);
 
   await Agent.updateOne(
@@ -129,6 +132,7 @@ export const verifyAgentOTP = asyncHandler(async (req: Request, res: Response, n
 
   if (!agent) return next(new NotFoundError("Agent introuvable"));
   if (!agent.isActive) return next(new ForbiddenError("Agent désactivé"));
+if (!agent.isApproved) return next(new ForbiddenError("Agent non approuvé"));
   if (!agent.authCodeHash) return next(new ValidationError("Aucun code envoyé"));
   if (!agent.mustChangePassword && isAuthCodeExpired(agent.authCodeIssuedAt)) {
     return next(new UnauthorizedError("Code expiré"));
@@ -186,6 +190,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response, n
   const agent = await Agent.findOne({ phone }).lean();
   if (!agent) return next(new NotFoundError("Aucun agent trouvé avec ce numéro"));
   if (!agent.isActive) return next(new ForbiddenError("Agent désactivé"));
+if (!agent.isApproved) return next(new ForbiddenError("Agent non approuvé"));
 
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   let tempPassword = "";
@@ -243,6 +248,7 @@ $or: [{ code: identifierRaw }, { phone: identifierPhone }],
 
 if (!agent) return next(new UnauthorizedError("Identifiants invalides"));
 if (agent.isActive === false) return next(new ForbiddenError("Agent désactivé"));
+if (!agent.isApproved) return next(new ForbiddenError("Agent non approuvé"));
 
 const makeAgentPayload = (a: any, mustChangePwd: boolean) => ({
   id: String(a._id),

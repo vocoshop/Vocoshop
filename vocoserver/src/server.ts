@@ -42,7 +42,6 @@ import adminNotificationRoutes from "./routes/adminNotificationRoutes";
 import adminSupportRoutes from "./routes/adminSupportRoutes";
 import adminConfigRoutes from "./routes/adminConfigRoutes";
 
-import { storeActivityTracker } from "./middleware/storeActivityTracker";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
 import paymentWebhookRoutes from "./routes/paymentWebhookRoutes";
 
@@ -118,7 +117,8 @@ app.use(express.json({
     req.rawBody = buf.toString();
   },
 }));
-app.use(morgan("dev"));
+// LOG_REQUESTS=0 coupe le log d'accès (tests de charge, ou prod sous charge)
+app.use(morgan("dev", { skip: () => process.env.LOG_REQUESTS === "0" }));
 app.use(systemLoggerMiddleware);
 
 app.use(helmet({
@@ -184,11 +184,12 @@ app.use("/api/suppliers", generalLimiter, supplierRoutes);
 
 // ✅ STORE
 app.use("/api/store", generalLimiter, storeRoutes);
-app.use(storeActivityTracker); // Middleware global pour tracker l'activité boutique
-app.use("/api/subscription", generalLimiter, subscriptionRoutes); // ✅ route abonnement (doit être après le tracker pour compter l'activité)
-app.use("/api/notifications", generalLimiter, notificationRoutes); // ✅ route notifications (doit être après le tracker pour compter l'activité)
+// L'activité boutique est mise à jour par authMiddleware depuis le JWT
+// (touchLastActiveThrottled) : ne jamais faire confiance à x-store-id.
+app.use("/api/subscription", generalLimiter, subscriptionRoutes);
+app.use("/api/notifications", generalLimiter, notificationRoutes);
 app.use("/api/push", generalLimiter, pushRoutes); // ✅ push tokens
-app.use("/api/invoices", generalLimiter, invoiceRoutes); // ✅ route factures (doit être après le tracker pour compter l'activité)
+app.use("/api/invoices", generalLimiter, invoiceRoutes); // ✅ route factures
 // ✅ PATCH RECOMMANDÉ
 app.use("/api/store/analysis", generalLimiter, storeAnalysisRoutes);
 

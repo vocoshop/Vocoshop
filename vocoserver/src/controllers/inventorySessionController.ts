@@ -1,7 +1,7 @@
 // controllers/inventorySessionController.ts
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 import InventorySession from "../models/InventorySession";
 import Product from "../models/Product";
 import StockHistory from "../models/StockHistory";
@@ -231,11 +231,11 @@ if (!session) return next(new NotFoundError("Session introuvable"));
 
 // sécurité : doit appartenir à la boutique & employé
 if (String((session as any).storeId) !== String(storeId)) {
-return next(new ForbiddenError("Accès refusé (store)"));
-}
-if (String((session as any).employeeId) !== String(employeeId)) {
-return next(new ForbiddenError("Accès refusé (employee)"));
-}
+      return next(new NotFoundError("Session introuvable"));
+    }
+    if (String((session as any).employeeId) !== String(employeeId)) {
+      return next(new NotFoundError("Session introuvable"));
+    }
 
 // on ne discard que les drafts
 if ((session as any).status !== "draft") {

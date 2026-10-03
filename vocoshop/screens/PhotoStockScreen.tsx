@@ -18,6 +18,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import API from "../src/api/api";
 import { compressImage } from "../src/utils/imageProcessing";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 import { isOnline } from "../src/api/utils/network";
 
 const UNIT_OPTIONS = [
@@ -68,7 +69,7 @@ export default function PhotoStockScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: 0.5,
+        quality: 1.0,
       });
       const compressed = await compressImage(photo.uri);
       setCapturedPhotos((prev) => [...prev, compressed.base64]);
@@ -96,6 +97,34 @@ export default function PhotoStockScreen() {
   const removePhoto = useCallback((index: number) => {
     setCapturedPhotos((prev) => prev.filter((_, i) => i !== index));
   }, []);
+
+  const updateProduct = useCallback(
+    (index: number, field: keyof DetectedProduct, value: any) => {
+      setProducts((prev) =>
+        prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
+      );
+    },
+    []
+  );
+
+  const removeProduct = useCallback((index: number) => {
+    setProducts((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const importProducts = useCallback(async () => {
+    if (products.length === 0) return;
+    setImporting(true);
+    try {
+      await API.post("/ai/vision-products/import", { products });
+      Alert.alert("Import terminé", `${products.length} produit(s) importé(s).`, [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.response?.data?.error || "Échec de l'import");
+    } finally {
+      setImporting(false);
+    }
+  }, [products, navigation]);
 
   const analyzePhotos = useCallback(async () => {
     if (capturedPhotos.length === 0) return;
@@ -125,11 +154,11 @@ export default function PhotoStockScreen() {
         name: p.name || "",
         category: p.category || "",
         unit: p.unit || "pièce",
-        estimatedQuantity: Math.max(1, parseInt(p.estimatedQuantity) || 1),
+        estimatedQuantity: Math.max(1, parseFrenchNumber(p.estimatedQuantity || "1")),
         suggestedExpirationDate: p.suggestedExpirationDate || "",
         suggestedSellPrice: p.suggestedSellPrice || 0,
         suggestedPurchasePrice: p.suggestedPurchasePrice || 0,
-        quantity: Math.max(1, parseInt(p.estimatedQuantity) || 1),
+        quantity: Math.max(1, parseFrenchNumber(p.estimatedQuantity || "1")),
         sellPrice: p.suggestedSellPrice || 0,
         purchasePrice: p.suggestedPurchasePrice || 0,
         expirationDate: p.suggestedExpirationDate || "",
@@ -510,7 +539,7 @@ export default function PhotoStockScreen() {
                         updateProduct(
                           i,
                           "quantity",
-                          Math.max(1, parseInt(v) || 1)
+                          Math.max(1, parseFrenchNumber(v))
                         )
                       }
                     />
@@ -539,7 +568,7 @@ export default function PhotoStockScreen() {
                         updateProduct(
                           i,
                           "purchasePrice",
-                          Math.max(0, parseInt(v) || 0)
+                          Math.max(0, parseFrenchNumber(v))
                         )
                       }
                     />
@@ -559,7 +588,7 @@ export default function PhotoStockScreen() {
                         updateProduct(
                           i,
                           "sellPrice",
-                          Math.max(0, parseInt(v) || 0)
+                          Math.max(0, parseFrenchNumber(v))
                         )
                       }
                     />

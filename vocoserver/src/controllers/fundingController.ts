@@ -34,11 +34,9 @@ async function calculateScore(storeId: string) {
   const createdAt = store?.createdAt ? new Date(store.createdAt) : now;
   const monthsActive = Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / (30 * 24 * 60 * 60 * 1000)));
 
-  const [totalSales, recentSales, totalScans, recentScans, totalProducts, recentStockMoves] = await Promise.all([
+  const [totalSales, totalScans, totalProducts, recentStockMoves] = await Promise.all([
     Sale.countDocuments({ storeId }),
-    Sale.countDocuments({ storeId, createdAt: { $gte: thirtyDaysAgo } }),
     OcrScan.countDocuments({ storeId }),
-    OcrScan.countDocuments({ storeId, createdAt: { $gte: thirtyDaysAgo } }),
     Product.countDocuments({ storeId }),
     StockHistory.countDocuments({ storeId, createdAt: { $gte: ninetyDaysAgo } }),
   ]);
@@ -172,8 +170,8 @@ export const createDemande = asyncHandler(async (req: Request, res: Response, ne
   if (recipientEmail) {
     try {
       // Calculer le score
-      const scoreResult = await calculateScore(storeId);
-      const { score, breakdown, meta } = scoreResult;
+const scoreResult = await calculateScore(storeId);
+  const { score, meta } = scoreResult;
 
       // Récupérer les infos du store
       const storeDoc = await Store.findOne({ shopId: storeId }).lean();

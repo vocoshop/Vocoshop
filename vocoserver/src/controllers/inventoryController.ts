@@ -1,7 +1,7 @@
 // src/controllers/inventoryController.ts
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError, NotFoundError } from "../utils/AppError";
 import mongoose from "mongoose";
 import Product from "../models/Product";
 import InventoryHistory from "../models/InventoryHistory";

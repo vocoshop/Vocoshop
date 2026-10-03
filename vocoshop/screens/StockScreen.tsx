@@ -117,8 +117,8 @@ onPress={() => go("AddStock")}
 activeOpacity={0.85}
 >
 <Ionicons name="add-circle-outline" size={34} color="#7DA6FF" />
-<Text style={styles.cardTitle}>Ajouter du stock</Text>
-<Text style={styles.cardDesc}>Entrée de nouveaux articles</Text>
+<Text style={styles.cardTitle}>Mon stock</Text>
+<Text style={styles.cardDesc}>Gérer mes articles</Text>
 </TouchableOpacity>
 
 {/* ➖ RETIRER DU STOCK */}
@@ -155,6 +155,15 @@ activeOpacity={0.85}
 </TouchableOpacity>
 </View>
 </ScrollView>
+
+{/* ➕ FLOATING + BUTTON */}
+<TouchableOpacity
+style={styles.fab}
+onPress={() => go("AddStock")}
+activeOpacity={0.85}
+>
+<Ionicons name="add" size={28} color="#fff" />
+</TouchableOpacity>
 </View>
 );
 }
@@ -257,6 +266,23 @@ marginBottom: 18,
 
 cardDisabled: {
 opacity: 0.45,
+},
+
+fab: {
+position: "absolute",
+bottom: 24,
+right: 20,
+width: 56,
+height: 56,
+borderRadius: 28,
+backgroundColor: "#7C3AED",
+justifyContent: "center",
+alignItems: "center",
+elevation: 6,
+shadowColor: "#7C3AED",
+shadowOffset: { width: 0, height: 4 },
+shadowOpacity: 0.35,
+shadowRadius: 8,
 },
 
 cardTitle: {

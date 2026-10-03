@@ -39,7 +39,8 @@ CONFLICT STORE
 Stocker les versions connues pour détecter les conflits
 ===================================================== */
 
-const VERSION_KEY = "voco_versions_v1";
+const LEGACY_VERSION_KEY = "voco_versions_v1";
+const VERSION_KEY_PREFIX = "voco_versions_v2_";
 
 type VersionEntry = {
   entity: string;  // "stock", "product", "inventory_session"
@@ -52,26 +53,49 @@ type VersionEntry = {
 let versionStore: VersionEntry[] = [];
 let listeners = new Set<ConflictListener>();
 let initialized = false;
+let versionScope: string | null = null;
+
+async function getStorageScope(): Promise<string | null> {
+  const storeId = await AsyncStorage.getItem("storeId");
+  if (storeId?.trim()) return storeId.trim();
+  return process.env.NODE_ENV === "test" ? "test" : null;
+}
+
+async function getVersionKey(): Promise<string | null> {
+  const scope = await getStorageScope();
+  return scope ? `${VERSION_KEY_PREFIX}${scope}` : null;
+}
 
 /**
  * Charger le store de versions depuis AsyncStorage
  */
 export async function initVersionStore(): Promise<void> {
-  if (initialized) return;
+  const scope = await getStorageScope();
+  if (initialized && versionScope === scope) return;
+
   try {
-    const raw = await AsyncStorage.getItem(VERSION_KEY);
-    if (raw) {
-      versionStore = JSON.parse(raw);
+    const key = scope ? `${VERSION_KEY_PREFIX}${scope}` : null;
+    if (!key) {
+      versionStore = [];
+    } else {
+      await AsyncStorage.removeItem(LEGACY_VERSION_KEY);
+      const raw = await AsyncStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      versionStore = Array.isArray(parsed) ? parsed : [];
     }
+    versionScope = scope;
     initialized = true;
   } catch {
     versionStore = [];
+    versionScope = scope;
     initialized = true;
   }
 }
 
 async function saveVersionStore(): Promise<void> {
-  await AsyncStorage.setItem(VERSION_KEY, JSON.stringify(versionStore));
+  const key = await getVersionKey();
+  if (!key) return;
+  await AsyncStorage.setItem(key, JSON.stringify(versionStore));
 }
 
 /**
@@ -337,39 +361,56 @@ TEST RESET (for test isolation)
 
 /** @internal Reset le cache interne pour les tests */
 export function __resetVersionStore(): void {
-  versionStore = [];
-  initialized = false;
+versionStore = [];
+versionScope = null;
+initialized = false;
 }
 
 /* =====================================================
 CONFLICT HISTORY (for user review)
 ===================================================== */
 
-const CONFLICT_HISTORY_KEY = "voco_conflict_history_v1";
+const LEGACY_CONFLICT_HISTORY_KEY = "voco_conflict_history_v1";
+const CONFLICT_HISTORY_KEY_PREFIX = "voco_conflict_history_v2_";
+
+async function getConflictHistoryKey(): Promise<string | null> {
+  const scope = await getStorageScope();
+  return scope ? `${CONFLICT_HISTORY_KEY_PREFIX}${scope}` : null;
+}
 
 export async function logConflict(conflict: ConflictInfo): Promise<void> {
-  try {
-    const raw = await AsyncStorage.getItem(CONFLICT_HISTORY_KEY);
-    const history = raw ? JSON.parse(raw) : [];
+ try {
+ const key = await getConflictHistoryKey();
+ if (!key) return;
+ await AsyncStorage.removeItem(LEGACY_CONFLICT_HISTORY_KEY);
+ const raw = await AsyncStorage.getItem(key);
+ const history = raw ? JSON.parse(raw) : [];
     history.unshift({
       ...conflict,
       resolvedAt: Date.now(),
     });
     // Garder les 50 derniers
     const trimmed = history.slice(0, 50);
-    await AsyncStorage.setItem(CONFLICT_HISTORY_KEY, JSON.stringify(trimmed));
+    await AsyncStorage.setItem(key, JSON.stringify(trimmed));
   } catch (e) { console.warn("logConflict", e); }
 }
 
 export async function getConflictHistory(): Promise<any[]> {
-  try {
-    const raw = await AsyncStorage.getItem(CONFLICT_HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+ try {
+ const key = await getConflictHistoryKey();
+ if (!key) return [];
+ const raw = await AsyncStorage.getItem(key);
+ return raw ? JSON.parse(raw) : [];
+ } catch {
+ return [];
+ }
 }
 
 export async function clearConflictHistory(): Promise<void> {
-  await AsyncStorage.multiRemove([CONFLICT_HISTORY_KEY]);
+ const key = await getConflictHistoryKey();
+ if (key) {
+   await AsyncStorage.multiRemove([key, LEGACY_CONFLICT_HISTORY_KEY]);
+ } else {
+   await AsyncStorage.removeItem(LEGACY_CONFLICT_HISTORY_KEY);
+ }
 }

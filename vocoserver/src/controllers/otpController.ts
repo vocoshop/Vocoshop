@@ -1,7 +1,7 @@
 // controllers/otpController.ts
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError";
+import { ValidationError } from "../utils/AppError";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
@@ -16,7 +16,6 @@ import { safeTrim, safeBool, shouldReauth } from "../utils/helpers";
 CONFIG
 ===================================================== */
 const REAUTH_DAYS = Math.min(Math.max(Number(process.env.REAUTH_DAYS || 14), 1), 180);
-const REAUTH_MS = REAUTH_DAYS * 24 * 60 * 60 * 1000;
 
 /* =====================================================
 HELPERS

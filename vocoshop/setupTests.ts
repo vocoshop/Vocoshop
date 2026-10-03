@@ -26,7 +26,7 @@ jest.mock('expo-camera', () => ({
 
 jest.mock('expo-barcode-scanner', () => ({
   BarCodeScanner: 'BarCodeScanner',
-}));
+}), { virtual: true });
 
 jest.mock('expo-av', () => ({
   Audio: {

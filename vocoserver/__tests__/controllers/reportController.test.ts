@@ -3,8 +3,27 @@ import crypto from "crypto";
 /* ------------------------------------------------------
 Model mocks (for all controller/service imports)
 ------------------------------------------------------ */
-jest.mock("../../src/models/Product", () => ({}));
+jest.mock("../../src/models/Product", () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn(),
+    countDocuments: jest.fn(),
+  },
+}));
 jest.mock("../../src/models/StockHistory", () => ({}));
+jest.mock("../../src/models/Store", () => ({
+  __esModule: true,
+  default: {
+    findById: jest.fn(),
+  },
+}));
+jest.mock("../../src/models/OcrScan", () => ({}));
+jest.mock("qrcode", () => ({
+  toDataURL: jest.fn().mockResolvedValue("data:image/png;base64,report"),
+}));
+jest.mock("../../src/blockchain/vocoScore", () => ({
+  computeScore: jest.fn().mockResolvedValue({ overallScore: 80 }),
+}));
 jest.mock("../../src/models/Sales", () => ({}));
 jest.mock("../../src/models/Counter", () => ({ findOneAndUpdate: jest.fn() }));
 
@@ -15,6 +34,7 @@ jest.mock("../../src/models/SharedReportLink", () => ({
 
 jest.mock("../../src/models/DailyReport", () => ({
   find: jest.fn(() => ({ sort: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) })) })),
+  distinct: jest.fn().mockResolvedValue([]),
 }));
 
 // BlockchainProof mock
@@ -44,13 +64,17 @@ jest.mock("../../src/services/blockchainAnchorService", () => {
 /* ------------------------------------------------------
 Imports
 ------------------------------------------------------ */
-import { computeDataHash } from "../../src/controllers/reportController";
+import { computeDataHash, viewSharedReport } from "../../src/controllers/reportController";
 import {
   anchorReport, getAnchorsForHash, getProofChain,
 } from "../../src/services/blockchainAnchorService";
 
 // Get mocked model refs
 const BlockchainProof = jest.requireMock("../../src/models/BlockchainProof") as any;
+const SharedReportLink = jest.requireMock("../../src/models/SharedReportLink") as any;
+const Product = jest.requireMock("../../src/models/Product").default as any;
+const Store = jest.requireMock("../../src/models/Store").default as any;
+const DailyReport = jest.requireMock("../../src/models/DailyReport") as any;
 
 /* ========================================================================
 computeDataHash — pure function, 0 mocks needed
@@ -201,5 +225,78 @@ describe("blockchainAnchorService — getProofChain", () => {
 
     const chain = await getProofChain(2);
     expect(chain).toHaveLength(2);
+  });
+});
+
+describe("viewSharedReport", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    SharedReportLink.findOne.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({
+        _id: "link-1",
+        storeId: "store-1",
+        month: "2026-01",
+        token: "a".repeat(64),
+        expiresAt: new Date(Date.now() + 86400000),
+        storeName: "Commerce",
+      }),
+    });
+    SharedReportLink.updateOne.mockResolvedValue({});
+    Store.findById.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({
+        storeName: "<script>alert(1)</script>",
+        ownerName: "\"><img src=x onerror=alert(2)>",
+        city: "<svg onload=alert(3)>",
+        phone: "\"javascript:alert(4)\"",
+        shopId: "<b>shop</b>",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+    });
+    Product.find.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue([
+        { name: "</script><script>alert(5)</script>", quantity: 4, sellPrice: 1000, purchasePrice: 500 },
+      ]),
+    });
+    Product.countDocuments.mockResolvedValue(1);
+    DailyReport.find.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue([
+        {
+          date: "2026-01-15",
+          totalRevenue: 4000,
+          grossProfit: 2000,
+          cogs: 2000,
+          totalSales: 4,
+          sales: [{ productName: "</script><script>alert(5)</script>", quantity: 4, totalAmount: 4000 }],
+        },
+      ]),
+    });
+    DailyReport.distinct.mockResolvedValue(["2026-01-15"]);
+  });
+
+  it("échappe les données du rapport et les valeurs intégrées au script", async () => {
+    const response: any = {
+      setHeader: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    };
+    const request: any = {
+      params: { id: "a".repeat(64) },
+      query: { month: "\"><script>alert(6)</script>" },
+      headers: {},
+      get: jest.fn().mockReturnValue("reports.example.test"),
+    };
+
+    await viewSharedReport(request, response);
+
+    expect(response.status).toHaveBeenCalledWith(200);
+    const html = response.send.mock.calls[0][0] as string;
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).not.toContain("</script><script>alert(5)</script>");
+    expect(html).not.toContain("\"><script>alert(6)</script>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain("\\u003c/script\\u003e\\u003cscrip");
   });
 });

@@ -78,7 +78,18 @@ uniqueKey: {
 { timestamps: true }
 );
 
+/* =====================================================
+🔍 INDEX NOTIFICATIONS
+===================================================== */
+
+/* Notifications d'une boutique, du plus récent au plus ancien */
+NotificationSchema.index({ storeId: 1, createdAt: -1 });
+/* Badge « non lues » d'une boutique */
+NotificationSchema.index({ storeId: 1, isRead: 1, createdAt: -1 });
+/* Déduplication des notifications système */
+NotificationSchema.index({ storeId: 1, uniqueKey: 1 });
+
 export default mongoose.model<INotification>(
-"Notification",
-NotificationSchema
+  "Notification",
+  NotificationSchema
 );

@@ -7,9 +7,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '^react$': '<rootDir>/../node_modules/react',
-    '^react-native$': '<rootDir>/../node_modules/react-native'
+    '^@/(.*)$': '<rootDir>/src/$1'
   },
   testEnvironment: 'node',
   transform: {

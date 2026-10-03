@@ -1,9 +1,9 @@
 // App.tsx
 
 import React, { useEffect, useState, useContext, useCallback } from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { NavigationContainer, useFocusEffect } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, useFocusEffect } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -286,9 +286,7 @@ cancelled = true;
 };
 }, [loading, bootLoading, token, bootToken, onboarded, navigation]);
 
-return (
-    <View style={{ flex: 1, backgroundColor: "#070014" }} />
-  );
+return null;
 }
 
 export default function App() {
@@ -319,11 +317,9 @@ return () => { mounted = false; };
 /**
  * ✅ 3 — APP NORMALE
  */
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
 
 return (
+<View style={{ flex: 1, backgroundColor: "#05060F" }}>
 <ErrorBoundary>
 <LanguageProvider>
 <AuthProvider>
@@ -334,7 +330,7 @@ return (
 <NotificationProvider>
 
 {/* ✅ UN SEUL NavigationContainer */}
-<NavigationContainer ref={navigationRef} linking={linking}>
+<NavigationContainer ref={navigationRef} linking={linking} theme={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: "#05060F", card: "#05060F" } }}>
 
 <StatusBar style="light" />
 
@@ -343,6 +339,7 @@ initialRouteName="Entry"
 screenOptions={{
 headerShown:false,
 animation:"slide_from_right",
+cardStyle: { backgroundColor: "#05060F" },
 }}
 >
 
@@ -467,6 +464,14 @@ component={SubscriptionBlockedScreen}
 </AuthProvider>
 </LanguageProvider>
 </ErrorBoundary>
+
+{/* Splash overlay au-dessus de la navigation */}
+{showSplash && (
+  <View style={StyleSheet.absoluteFill} pointerEvents="auto">
+    <SplashScreen onFinish={() => setShowSplash(false)} />
+  </View>
+)}
+</View>
 
 );
 }

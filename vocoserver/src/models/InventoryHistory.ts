@@ -15,4 +15,11 @@ timestamps: true, // <-- créé createdAt automatiquement
 }
 );
 
+/* =====================================================
+🔍 INDEX HISTORIQUE INVENTAIRE
+===================================================== */
+
+/* Flux d'inventaire d'une boutique, du plus récent au plus ancien */
+InventoryHistorySchema.index({ storeId: 1, createdAt: -1 });
+
 export default mongoose.model("InventoryHistory", InventoryHistorySchema);

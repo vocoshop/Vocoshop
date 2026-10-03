@@ -1,5 +1,6 @@
 // __tests__/offline/cache.test.ts
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   cacheSet,
   cacheGet,
@@ -54,6 +55,21 @@ describe('offline/cache', () => {
       const result = await cacheGet('version_test');
       expect(result!.version).toBe(42);
     });
+  });
+
+  it('isole les entrées par boutique', async () => {
+    await AsyncStorage.setItem('storeId', 'store-a');
+    await cacheSet('products', [{ name: 'A' }]);
+
+    await AsyncStorage.setItem('storeId', 'store-b');
+    await cacheSet('products', [{ name: 'B' }]);
+    expect((await getCachedProducts())!.data).toEqual([{ name: 'B' }]);
+
+    await AsyncStorage.setItem('storeId', 'store-a');
+    expect((await getCachedProducts())!.data).toEqual([{ name: 'A' }]);
+
+    await cacheClear();
+    await AsyncStorage.removeItem('storeId');
   });
 
   describe('cacheClear', () => {

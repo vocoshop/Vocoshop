@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import API from "../../src/api/api";
+import { parseFrenchNumber } from "../../src/utils/parseFrenchNumber";
 
 interface Partner {
   _id: string;
@@ -273,7 +274,7 @@ export default function GestionPartenaires() {
               <TextInput
                 style={styles.input}
                 value={String(editing.min || "")}
-                onChangeText={(t) => setEditing({ ...editing, min: parseInt(t) || 0 })}
+                onChangeText={(t) => setEditing({ ...editing, min: parseFrenchNumber(t) })}
                 placeholder="100000"
                 placeholderTextColor="#555"
                 keyboardType="numeric"
@@ -283,7 +284,7 @@ export default function GestionPartenaires() {
               <TextInput
                 style={styles.input}
                 value={String(editing.max || "")}
-                onChangeText={(t) => setEditing({ ...editing, max: parseInt(t) || 0 })}
+                onChangeText={(t) => setEditing({ ...editing, max: parseFrenchNumber(t) })}
                 placeholder="5000000"
                 placeholderTextColor="#555"
                 keyboardType="numeric"
@@ -311,7 +312,7 @@ export default function GestionPartenaires() {
               <TextInput
                 style={styles.input}
                 value={String(editing.order || "")}
-                onChangeText={(t) => setEditing({ ...editing, order: parseInt(t) || 0 })}
+                onChangeText={(t) => setEditing({ ...editing, order: parseFrenchNumber(t) })}
                 placeholder="1"
                 placeholderTextColor="#555"
                 keyboardType="numeric"

@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import API from "../src/api/api";
+import { parseFrenchNumber, evalSum } from "../src/utils/parseFrenchNumber";
 
 interface OcrLine {
   text: string;
@@ -51,7 +52,28 @@ export default function OcrValidationScreen() {
   const route = useRoute();
   const scan: ScanData = route.params?.scan;
 
-  const [lines, setLines] = useState<OcrLine[]>(scan?.lines || []);
+  const [lines, setLines] = useState<OcrLine[]>(() => {
+    const initial = scan?.lines || [];
+    return initial.map((line) => {
+      const text = line.text.trim();
+      if (line.unitPrice && line.unitPrice > 0) return line;
+      if (text.includes("=")) {
+        const eqIdx = text.indexOf("=");
+        const beforeEq = text.slice(0, eqIdx).trim();
+        const afterEq = text.slice(eqIdx + 1).trim();
+        const num = evalSum(afterEq);
+        if (num > 0) {
+          const qty = beforeEq ? (line.quantity || 1) : 1;
+          const unitPrice = qty > 1 && num % qty === 0 ? num / qty : num;
+          return { ...line, unitPrice, quantity: qty, total: qty * unitPrice };
+        }
+      } else if (/^[\d+.\s]+$/.test(text)) {
+        const num = evalSum(text);
+        if (num > 0) return { ...line, unitPrice: num, quantity: 1, total: num };
+      }
+      return line;
+    });
+  });
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -74,7 +96,7 @@ export default function OcrValidationScreen() {
 
   const matchedCount = lines.filter((l) => l.productId).length;
   const unmatchedCount = lines.filter((l) => !l.productId).length;
-  const totalAmount = lines.reduce((s, l) => s + (l.total || (l.quantity || 0) * (l.unitPrice || 0)), 0);
+  const totalAmount = lines.reduce((s, l) => s + (l.quantity || 0) * (l.unitPrice || 0), 0);
 
   const globalConfidence = scan?.globalConfidence ?? 0;
   const avgConfidence =
@@ -93,11 +115,34 @@ export default function OcrValidationScreen() {
   const saveEdit = useCallback(() => {
     if (editingIndex === null) return;
     const updated = [...lines];
-    updated[editingIndex] = {
-      ...updated[editingIndex],
-      text: editValue,
-      corrected: editValue !== updated[editingIndex].text,
-    };
+    const line = updated[editingIndex];
+    const text = editValue.trim();
+    const newFields: Partial<OcrLine> = { text, corrected: text !== line.text };
+
+    const eqIdx = text.indexOf("=");
+    if (eqIdx !== -1) {
+      const beforeEq = text.slice(0, eqIdx).trim();
+      const afterEq = text.slice(eqIdx + 1).trim();
+      const num = evalSum(afterEq);
+      if (num > 0) {
+        const qty = beforeEq ? (line.quantity || 1) : 1;
+        const unitPrice = qty > 1 && num % qty === 0 ? num / qty : num;
+        newFields.unitPrice = unitPrice;
+        newFields.quantity = qty;
+        newFields.total = qty * unitPrice;
+      }
+    } else if (/^[*×xX]\s*/.test(text)) {
+      const num = parseFrenchNumber(text.replace(/^[*×xX]\s*/, ""));
+      if (num > 0) newFields.quantity = num;
+      if (newFields.quantity !== undefined && line.unitPrice && line.unitPrice > 0) {
+        newFields.total = newFields.quantity * line.unitPrice;
+      }
+    } else if (/^[\d+.\s]+$/.test(text)) {
+      const num = evalSum(text);
+      if (num > 0) { newFields.unitPrice = num; newFields.quantity = 1; newFields.total = num; }
+    }
+
+    updated[editingIndex] = { ...line, ...newFields };
     setLines(updated);
     setEditingIndex(null);
   }, [editingIndex, editValue, lines]);
@@ -150,21 +195,38 @@ export default function OcrValidationScreen() {
       setLines((prev) => {
         const updated = [...prev];
         const line = updated[index];
-        const sellPrice = product.sellPrice || 0;
-        const currentTotal = line.total || 0;
+        const existingPrice = (line.unitPrice || 0) > 0 ? (line.unitPrice || 0) : (product.sellPrice || 0);
         let qty = line.quantity || 1;
-        if (sellPrice > 0 && currentTotal > 0 && currentTotal % sellPrice === 0) {
-          qty = Math.round(currentTotal / sellPrice);
+        // Chercher une ligne non liee de meme type dont le texte est quasi-numerique (=103, x5, 103...)
+        const qtyIdx = updated.findIndex((l, i) => i !== index && !l.productId && l.type === line.type && (l.quantity ?? 0) > 0 && /^[\d.\s]+$/.test(l.text.replace(/^[*=×xX]\s*/, "").trim()));
+        if (qtyIdx !== -1) {
+          qty = updated[qtyIdx].quantity || qty;
+          // Calculer la cible AVANT le splice pour eviter le decalage
+          const targetIdx = qtyIdx < index ? index - 1 : index;
+          updated.splice(qtyIdx, 1);
+          const current = updated[targetIdx];
+          if (current && !current.productId) {
+            updated[targetIdx] = {
+              ...current,
+              productName: product.name,
+              productId: product._id,
+              unitPrice: existingPrice,
+              quantity: qty,
+              total: qty * existingPrice,
+              corrected: true,
+            };
+          }
+        } else {
+          updated[index] = {
+            ...updated[index],
+            productName: product.name,
+            productId: product._id,
+            unitPrice: existingPrice,
+            quantity: qty,
+            total: qty * existingPrice,
+            corrected: true,
+          };
         }
-        updated[index] = {
-          ...line,
-          productName: product.name,
-          productId: product._id,
-          unitPrice: sellPrice || line.unitPrice,
-          quantity: qty,
-          total: qty * (sellPrice || 1) || currentTotal,
-          corrected: true,
-        };
         return updated;
       });
       setLinkingIndex(null);
@@ -332,7 +394,7 @@ export default function OcrValidationScreen() {
               style={styles.valueInput}
               keyboardType="numeric"
               value={item.quantity?.toString() || ""}
-              onChangeText={(v) => updateLineField(index, "quantity", parseInt(v) || 0)}
+              onChangeText={(v) => updateLineField(index, "quantity", evalSum(v))}
             />
           </View>
           <View style={styles.valueGroup}>
@@ -341,7 +403,7 @@ export default function OcrValidationScreen() {
               style={styles.valueInput}
               keyboardType="numeric"
               value={item.unitPrice?.toString() || ""}
-              onChangeText={(v) => updateLineField(index, "unitPrice", parseInt(v) || 0)}
+              onChangeText={(v) => updateLineField(index, "unitPrice", evalSum(v))}
             />
           </View>
           <View style={styles.valueGroup}>

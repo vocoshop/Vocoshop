@@ -6,9 +6,6 @@ TYPES
 type PaymentPayload = {
   method: "mobile_money" | "card";
   phone?: string;
-  card?: string;
-  expiry?: string;
-  cvc?: string;
   storeId: string;
   email?: string;
   countryCode?: string;
@@ -95,62 +92,15 @@ async function chargeMobileMoney(
 }
 
 /* =====================================================
-Card charge via Flutterwave
-===================================================== */
-async function chargeCard(
-  card: string,
-  expiry: string,
-  cvc: string,
-  storeId: string
-): Promise<PaymentResult> {
-  const txRef = generateTxRef(storeId);
-  const [expMonth, expYear] = expiry.split("/").map((s) => s.trim());
-
-  const payload = {
-    tx_ref: txRef,
-    amount: AMOUNT,
-    currency: CURRENCY,
-    card_number: card.replace(/\s/g, ""),
-    cvv: cvc,
-    expiry_month: expMonth || "12",
-    expiry_year: expYear || "30",
-    email: `store_${storeId}@vocoshop.com`,
-    fullname: `Boutique ${storeId}`,
-  };
-
-  try {
-    const res = await fetch(`${FLW_BASE}/charges?type=card`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${FLW_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data: any = await res.json();
-
-    if (data.status === "success" || data.status === "pending") {
-      return {
-        success: true,
-        txRef,
-        flwRef: data.data?.flw_ref || data.data?.id?.toString(),
-      };
-    }
-
-    throw new Error(data.message || "Échec du paiement par carte");
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erreur réseau Flutterwave";
-    throw new Error(msg);
-  }
-}
-
-/* =====================================================
 MAIN — processSubscriptionPayment (Flutterwave v3)
 ===================================================== */
 export async function processSubscriptionPayment(
   payload: PaymentPayload
 ): Promise<PaymentResult> {
+  if (payload.method === "card") {
+    throw new Error("Le paiement par carte doit utiliser le checkout hébergé");
+  }
+
   // Fallback: if Flutterwave not configured, use stub
   if (!FLW_SECRET_KEY || FLW_SECRET_KEY === "your_flw_secret_key") {
     console.log("⚠️ Flutterwave non configuré — mode simulation");
@@ -166,13 +116,6 @@ export async function processSubscriptionPayment(
     const operator = detectOperator(payload.phone);
     if (operator === "UNKNOWN") throw new Error("Opérateur non reconnu");
     return chargeMobileMoney(payload.phone, payload.storeId, operator);
-  }
-
-  if (payload.method === "card") {
-    if (!payload.card || !payload.expiry || !payload.cvc) {
-      throw new Error("Carte invalide");
-    }
-    return chargeCard(payload.card, payload.expiry, payload.cvc, payload.storeId);
   }
 
   throw new Error("Méthode inconnue");

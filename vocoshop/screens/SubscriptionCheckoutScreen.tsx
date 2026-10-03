@@ -12,13 +12,12 @@ Animated
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "../src/api/types/navigation";
 import * as Haptics from "expo-haptics";
 
 // ✅ PAYMENT HANDLER GLOBAL
 import { handleSubscriptionPayment } from "../src/api/payments/paymentHandler";
-
-// ✅ CONTEXT ABONNEMENT
-import { useSubscription } from "../src/api/context/SubscriptionContext";
 
 // ✅ STORE PROFILE
 import { AuthContext } from "../src/api/context/AuthContext";
@@ -27,16 +26,12 @@ import { Alert } from "react-native";
 
 export default function SubscriptionCheckoutScreen() {
 
-const navigation = useNavigation();
-const { refreshSubscription } = useSubscription();
+const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 const { token } = useContext(AuthContext);
 
 const [method, setMethod] = useState<string | null>(null);
 
 const [phone,setPhone] = useState("");
-const [card,setCard] = useState("");
-const [expiry,setExpiry] = useState("");
-const [cvc,setCvc] = useState("");
 
 const [loading,setLoading] = useState(false);
 
@@ -45,6 +40,7 @@ const [waitingValidation,setWaitingValidation] = useState(false);
 
 /* 🔥 STORE PROFILE CACHED */
 const [customerName, setCustomerName] = useState("");
+const [customerPhone, setCustomerPhone] = useState("");
 
 useEffect(() => {
 (async () => {
@@ -54,6 +50,7 @@ const profile = await getMyStoreProfile({
 Authorization: `Bearer ${token}`,
 });
 setCustomerName(profile.ownerName || profile.shopName || "");
+setCustomerPhone(profile.ownerPhone || profile.phone || "");
 } catch (e) { console.warn("load profile for checkout", e); }
 })();
 }, [token]);
@@ -65,8 +62,7 @@ setCustomerName(profile.ownerName || profile.shopName || "");
 const isMobileValid =
 method === "mobile_money" && phone && phone.length >= 6;
 
-const isCardValid =
-method === "card" && card && expiry && cvc;
+const isCardValid = method === "card";
 
 const canPay = isMobileValid || isCardValid;
 
@@ -77,9 +73,15 @@ const canPay = isMobileValid || isCardValid;
 function detectOperator(phone:string){
 const clean = phone.replace(/\s+/g,"");
 
-if(clean.startsWith("+24206") || clean.startsWith("06")) return "MTN";
-if(clean.startsWith("+24205") || clean.startsWith("05")) return "AIRTEL";
-if(clean.startsWith("+24207") || clean.startsWith("07")) return "ORANGE";
+// Normaliser le prefixe : enlever +242, 00242 ou 242 pour ne garder que le numero local
+let local = clean;
+if (local.startsWith("+242")) local = local.slice(4);
+else if (local.startsWith("00242")) local = local.slice(5);
+else if (local.startsWith("242") && local.length > 7) local = local.slice(3);
+
+if(local.startsWith("06")) return "MTN";
+if(local.startsWith("05")) return "AIRTEL";
+if(local.startsWith("07")) return "ORANGE";
 
 return null;
 }
@@ -198,7 +200,9 @@ color:"#aaa",
 marginTop:8,
 textAlign:"center"
 }}>
-📲 Confirmez la demande sur votre téléphone Mobile Money.
+📲 {method === "card"
+? "La page de paiement sécurisé va s’ouvrir."
+: "📲 Confirmez la demande sur votre téléphone Mobile Money."}
 </Text>
 
 </View>
@@ -227,35 +231,13 @@ keyboardType="phone-pad"
 </>
 )}
 
-{/* 💳 CARD INPUTS */}
 {method === "card" && !waitingValidation && (
-<>
-<TextInput
-placeholder="Numéro de carte"
-placeholderTextColor="#888"
-style={styles.input}
-value={card}
-onChangeText={setCard}
-keyboardType="numeric"
-/>
-
-<TextInput
-placeholder="MM/AA"
-placeholderTextColor="#888"
-style={styles.input}
-value={expiry}
-onChangeText={setExpiry}
-/>
-
-<TextInput
-placeholder="CVC"
-placeholderTextColor="#888"
-style={styles.input}
-value={cvc}
-onChangeText={setCvc}
-keyboardType="numeric"
-/>
-</>
+<View style={styles.secureCheckoutNotice}>
+<Ionicons name="lock-closed-outline" size={22} color="#BFA6FF" />
+<Text style={styles.secureCheckoutText}>
+Les informations de votre carte seront saisies sur la page sécurisée du prestataire de paiement.
+</Text>
+</View>
 )}
 
 {/* 🔥 PAY BTN — VERSION ULTRA PRO */}
@@ -275,66 +257,29 @@ if(loading) return;
 // 🔥 vibration immédiate UX
 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-if(method === "mobile_money" && !phone){
+const selectedMethod = method as "mobile_money" | "card";
+
+if(selectedMethod === "mobile_money" && !phone.trim()){
 Alert.alert("Numéro requis","Entrez votre numéro Mobile Money.");
 return;
 }
 
-if(method === "card" && (!card || !expiry || !cvc)){
-Alert.alert("Carte incomplète","Vérifiez vos informations.");
-return;
-}
-
 setLoading(true);
-setWaitingValidation(true);
+setWaitingValidation(selectedMethod === "mobile_money");
 
 const result = await handleSubscriptionPayment({
-method: method as "mobile_money" | "card",
+method: selectedMethod,
 phone,
-card,
-expiry,
-cvc,
 email: `client_${Date.now()}@vocoshop.com`,
-countryCode: "CG",
 });
 
-// 📱 Mobile Money → WebView Yabetoo intégrée
-if (result && typeof result === "object" && "checkoutUrl" in result) {
 setMethod(null);
 navigation.navigate("YabetooWebView", {
 checkoutUrl: result.checkoutUrl,
 customerName,
-customerPhone: phone,
+customerPhone: selectedMethod === "mobile_money" ? phone : customerPhone,
 });
 return;
-}
-
-// 💳 Carte → validation sur téléphone
-Alert.alert(
-"Paiement en cours",
-"📲 Validez la demande sur votre téléphone."
-);
-
-// 🔥 refresh abonnement global
-await refreshSubscription();
-
-// 🔥 vibration succès UX PRO
-await Haptics.notificationAsync(
-Haptics.NotificationFeedbackType.Success
-);
-
-// 🔥 reset champs
-setPhone("");
-setCard("");
-setExpiry("");
-setCvc("");
-
-setMethod(null);
-
-navigation.reset({
-index:0,
-routes:[{ name:"Home" }]
-});
 
 }catch(e){
 console.log("❌ PAYMENT ERROR",e);
@@ -425,6 +370,21 @@ padding:14,
 borderRadius:14,
 alignItems:"center",
 marginTop:10
+},
+
+secureCheckoutNotice:{
+flexDirection:"row",
+alignItems:"flex-start",
+backgroundColor:"#221A3A",
+padding:12,
+borderRadius:12,
+marginBottom:10
+},
+secureCheckoutText:{
+color:"#fff",
+marginLeft:8,
+flex:1,
+lineHeight:20
 },
 
 operatorBadge:{

@@ -22,6 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import API from "../src/api/api";
 import { AuthContext } from "../src/api/context/AuthContext";
+import { parseFrenchNumber } from "../src/utils/parseFrenchNumber";
 
 import { runOrQueue } from "../src/api/offline/queue";
 import { isOffline } from "../src/api/utils/network";
@@ -303,8 +304,8 @@ return Alert.alert(
 );
 }
 
-const q = Number(quantity);
-if (!Number.isFinite(q) || q <= 0) {
+const q = parseFrenchNumber(quantity);
+if (q <= 0) {
 return Alert.alert(
 "Erreur",
 "Veuillez renseigner un nombre compté valide (ex: 12)."
@@ -355,25 +356,17 @@ Alert.alert(
 "Produit compté hors-ligne. Synchronisation automatique."
 );
 
-navigation.navigate({
-name: "Inventory",
-params: { justCounted: true, countedAt: Date.now() },
-merge: true,
-});
+      (navigation as any).navigate("Inventory", { justCounted: true, countedAt: Date.now() });
 
-return;
-}
+      return;
+    }
 
-// ✅ ONLINE
-await refreshCountAndActive(sid);
+    // ✅ ONLINE
+    await refreshCountAndActive(sid);
 
-Alert.alert("Succès", "Produit compté avec succès.");
+    Alert.alert("Succès", "Produit compté avec succès.");
 
-navigation.navigate({
-name: "Inventory",
-params: { justCounted: true, countedAt: Date.now() },
-merge: true,
-});
+    (navigation as any).navigate("Inventory", { justCounted: true, countedAt: Date.now() });
 
 } catch (err: any) {
 showApiError(err, "Impossible d’enregistrer le comptage.");

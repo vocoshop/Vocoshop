@@ -1,5 +1,12 @@
 import rateLimit from "express-rate-limit";
 
+/**
+ * Échappatoire réservée aux tests de charge (perf/run.js).
+ * Inactif tant que DISABLE_RATE_LIMIT n'est pas explicitement à "1" :
+ * le comportement en production reste inchangé.
+ */
+const skipRateLimit = () => process.env.DISABLE_RATE_LIMIT === "1";
+
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 attempts per window
@@ -9,6 +16,7 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
 });
 
 export const otpLimiter = rateLimit({
@@ -20,6 +28,7 @@ export const otpLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
 });
 
 export const generalLimiter = rateLimit({
@@ -31,6 +40,7 @@ export const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
 });
 
 export const partnerLimiter = rateLimit({
@@ -42,6 +52,7 @@ export const partnerLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
 });
 
 export const registerLimiter = rateLimit({
@@ -53,6 +64,7 @@ export const registerLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
 });
 
 export const yabetooCheckoutLimiter = rateLimit({
@@ -61,6 +73,7 @@ export const yabetooCheckoutLimiter = rateLimit({
   message: { error: "Trop de tentatives de paiement. Veuillez attendre 5 minutes.", code: "YABETOO_CHECKOUT_LIMIT" },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
 });
 
 export const yabetooWebhookLimiter = rateLimit({
@@ -69,4 +82,5 @@ export const yabetooWebhookLimiter = rateLimit({
   message: { error: "Trop de webhooks.", code: "YABETOO_WEBHOOK_LIMIT" },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
 });
