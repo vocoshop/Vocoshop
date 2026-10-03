@@ -7,6 +7,7 @@
     "dev:shop": "cd vocoshop && npx expo start"
   },
   "workspaces": [
+    "vocoserver",
     "vocoshop",
     "voco-web"
   ],
