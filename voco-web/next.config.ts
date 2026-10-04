@@ -22,11 +22,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://vocoshop.onrender.com/api/:path*",
+        destination: "https://vocoserver-production.up.railway.app/api/:path*",
       },
       {
         source: "/uploads/:path*",
-        destination: "https://vocoshop.onrender.com/uploads/:path*",
+        destination: "https://vocoserver-production.up.railway.app/uploads/:path*",
       },
     ];
   },
