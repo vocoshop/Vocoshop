@@ -180,7 +180,14 @@ doc
 🔥 QR CODE
 ===================================================== */
 
-const publicUrl = `https://vocoshop.app/invoice/${invoice.invoiceNumber}`;
+/* =====================================================
+🔥 QR CODE
+=====================================================
+➡️ URL en capability : le jeton t= rend lURL non devinable.
+   Elle pointe vers le front Vercel (et non l'API Railway)
+   car c'est le front qui sert la page /invoice/[n].
+*/
+const publicUrl = `https://www.vocoshop.app/invoice/${invoice.invoiceNumber}?t=${invoice.publicToken ?? ""}`;
 
 const qr = await QRCode.toDataURL(publicUrl);
 const base64Data = qr.replace(/^data:image\/png;base64,/, "");

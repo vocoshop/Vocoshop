@@ -1,5 +1,7 @@
 import express from "express";
+import crypto from "crypto";
 import authMiddleware from "../middleware/authMiddleware";
+import { publicInvoiceLimiter } from "../middleware/rateLimiter";
 import Invoice from "../models/Invoice";
 import Store from "../models/Store"; // ✅ IMPORTANT
 import { generateInvoicePDF } from "../services/pdfInvoiceService";
@@ -63,6 +65,16 @@ return res.status(404).json({error:"Invoice not found"});
 }
 
 /**
+🔥 BACKFILL JETON PUBLIC
+Les factures créées avant ce correctif n'ont pas de publicToken.
+On le génère au premier téléchargement du PDF (lazy, sans migration).
+*/
+if(!invoice.publicToken){
+invoice.publicToken = crypto.randomBytes(24).toString("hex");
+await invoice.save();
+}
+
+/**
 🔥 récupérer profil boutique (nom commercial)
 */
 const store = await Store.findById(storeId).lean() as any;
@@ -97,32 +109,49 @@ return res.status(500).json({error:"pdf error"});
 
 /**
 =====================================================
-🌍 PUBLIC INVOICE (SANS TOKEN)
+🌍 PUBLIC INVOICE (CAPABILITY URL)
 =====================================================
+🔐 Exige le jeton `?t=` présent dans le QR code du PDF.
+   invoiceNumber seul ne suffit plus : VOC-2026-482913 ne
+   donne que ~900 000 combinaisons/an et était donc énumérable.
+➡️ storeId, transactionId, publicToken, _id ne sont JAMAIS exposés.
+➡️ Réponse 404 identique pour "facture inconnue" et "mauvais jeton"
+   (pas d'oracle permettant de tester l'existence d'une facture).
 */
-router.get("/public/:invoiceNumber", async (req:any,res)=>{
+router.get("/public/:invoiceNumber", publicInvoiceLimiter, async (req:any,res)=>{
 
 try{
 
 const { invoiceNumber } = req.params;
+const token = typeof req.query.t === "string" ? req.query.t : "";
 
-if(!invoiceNumber){
-return res.status(400).send("invoiceNumber manquant");
+if(!invoiceNumber || !token){
+return res.status(404).json({error:"Facture introuvable"});
 }
 
 const invoice = await Invoice.findOne({
-invoiceNumber
+invoiceNumber,
+publicToken: token
 }).lean();
 
 if(!invoice){
-return res.status(404).send("Facture introuvable");
+return res.status(404).json({error:"Facture introuvable"});
 }
 
-return res.json(invoice);
+return res.json({
+invoiceNumber: invoice.invoiceNumber,
+plan: invoice.plan,
+amount: invoice.amount,
+currency: invoice.currency,
+billingPeriodStart: invoice.billingPeriodStart,
+billingPeriodEnd: invoice.billingPeriodEnd,
+paidAt: invoice.paidAt,
+status: invoice.paidAt ? "PAYEE" : "EN_ATTENTE"
+});
 
 }catch(e){
 console.log("public invoice error",e);
-return res.status(500).send("invoice error");
+return res.status(500).json({error:"invoice error"});
 }
 
 });

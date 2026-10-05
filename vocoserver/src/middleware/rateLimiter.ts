@@ -55,6 +55,18 @@ export const partnerLimiter = rateLimit({
   skip: skipRateLimit,
 });
 
+export const publicInvoiceLimiter = rateLimit({
+windowMs: 1 * 60 * 1000, // 1 minute
+max: 20, // 20 consultations de facture par minute et par IP
+message: {
+error: "Trop de consultations de factures. Veuillez ralentir.",
+code: "PUBLIC_INVOICE_RATE_LIMIT",
+},
+standardHeaders: true,
+legacyHeaders: false,
+skip: skipRateLimit,
+});
+
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 heure
   max: 5, // 5 inscriptions par heure par IP

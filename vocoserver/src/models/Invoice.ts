@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 /**
 =====================================================
@@ -84,6 +85,20 @@ default: Date.now
 transactionId: {
 type: String,
 default: null,
+index: true
+},
+
+/* =====================================================
+🔐 JETON PUBLIC (CAPABILITY URL)
+=====================================================
+➡️ invoiceNumber reste lisible par lhumain (VOC-2026-482913)
+➡️ publicToken est le secret non devinable du QR code
+➡️Sans ce jeton, /api/invoices/public/:n refuse de répondre
+➡️Généré automatiquement (aucun appelant à modifier)
+*/
+publicToken: {
+type: String,
+default: () => crypto.randomBytes(24).toString("hex"),
 index: true
 }
 
