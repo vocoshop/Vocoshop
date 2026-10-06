@@ -30,7 +30,7 @@ export default function StoreCreatedScreen() {
     `📊 Chiffre d'affaires\n` +
     `📦 Etat du stock\n` +
     `📈 Benefices et bilans quotidiens\n\n` +
-    `📲 Retrouvez VocoShop ici : https://vocoshop.onrender.com/download\n\n` +
+    `📲 Retrouvez VocoShop ici : https://vocoserver-production.up.railway.app/download\n\n` +
     `Connectez-vous avec ce numero : ${ownerPhone}\n\n` +
     `👉 VocoShop — Vendez. Gerer. Grandissez.`;
 

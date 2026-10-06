@@ -824,7 +824,7 @@ export const viewSharedReport = async (req: Request, res: Response) => {
 
     let qrDataUri = "";
     try {
-      const qr = await QRCode.toDataURL(`https://vocoshop.onrender.com/api/public/report/verify/${token}`, { width: 160, margin: 2, color: { dark: "#A78BFA", light: "#0A0617" } });
+      const qr = await QRCode.toDataURL(`${getPublicBaseUrl(req)}/api/public/report/verify/${token}`, { width: 160, margin: 2, color: { dark: "#A78BFA", light: "#0A0617" } });
       qrDataUri = qr;
     } catch (qrErr2) { console.warn("QR code web", qrErr2); }
 

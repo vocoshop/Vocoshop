@@ -15,7 +15,7 @@ import { navigate } from "./navigation/navigationRef";
 const envUrl = process.env.EXPO_PUBLIC_API_URL;
 const extraUrl = (Constants.expoConfig as Record<string, any>)?.extra?.EXPO_PUBLIC_API_URL;
 const manifestUrl = (Constants as Record<string, any>)?.manifest?.extra?.EXPO_PUBLIC_API_URL;
-export const API_BASE = envUrl || extraUrl || manifestUrl || "https://vocoshop.onrender.com";
+export const API_BASE = envUrl || extraUrl || manifestUrl || "https://vocoserver-production.up.railway.app";
 if (__DEV__) console.warn("🔗 API_BASE =", API_BASE);
 
 /**

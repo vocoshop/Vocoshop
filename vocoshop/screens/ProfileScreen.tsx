@@ -174,7 +174,7 @@ loadStoreProfile();
         message:
           `📢 Rejoins-moi sur VocoShop !\n\n` +
           `Utilise mon code de parrainage *${referralCode}* lors de ton inscription et beneficie d'un mois d'essai gratuit.\n\n` +
-          `📲 Telecharge l'app ici : https://vocoshop.onrender.com/download\n\n` +
+          `📲 Telecharge l'app ici : https://vocoserver-production.up.railway.app/download\n\n` +
           `👉 VocoShop — Vendez. Gerer. Grandissez.`,
       });
     } catch (e) { console.warn("shareCode", e); }

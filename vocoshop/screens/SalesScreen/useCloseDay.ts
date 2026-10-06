@@ -151,7 +151,7 @@ const [daySummary, setDaySummary] = useState<TodaySummary | null>(null);
         `📈 Benefice : ${profitFormatted} FCFA\n\n` +
         `📎 Le rapport detaille est disponible dans le PDF ci-joint.\n\n` +
         `Merci de votre confiance.\n\n` +
-        `📲 VocoShop : https://vocoshop.onrender.com/download`;
+        `📲 VocoShop : https://vocoserver-production.up.railway.app/download`;
 
       const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
 

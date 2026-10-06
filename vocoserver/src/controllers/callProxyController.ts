@@ -37,7 +37,7 @@ agentPhone,
 status: "requested",
 });
 
-const baseUrl = process.env.PUBLIC_BASE_URL || "https://vocoshop.onrender.com";
+const baseUrl = process.env.PUBLIC_BASE_URL || "https://vocoserver-production.up.railway.app";
 const answerUrl = `${baseUrl}/api/call-proxy/webhook/answer/${proxy._id}`;
 const eventUrl = `${baseUrl}/api/call-proxy/webhook/event/${proxy._id}`;
 
