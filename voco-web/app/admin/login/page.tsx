@@ -59,7 +59,21 @@ export default function AdminLogin() {
       }));
 
       document.cookie = `adminToken=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+      /* On libere le bouton AVANT la redirection : sans cela le bouton
+         reste sur « Connexion... » avec loading=true, et le formulaire
+         parait fige meme quand la connexion a reussi. */
+      setLoading(false);
+
+      /* router.push() est type void ici : une route absente ne leve pas
+         d'exception, elle laisse simplement la page _not-found s'afficher.
+         On verifie donc apres coup qu'on a bien quitte le formulaire. */
       router.push('/super-admin/dashboard');
+      window.setTimeout(() => {
+        if (window.location.pathname === '/admin/login') {
+          setError('Connexion reussie, mais le dashboard est injoignable.');
+        }
+      }, 3000);
     } catch (err) {
       setError('Erreur de connexion au serveur');
       setLoading(false);
