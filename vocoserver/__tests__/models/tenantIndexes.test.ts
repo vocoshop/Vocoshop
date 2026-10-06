@@ -3,6 +3,7 @@
 jest.unmock("mongoose");
 
 import Store from "../../src/models/Store";
+import Product from "../../src/models/Product";
 import StockHistory from "../../src/models/StockHistory";
 import InventoryHistory from "../../src/models/InventoryHistory";
 import InventorySession from "../../src/models/InventorySession";
@@ -22,6 +23,11 @@ const indexKeys = (model: any): string[][] =>
 const hasIndex = (model: any, keys: string[]) =>
   indexKeys(model).some((k) => JSON.stringify(k) === JSON.stringify(keys));
 
+const indexOptions = (model: any, keys: string[]) =>
+  model.schema.indexes().find(
+    (spec: any[]) => JSON.stringify(Object.keys(spec[0])) === JSON.stringify(keys)
+  )?.[1] ?? {};
+
 describe("Tenant-scoped model indexes", () => {
   describe("Store", () => {
     it("should index agentCode + createdAt for admin-manager listings", () => {
@@ -34,6 +40,29 @@ describe("Tenant-scoped model indexes", () => {
 
     it("should index subscriptionStatus + paidUntil for stats aggregation", () => {
       expect(hasIndex(Store, ["subscriptionStatus", "paidUntil"])).toBe(true);
+    });
+  });
+
+  describe("Product", () => {
+    it("should index storeId + barcode", () => {
+      expect(hasIndex(Product, ["storeId", "barcode"])).toBe(true);
+    });
+
+    it("should enforce uniqueness on storeId + barcode", () => {
+      expect(indexOptions(Product, ["storeId", "barcode"]).unique).toBe(true);
+    });
+
+    /* `sparse: true` ignore les champs ABSENTS mais pas les chaines vides :
+       tous les produits sans code (barcode: "") entraient en collision sur
+       (storeId, "") et rendaient l'index impossible a creer. */
+    it("should NOT rely on sparse alone to skip empty barcodes", () => {
+      expect(indexOptions(Product, ["storeId", "barcode"]).sparse).toBeUndefined();
+    });
+
+    it("should restrict the unique index to non-empty string barcodes", () => {
+      expect(
+        indexOptions(Product, ["storeId", "barcode"]).partialFilterExpression
+      ).toEqual({ barcode: { $type: "string", $gt: "" } });
     });
   });
 

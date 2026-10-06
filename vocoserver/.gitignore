@@ -25,5 +25,10 @@ yarn-error.log*
 # Local history backups
 .history/
 
+# Migration MongoDB : dumps BSON + manifestes (données de production)
+backups/
+*.bson
+*.manifest.json
+
 # uploaded PII (agent photos, selfies, voice recordings)
 /uploads/

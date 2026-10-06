@@ -177,6 +177,18 @@ next();
 📌 INDEX
 ------------------------------------------------------------- */
 ProductSchema.index({ storeId: 1, name: 1 });
-ProductSchema.index({ storeId: 1, barcode: 1 }, { unique: true, sparse: true });
+
+/* Unicité (storeId, barcode) UNIQUEMENT pour les codes-barres reellement
+   renseignes. `sparse: true` ne suffit pas : il ignore les champs ABSENTS
+   mais pas les chaines vides, si bien que tous les produits sans code
+   (barcode: "") se retrouvaient en collision sur (storeId, "").
+   Le partialFilterExpression cible les chaines non vides. */
+ProductSchema.index(
+  { storeId: 1, barcode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { barcode: { $type: "string", $gt: "" } },
+  }
+);
 
 export default mongoose.model<IProduct>("Product", ProductSchema);
